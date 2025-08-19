@@ -1,0 +1,32 @@
+{
+  "player_progress": {
+    "current_level": 1,
+    "max_unlocked_level": 1,
+    "total_score": 0,
+    "total_playtime": 0,
+    "weapons_unlocked": ["Knife"],
+    "achievements": [],
+    "level_stats": {
+      "1": {
+        "completed": false,
+        "best_time": null,
+        "best_score": 0,
+        "attempts": 0
+      }
+    }
+  },
+  "settings": {
+    "sound_volume": 0.7,
+    "music_volume": 0.5,
+    "fullscreen": false,
+    "show_fps": false,
+    "difficulty_multiplier": 1.0
+  },
+  "statistics": {
+    "total_games_played": 0,
+    "total_enemies_defeated": 0,
+    "total_deaths": 0,
+    "favorite_weapon": "Knife",
+    "longest_survival_time": 0
+  }
+}

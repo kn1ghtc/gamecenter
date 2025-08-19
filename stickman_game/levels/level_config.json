@@ -1,0 +1,83 @@
+{
+  "levels": {
+    "1": {
+      "name": "森林新手村",
+      "theme": "forest",
+      "difficulty": 1,
+      "enemies": 1,
+      "platforms": 2,
+      "time_limit": 120,
+      "description": "欢迎来到火柴人的冒险世界！"
+    },
+    "2": {
+      "name": "森林小径",
+      "theme": "forest", 
+      "difficulty": 1,
+      "enemies": 2,
+      "platforms": 3,
+      "time_limit": 110,
+      "description": "小心森林中的敌人！"
+    },
+    "3": {
+      "name": "森林深处",
+      "theme": "forest",
+      "difficulty": 2,
+      "enemies": 2,
+      "platforms": 4,
+      "time_limit": 100,
+      "description": "森林变得更加危险了..."
+    },
+    "11": {
+      "name": "沙漠入口",
+      "theme": "desert",
+      "difficulty": 3,
+      "enemies": 3,
+      "platforms": 5,
+      "time_limit": 90,
+      "description": "炎热的沙漠考验开始！"
+    },
+    "21": {
+      "name": "雪山脚下",
+      "theme": "snow",
+      "difficulty": 5,
+      "enemies": 4,
+      "platforms": 6,
+      "time_limit": 80,
+      "description": "寒冷的雪山挑战！"
+    },
+    "30": {
+      "name": "最终挑战",
+      "theme": "snow",
+      "difficulty": 10,
+      "enemies": 5,
+      "platforms": 8,
+      "time_limit": 60,
+      "description": "最后的boss战！证明你的实力！"
+    }
+  },
+  "themes": {
+    "forest": {
+      "name": "翠绿森林",
+      "background_color": [50, 100, 50],
+      "ground_color": [139, 69, 19],
+      "platform_color": [101, 67, 33]
+    },
+    "desert": {
+      "name": "炎热沙漠", 
+      "background_color": [200, 150, 50],
+      "ground_color": [194, 154, 108],
+      "platform_color": [160, 82, 45]
+    },
+    "snow": {
+      "name": "冰雪世界",
+      "background_color": [150, 180, 220],
+      "ground_color": [200, 200, 200],
+      "platform_color": [169, 169, 169]
+    }
+  },
+  "game_info": {
+    "total_levels": 30,
+    "version": "2.0",
+    "last_updated": "2025-07-20"
+  }
+}
