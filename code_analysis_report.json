@@ -1,0 +1,1090 @@
+{
+  "project_overview": {
+    "project_name": "Game Center",
+    "project_path": "/home/runner/work/gamecenter/gamecenter",
+    "sub_projects": [
+      "tankBattle",
+      "stickman_game"
+    ]
+  },
+  "tankBattle_analysis": {
+    "architecture_pattern": "Monolithic",
+    "file_count": 1,
+    "main_file_analysis": {
+      "file_path": "/home/runner/work/gamecenter/gamecenter/tankBattle/main.py",
+      "lines_of_code": 471,
+      "classes": [
+        {
+          "name": "Wall",
+          "methods": [
+            {
+              "name": "__init__",
+              "line_number": 43,
+              "args_count": 3
+            },
+            {
+              "name": "draw",
+              "line_number": 47,
+              "args_count": 2
+            }
+          ],
+          "line_number": 42
+        },
+        {
+          "name": "Bullet",
+          "methods": [
+            {
+              "name": "__init__",
+              "line_number": 52,
+              "args_count": 6
+            },
+            {
+              "name": "update",
+              "line_number": 61,
+              "args_count": 1
+            },
+            {
+              "name": "draw",
+              "line_number": 65,
+              "args_count": 2
+            }
+          ],
+          "line_number": 51
+        },
+        {
+          "name": "Tank",
+          "methods": [
+            {
+              "name": "__init__",
+              "line_number": 70,
+              "args_count": 7
+            },
+            {
+              "name": "move",
+              "line_number": 88,
+              "args_count": 3
+            },
+            {
+              "name": "rotate",
+              "line_number": 100,
+              "args_count": 2
+            },
+            {
+              "name": "fire",
+              "line_number": 103,
+              "args_count": 1
+            },
+            {
+              "name": "update",
+              "line_number": 110,
+              "args_count": 1
+            },
+            {
+              "name": "draw",
+              "line_number": 113,
+              "args_count": 2
+            }
+          ],
+          "line_number": 69
+        },
+        {
+          "name": "Base",
+          "methods": [
+            {
+              "name": "__init__",
+              "line_number": 136,
+              "args_count": 3
+            },
+            {
+              "name": "draw",
+              "line_number": 139,
+              "args_count": 2
+            }
+          ],
+          "line_number": 135
+        },
+        {
+          "name": "Game",
+          "methods": [
+            {
+              "name": "__init__",
+              "line_number": 146,
+              "args_count": 1
+            },
+            {
+              "name": "pre_generate_levels",
+              "line_number": 169,
+              "args_count": 1
+            },
+            {
+              "name": "generate_maze",
+              "line_number": 205,
+              "args_count": 2
+            },
+            {
+              "name": "save_level_to_file",
+              "line_number": 243,
+              "args_count": 8
+            },
+            {
+              "name": "load_sounds",
+              "line_number": 256,
+              "args_count": 1
+            },
+            {
+              "name": "load_level",
+              "line_number": 266,
+              "args_count": 2
+            },
+            {
+              "name": "run",
+              "line_number": 336,
+              "args_count": 1
+            },
+            {
+              "name": "handle_events",
+              "line_number": 346,
+              "args_count": 1
+            },
+            {
+              "name": "update",
+              "line_number": 359,
+              "args_count": 1
+            },
+            {
+              "name": "draw",
+              "line_number": 447,
+              "args_count": 1
+            }
+          ],
+          "line_number": 145
+        }
+      ],
+      "functions": [
+        {
+          "name": "carve",
+          "line_number": 209,
+          "args_count": 2
+        }
+      ],
+      "imports": [
+        "pygame",
+        "random",
+        "math",
+        "sys",
+        "os"
+      ],
+      "complexity_score": 131
+    },
+    "has_documentation": true
+  },
+  "stickman_game_analysis": {
+    "architecture_pattern": "Modular",
+    "file_count": 9,
+    "module_analyses": {
+      "menu.py": {
+        "file_path": "/home/runner/work/gamecenter/gamecenter/stickman_game/src/menu.py",
+        "lines_of_code": 358,
+        "classes": [
+          {
+            "name": "Menu",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 14,
+                "args_count": 1
+              },
+              {
+                "name": "handle_event",
+                "line_number": 46,
+                "args_count": 2
+              },
+              {
+                "name": "handle_main_menu_input",
+                "line_number": 57,
+                "args_count": 2
+              },
+              {
+                "name": "handle_level_select_input",
+                "line_number": 74,
+                "args_count": 2
+              },
+              {
+                "name": "handle_settings_input",
+                "line_number": 95,
+                "args_count": 2
+              },
+              {
+                "name": "update",
+                "line_number": 118,
+                "args_count": 1
+              },
+              {
+                "name": "draw",
+                "line_number": 123,
+                "args_count": 2
+              },
+              {
+                "name": "get_screen_center",
+                "line_number": 134,
+                "args_count": 2
+              },
+              {
+                "name": "get_ui_scale",
+                "line_number": 139,
+                "args_count": 2
+              },
+              {
+                "name": "draw_main_menu",
+                "line_number": 146,
+                "args_count": 2
+              },
+              {
+                "name": "draw_level_select",
+                "line_number": 199,
+                "args_count": 2
+              },
+              {
+                "name": "draw_settings",
+                "line_number": 269,
+                "args_count": 2
+              },
+              {
+                "name": "get_theme_color",
+                "line_number": 328,
+                "args_count": 2
+              },
+              {
+                "name": "get_level_info",
+                "line_number": 337,
+                "args_count": 2
+              },
+              {
+                "name": "unlock_level",
+                "line_number": 354,
+                "args_count": 2
+              }
+            ],
+            "line_number": 12
+          }
+        ],
+        "functions": [],
+        "imports": [
+          "pygame",
+          "math",
+          "config.*"
+        ],
+        "complexity_score": 76
+      },
+      "image_manager.py": {
+        "file_path": "/home/runner/work/gamecenter/gamecenter/stickman_game/src/image_manager.py",
+        "lines_of_code": 95,
+        "classes": [
+          {
+            "name": "ImageManager",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 13,
+                "args_count": 1
+              },
+              {
+                "name": "_load_images",
+                "line_number": 20,
+                "args_count": 1
+              },
+              {
+                "name": "get_image",
+                "line_number": 65,
+                "args_count": 2
+              },
+              {
+                "name": "get_background",
+                "line_number": 69,
+                "args_count": 2
+              },
+              {
+                "name": "get_sprite",
+                "line_number": 74,
+                "args_count": 2
+              },
+              {
+                "name": "get_weapon_icon",
+                "line_number": 78,
+                "args_count": 2
+              },
+              {
+                "name": "get_scaled_image",
+                "line_number": 82,
+                "args_count": 4
+              },
+              {
+                "name": "get_scaled_background",
+                "line_number": 89,
+                "args_count": 4
+              }
+            ],
+            "line_number": 10
+          }
+        ],
+        "functions": [],
+        "imports": [
+          "pygame",
+          "os"
+        ],
+        "complexity_score": 34
+      },
+      "level_platform_system.py": {
+        "file_path": "/home/runner/work/gamecenter/gamecenter/stickman_game/src/level_platform_system.py",
+        "lines_of_code": 447,
+        "classes": [
+          {
+            "name": "Platform",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 14,
+                "args_count": 6
+              },
+              {
+                "name": "update",
+                "line_number": 19,
+                "args_count": 1
+              },
+              {
+                "name": "draw",
+                "line_number": 22,
+                "args_count": 3
+              },
+              {
+                "name": "_draw_tiled_sprite",
+                "line_number": 33,
+                "args_count": 3
+              }
+            ],
+            "line_number": 12
+          },
+          {
+            "name": "MovingPlatform",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 58,
+                "args_count": 8
+              },
+              {
+                "name": "update",
+                "line_number": 68,
+                "args_count": 1
+              }
+            ],
+            "line_number": 56
+          },
+          {
+            "name": "LevelPlatformSystem",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 84,
+                "args_count": 1
+              },
+              {
+                "name": "set_screen_size",
+                "line_number": 132,
+                "args_count": 3
+              },
+              {
+                "name": "get_level",
+                "line_number": 139,
+                "args_count": 2
+              },
+              {
+                "name": "get_level_theme",
+                "line_number": 166,
+                "args_count": 2
+              },
+              {
+                "name": "calculate_difficulty",
+                "line_number": 173,
+                "args_count": 2
+              },
+              {
+                "name": "generate_reachable_enemies",
+                "line_number": 193,
+                "args_count": 4
+              },
+              {
+                "name": "generate_reachable_platforms",
+                "line_number": 220,
+                "args_count": 3
+              },
+              {
+                "name": "generate_reachable_goal",
+                "line_number": 254,
+                "args_count": 4
+              },
+              {
+                "name": "create_enemy",
+                "line_number": 268,
+                "args_count": 5
+              },
+              {
+                "name": "get_ai_type",
+                "line_number": 283,
+                "args_count": 2
+              },
+              {
+                "name": "get_victory_conditions",
+                "line_number": 292,
+                "args_count": 3
+              },
+              {
+                "name": "check_victory_condition",
+                "line_number": 302,
+                "args_count": 2
+              },
+              {
+                "name": "clear_platforms",
+                "line_number": 317,
+                "args_count": 1
+              },
+              {
+                "name": "add_platform",
+                "line_number": 322,
+                "args_count": 2
+              },
+              {
+                "name": "generate_level_platforms",
+                "line_number": 341,
+                "args_count": 2
+              },
+              {
+                "name": "_add_fullscreen_helper_platforms",
+                "line_number": 373,
+                "args_count": 3
+              },
+              {
+                "name": "update",
+                "line_number": 418,
+                "args_count": 1
+              },
+              {
+                "name": "draw",
+                "line_number": 423,
+                "args_count": 3
+              },
+              {
+                "name": "check_platform_collision",
+                "line_number": 428,
+                "args_count": 3
+              },
+              {
+                "name": "get_all_platform_rects",
+                "line_number": 444,
+                "args_count": 1
+              }
+            ],
+            "line_number": 81
+          }
+        ],
+        "functions": [],
+        "imports": [
+          "random",
+          "math",
+          "pygame",
+          "config.*"
+        ],
+        "complexity_score": 119
+      },
+      "player.py": {
+        "file_path": "/home/runner/work/gamecenter/gamecenter/stickman_game/src/player.py",
+        "lines_of_code": 345,
+        "classes": [
+          {
+            "name": "Knife",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 12,
+                "args_count": 5
+              },
+              {
+                "name": "update",
+                "line_number": 20,
+                "args_count": 1
+              },
+              {
+                "name": "draw",
+                "line_number": 25,
+                "args_count": 2
+              }
+            ],
+            "line_number": 10
+          },
+          {
+            "name": "Bullet",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 47,
+                "args_count": 5
+              },
+              {
+                "name": "update",
+                "line_number": 52,
+                "args_count": 1
+              },
+              {
+                "name": "draw",
+                "line_number": 55,
+                "args_count": 2
+              }
+            ],
+            "line_number": 45
+          },
+          {
+            "name": "Bomb",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 60,
+                "args_count": 5
+              },
+              {
+                "name": "update",
+                "line_number": 67,
+                "args_count": 1
+              },
+              {
+                "name": "draw",
+                "line_number": 72,
+                "args_count": 2
+              }
+            ],
+            "line_number": 58
+          },
+          {
+            "name": "Player",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 77,
+                "args_count": 3
+              },
+              {
+                "name": "set_screen_size",
+                "line_number": 108,
+                "args_count": 3
+              },
+              {
+                "name": "update",
+                "line_number": 127,
+                "args_count": 3
+              },
+              {
+                "name": "handle_input",
+                "line_number": 179,
+                "args_count": 2
+              },
+              {
+                "name": "switch_weapon",
+                "line_number": 199,
+                "args_count": 1
+              },
+              {
+                "name": "can_use_weapon",
+                "line_number": 208,
+                "args_count": 1
+              },
+              {
+                "name": "use_weapon",
+                "line_number": 218,
+                "args_count": 1
+              },
+              {
+                "name": "can_shoot",
+                "line_number": 248,
+                "args_count": 1
+              },
+              {
+                "name": "can_throw_bomb",
+                "line_number": 252,
+                "args_count": 1
+              },
+              {
+                "name": "get_weapon_info",
+                "line_number": 256,
+                "args_count": 1
+              },
+              {
+                "name": "take_damage",
+                "line_number": 266,
+                "args_count": 2
+              },
+              {
+                "name": "draw",
+                "line_number": 272,
+                "args_count": 3
+              },
+              {
+                "name": "_draw_health_bar",
+                "line_number": 303,
+                "args_count": 2
+              },
+              {
+                "name": "_draw_stickman",
+                "line_number": 317,
+                "args_count": 2
+              }
+            ],
+            "line_number": 75
+          }
+        ],
+        "functions": [],
+        "imports": [
+          "pygame",
+          "time",
+          "config.*",
+          "config.FULLSCREEN_JUMP_BOOST",
+          "config.FULLSCREEN_WEAPON_SPEED_BOOST",
+          "config.FULLSCREEN_WEAPON_RANGE_BOOST"
+        ],
+        "complexity_score": 112
+      },
+      "entities.py": {
+        "file_path": "/home/runner/work/gamecenter/gamecenter/stickman_game/src/entities.py",
+        "lines_of_code": 285,
+        "classes": [
+          {
+            "name": "Enemy",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 13,
+                "args_count": 3
+              },
+              {
+                "name": "set_screen_size",
+                "line_number": 31,
+                "args_count": 3
+              },
+              {
+                "name": "update",
+                "line_number": 36,
+                "args_count": 3
+              },
+              {
+                "name": "can_attack",
+                "line_number": 110,
+                "args_count": 1
+              },
+              {
+                "name": "attack",
+                "line_number": 114,
+                "args_count": 1
+              },
+              {
+                "name": "take_damage",
+                "line_number": 121,
+                "args_count": 2
+              },
+              {
+                "name": "draw",
+                "line_number": 126,
+                "args_count": 3
+              },
+              {
+                "name": "_draw_health_bar",
+                "line_number": 146,
+                "args_count": 2
+              },
+              {
+                "name": "_draw_state_indicator",
+                "line_number": 160,
+                "args_count": 2
+              },
+              {
+                "name": "_draw_stickman",
+                "line_number": 170,
+                "args_count": 2
+              }
+            ],
+            "line_number": 11
+          },
+          {
+            "name": "Explosion",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 254,
+                "args_count": 3
+              },
+              {
+                "name": "update",
+                "line_number": 261,
+                "args_count": 1
+              },
+              {
+                "name": "draw",
+                "line_number": 268,
+                "args_count": 2
+              }
+            ],
+            "line_number": 252
+          }
+        ],
+        "functions": [],
+        "imports": [
+          "pygame",
+          "random",
+          "math",
+          "config.*",
+          "config.FULLSCREEN_ENEMY_DETECTION_BOOST"
+        ],
+        "complexity_score": 74
+      },
+      "__init__.py": {
+        "file_path": "/home/runner/work/gamecenter/gamecenter/stickman_game/src/__init__.py",
+        "lines_of_code": 27,
+        "classes": [],
+        "functions": [],
+        "imports": [
+          "config.*",
+          "game.Game",
+          "player.Player",
+          "entities.Enemy",
+          "entities.Explosion",
+          "level_platform_system.LevelPlatformSystem",
+          "core.InputManager"
+        ],
+        "complexity_score": 16
+      },
+      "config.py": {
+        "file_path": "/home/runner/work/gamecenter/gamecenter/stickman_game/src/config.py",
+        "lines_of_code": 162,
+        "classes": [],
+        "functions": [
+          {
+            "name": "get_chinese_font",
+            "line_number": 153,
+            "args_count": 1
+          }
+        ],
+        "imports": [
+          "pygame"
+        ],
+        "complexity_score": 21
+      },
+      "core.py": {
+        "file_path": "/home/runner/work/gamecenter/gamecenter/stickman_game/src/core.py",
+        "lines_of_code": 443,
+        "classes": [
+          {
+            "name": "InputManager",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 21,
+                "args_count": 1
+              },
+              {
+                "name": "handle_event",
+                "line_number": 24,
+                "args_count": 2
+              },
+              {
+                "name": "is_key_pressed",
+                "line_number": 31,
+                "args_count": 2
+              },
+              {
+                "name": "get_current_input",
+                "line_number": 35,
+                "args_count": 1
+              }
+            ],
+            "line_number": 19
+          },
+          {
+            "name": "SoundManager",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 50,
+                "args_count": 1
+              },
+              {
+                "name": "_load_sounds",
+                "line_number": 84,
+                "args_count": 1
+              },
+              {
+                "name": "_generate_fallback_sound",
+                "line_number": 132,
+                "args_count": 2
+              },
+              {
+                "name": "_create_simple_tone",
+                "line_number": 159,
+                "args_count": 4
+              },
+              {
+                "name": "_create_noise",
+                "line_number": 180,
+                "args_count": 3
+              },
+              {
+                "name": "_create_success_sound",
+                "line_number": 200,
+                "args_count": 1
+              },
+              {
+                "name": "_create_atomic_explosion_sound",
+                "line_number": 232,
+                "args_count": 1
+              },
+              {
+                "name": "speak_text",
+                "line_number": 290,
+                "args_count": 2
+              },
+              {
+                "name": "play_death_message",
+                "line_number": 308,
+                "args_count": 2
+              },
+              {
+                "name": "play_sound",
+                "line_number": 313,
+                "args_count": 2
+              }
+            ],
+            "line_number": 47
+          },
+          {
+            "name": "SaveManager",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 328,
+                "args_count": 1
+              },
+              {
+                "name": "load_data",
+                "line_number": 341,
+                "args_count": 1
+              },
+              {
+                "name": "save_data_to_file",
+                "line_number": 389,
+                "args_count": 1
+              },
+              {
+                "name": "get_max_unlocked_level",
+                "line_number": 400,
+                "args_count": 1
+              },
+              {
+                "name": "unlock_level",
+                "line_number": 404,
+                "args_count": 2
+              },
+              {
+                "name": "update_high_score",
+                "line_number": 411,
+                "args_count": 2
+              },
+              {
+                "name": "record_game_played",
+                "line_number": 420,
+                "args_count": 1
+              },
+              {
+                "name": "record_death",
+                "line_number": 426,
+                "args_count": 1
+              },
+              {
+                "name": "record_kill",
+                "line_number": 431,
+                "args_count": 1
+              },
+              {
+                "name": "get_save_info",
+                "line_number": 436,
+                "args_count": 1
+              }
+            ],
+            "line_number": 325
+          }
+        ],
+        "functions": [],
+        "imports": [
+          "pygame",
+          "math",
+          "random",
+          "json",
+          "os",
+          "datetime.datetime",
+          "config.*",
+          "pyttsx3"
+        ],
+        "complexity_score": 123
+      },
+      "game.py": {
+        "file_path": "/home/runner/work/gamecenter/gamecenter/stickman_game/src/game.py",
+        "lines_of_code": 820,
+        "classes": [
+          {
+            "name": "Game",
+            "methods": [
+              {
+                "name": "__init__",
+                "line_number": 12,
+                "args_count": 1
+              },
+              {
+                "name": "start_game",
+                "line_number": 66,
+                "args_count": 2
+              },
+              {
+                "name": "init_level",
+                "line_number": 94,
+                "args_count": 1
+              },
+              {
+                "name": "restart_game",
+                "line_number": 167,
+                "args_count": 1
+              },
+              {
+                "name": "next_level",
+                "line_number": 180,
+                "args_count": 1
+              },
+              {
+                "name": "handle_events",
+                "line_number": 198,
+                "args_count": 1
+              },
+              {
+                "name": "toggle_fullscreen",
+                "line_number": 241,
+                "args_count": 1
+              },
+              {
+                "name": "get_screen_size",
+                "line_number": 266,
+                "args_count": 1
+              },
+              {
+                "name": "_draw_background",
+                "line_number": 272,
+                "args_count": 3
+              },
+              {
+                "name": "update",
+                "line_number": 290,
+                "args_count": 1
+              },
+              {
+                "name": "check_victory",
+                "line_number": 453,
+                "args_count": 1
+              },
+              {
+                "name": "next_level",
+                "line_number": 500,
+                "args_count": 1
+              },
+              {
+                "name": "restart_game",
+                "line_number": 510,
+                "args_count": 1
+              },
+              {
+                "name": "draw",
+                "line_number": 520,
+                "args_count": 2
+              },
+              {
+                "name": "draw_ui",
+                "line_number": 630,
+                "args_count": 2
+              },
+              {
+                "name": "draw_pause_screen",
+                "line_number": 729,
+                "args_count": 2
+              },
+              {
+                "name": "draw_game_over_screen",
+                "line_number": 751,
+                "args_count": 2
+              },
+              {
+                "name": "draw_level_complete_screen",
+                "line_number": 773,
+                "args_count": 2
+              },
+              {
+                "name": "run",
+                "line_number": 809,
+                "args_count": 1
+              }
+            ],
+            "line_number": 11
+          }
+        ],
+        "functions": [],
+        "imports": [
+          "pygame",
+          "time",
+          "config.*",
+          "player.Player",
+          "entities.Enemy",
+          "entities.Explosion",
+          "level_platform_system.LevelPlatformSystem",
+          "core.InputManager",
+          "core.SoundManager",
+          "core.SaveManager",
+          "menu.Menu",
+          "image_manager.ImageManager"
+        ],
+        "complexity_score": 149
+      }
+    },
+    "total_lines": 2982,
+    "config_files": [
+      "src/config.py",
+      "levels/level_config.json",
+      "levels/game_save.json"
+    ]
+  },
+  "comparison": {
+    "architecture_comparison": {
+      "tankBattle": "Monolithic",
+      "stickman_game": "Modular"
+    },
+    "size_comparison": {
+      "tankBattle_lines": 471,
+      "stickman_game_lines": 2982,
+      "size_ratio": 6.3312101910828025
+    },
+    "modularity_comparison": {
+      "tankBattle_files": 1,
+      "stickman_game_files": 9,
+      "modularity_factor": 9.0
+    }
+  },
+  "recommendations": [
+    "tankBattle: 代码复杂度过高，建议拆分为多个模块",
+    "tankBattle: 建议采用模块化架构，参考stickman_game的设计",
+    "stickman_game: 模块化程度良好，但需要注意避免过度工程化",
+    "stickman_game: 配置管理良好，建议tankBattle也采用类似方式",
+    "建议两个项目都添加单元测试和CI/CD流程",
+    "建议建立统一的代码规范和格式化工具",
+    "建议添加代码静态分析工具如pylint或flake8"
+  ]
+}
