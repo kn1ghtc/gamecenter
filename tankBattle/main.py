@@ -167,45 +167,51 @@ class Game:  # Game类，管理整个游戏的逻辑和状态
         self.load_level(self.level)  # 加载第一关
 
     def pre_generate_levels(self):  # 预生成所有关卡地图
+        # 确保assets目录存在
+        assets_dir = 'assets'
+        if not os.path.exists(assets_dir):
+            os.makedirs(assets_dir)
+
         for level in range(1, self.max_level + 1):
             map_file = os.path.join('assets', f'level{level}.map')
-            # 总是重新生成以确保更新
-            # 生成迷宫
-            walls = self.generate_maze(level)
-            
-            # 玩家位置
-            player_x = 1 * CELL_SIZE + CELL_SIZE // 2
-            player_y = 1 * CELL_SIZE + CELL_SIZE // 2
-            
-            # 基地位置
-            base_x = WIDTH // 2 - 25
-            base_y = HEIGHT - 70
-            
-            # 敌人位置
-            path_cells = []
-            for y in range(GRID_HEIGHT):
-                for x in range(GRID_WIDTH):
-                    cell_rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
-                    if not any(w.rect.colliderect(cell_rect) for w in walls):
-                        path_cells.append((x, y))
-            
-            num_enemies = min(4 + level // 5, 15)
-            random.shuffle(path_cells)
-            enemies_data = []
-            for i in range(min(num_enemies, len(path_cells))):
-                x, y = path_cells[i]
-                enemy_x = x * CELL_SIZE + CELL_SIZE // 2
-                enemy_y = y * CELL_SIZE + CELL_SIZE // 2
-                angle = random.uniform(0, 2 * math.pi)
-                enemies_data.append((enemy_x, enemy_y, angle))
-            
-            # 保存地图
-            self.save_level_to_file(level, walls, player_x, player_y, base_x, base_y, enemies_data)
+            # 只有当地图文件不存在时才生成
+            if not os.path.exists(map_file):
+                # 生成迷宫
+                walls = self.generate_maze(level)
+
+                # 玩家位置
+                player_x = 1 * CELL_SIZE + CELL_SIZE // 2
+                player_y = 1 * CELL_SIZE + CELL_SIZE // 2
+
+                # 基地位置
+                base_x = WIDTH // 2 - 25
+                base_y = HEIGHT - 70
+
+                # 敌人位置
+                path_cells = []
+                for y in range(GRID_HEIGHT):
+                    for x in range(GRID_WIDTH):
+                        cell_rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+                        if not any(w.rect.colliderect(cell_rect) for w in walls):
+                            path_cells.append((x, y))
+
+                num_enemies = min(4 + level // 5, 15)
+                random.shuffle(path_cells)
+                enemies_data = []
+                for i in range(min(num_enemies, len(path_cells))):
+                    x, y = path_cells[i]
+                    enemy_x = x * CELL_SIZE + CELL_SIZE // 2
+                    enemy_y = y * CELL_SIZE + CELL_SIZE // 2
+                    angle = random.uniform(0, 2 * math.pi)
+                    enemies_data.append((enemy_x, enemy_y, angle))
+
+                # 保存地图
+                self.save_level_to_file(level, walls, player_x, player_y, base_x, base_y, enemies_data)
 
     def generate_maze(self, level):  # 生成迷宫，使用递归回溯算法
         # 初始化网格，所有单元格为墙壁（1=wall, 0=path）
         grid = [[1 for _ in range(GRID_WIDTH)] for _ in range(GRID_HEIGHT)]
-        
+
         def carve(x, y):  # 递归雕刻函数
             grid[y][x] = 0  # 标记当前单元格为路径
             directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # 四个方向：下、右、上、左
@@ -215,13 +221,13 @@ class Game:  # Game类，管理整个游戏的逻辑和状态
                 if 0 <= nx < GRID_WIDTH and 0 <= ny < GRID_HEIGHT and grid[ny][nx] == 1:
                     grid[y + dy][x + dx] = 0  # 移除中间的墙壁
                     carve(nx, ny)  # 递归雕刻
-        
+
         # 从多个起始点开始雕刻，确保覆盖整个屏幕
         starts = [(1, 1), (GRID_WIDTH-2, 1), (1, GRID_HEIGHT-2), (GRID_WIDTH-2, GRID_HEIGHT-2)]
         for sx, sy in starts:
             if grid[sy][sx] == 1:
                 carve(sx, sy)
-        
+
         # 根据关卡添加额外雕刻，增加复杂性
         extra_carves = level // 3  # 每3关增加一次额外雕刻
         for _ in range(extra_carves):
@@ -230,17 +236,22 @@ class Game:  # Game类，管理整个游戏的逻辑和状态
             if wall_cells:
                 x, y = random.choice(wall_cells)
                 carve(x, y)
-        
+
         # 创建墙壁列表
         walls = []
         for y in range(GRID_HEIGHT):
             for x in range(GRID_WIDTH):
                 if grid[y][x] == 1:  # 如果是墙壁
                     walls.append(Wall((x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE), 20))
-        
+
         return walls
 
     def save_level_to_file(self, level, walls, player_x, player_y, base_x, base_y, enemies_data):  # 保存关卡到文件
+        # 确保assets目录存在
+        assets_dir = 'assets'
+        if not os.path.exists(assets_dir):
+            os.makedirs(assets_dir)
+
         map_file = os.path.join('assets', f'level{level}.map')
         with open(map_file, 'w', encoding='utf-8') as f:
             f.write(f'# Level {level} Maze Map\n')
@@ -268,7 +279,7 @@ class Game:  # Game类，管理整个游戏的逻辑和状态
         self.walls = []  # 清空墙壁
         self.enemies = []  # 清空敌人
         self.bullets = []  # 清空子弹
-        
+
         if os.path.exists(map_file):  # 如果地图文件存在，从文件加载
             with open(map_file, 'r', encoding='utf-8') as f:
                 for line in f:
@@ -298,17 +309,17 @@ class Game:  # Game类，管理整个游戏的逻辑和状态
         else:  # 如果地图文件不存在，使用迷宫生成
             # 生成迷宫墙壁
             self.walls = self.generate_maze(level)
-            
+
             # 玩家位置：老家位置（左上角附近）
             player_x = 1 * CELL_SIZE + CELL_SIZE // 2
             player_y = 1 * CELL_SIZE + CELL_SIZE // 2
             self.player = Tank(player_x, player_y, 0, PLAYER_COLOR, True, TANK_GREEN_IMG)
-            
+
             # 基地位置：固定在底部中心
             base_x = WIDTH // 2 - 25
             base_y = HEIGHT - 70
             self.base = Base(base_x, base_y)
-            
+
             # 敌人随机位置：选择路径单元格
             path_cells = []
             for y in range(GRID_HEIGHT):
@@ -316,7 +327,7 @@ class Game:  # Game类，管理整个游戏的逻辑和状态
                     cell_rect = pygame.Rect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
                     if not any(w.rect.colliderect(cell_rect) for w in self.walls):
                         path_cells.append((x, y))
-            
+
             # 敌人数量随关卡增加
             num_enemies = min(4 + level // 5, 15)
             random.shuffle(path_cells)
@@ -328,10 +339,10 @@ class Game:  # Game类，管理整个游戏的逻辑和状态
                 angle = random.uniform(0, 2 * math.pi)
                 self.enemies.append(Tank(enemy_x, enemy_y, angle, ENEMY_COLOR, False, TANK_RED_IMG))
                 enemies_data.append((enemy_x, enemy_y, angle))
-            
+
             # 保存地图到文件
             self.save_level_to_file(level, self.walls, player_x, player_y, base_x, base_y, enemies_data)
-        
+
         self.start_time = pygame.time.get_ticks()  # 重置开始时间
     def run(self):  # 主游戏循环
         while self.running:  # 当游戏运行时
