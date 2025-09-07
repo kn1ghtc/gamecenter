@@ -135,6 +135,22 @@ class EnvironmentManager:
         """设置敌方基地"""
         self.enemy_base = base
 
+    def get_player_base(self):
+        """获取玩家基地"""
+        return self.player_base
+
+    def get_enemy_base(self):
+        """获取敌方基地"""
+        return self.enemy_base
+
+    def get_base_position(self, base_type):
+        """获取基地位置"""
+        if base_type == 'player' and self.player_base:
+            return (self.player_base.rect.centerx, self.player_base.rect.centery)
+        elif base_type == 'enemy' and self.enemy_base:
+            return (self.enemy_base.rect.centerx, self.enemy_base.rect.centery)
+        return None
+
     def get_all_walls(self):
         """获取所有存活的墙壁"""
         return [wall for wall in self.walls if wall.health > 0]
@@ -162,3 +178,57 @@ class EnvironmentManager:
         self.walls.clear()
         self.player_base = None
         self.enemy_base = None
+
+
+class BarrierWall(pygame.sprite.Sprite):
+    """隔离围墙类 - 特殊的不可破坏围墙"""
+    def __init__(self, rect, health=None, destructible=False, piercing_passable=True):
+        super().__init__()
+        self.rect = pygame.Rect(rect)
+        from config import BARRIER_WALL_CONFIG
+        self.max_health = health if health else BARRIER_WALL_CONFIG['HEALTH']
+        self.health = self.max_health
+        self.color = BARRIER_WALL_CONFIG['COLOR']
+        self.destructible = destructible  # 是否可被常规攻击摧毁
+        self.piercing_passable = piercing_passable  # 是否允许穿甲子弹穿过
+        self.wall_type = 'barrier'  # 围墙类型标识
+
+    def take_damage(self, damage, bullet_type='normal'):
+        """受到伤害 - 只有在可破坏时才受伤害"""
+        if not self.destructible:
+            return False  # 不可破坏围墙不受伤害
+
+        self.health -= damage
+        return self.health <= 0
+
+    def can_bullet_pass(self, bullet_type='normal'):
+        """检查子弹是否可以穿过"""
+        if bullet_type == 'piercing' and self.piercing_passable:
+            return True  # 穿甲子弹可以穿过
+        return False
+
+    def is_obstacle_for_tank(self):
+        """对坦克来说是否是障碍物"""
+        return True  # 对坦克始终是障碍物，需要绕行
+
+    def draw(self, surface):
+        """绘制隔离围墙 - 特殊外观"""
+        if self.health > 0:
+            # 绘制主体
+            pygame.draw.rect(surface, self.color, self.rect)
+
+            # 添加特殊标记纹理
+            stripe_width = 3
+            for i in range(0, self.rect.width, stripe_width * 2):
+                stripe_rect = pygame.Rect(
+                    self.rect.x + i,
+                    self.rect.y,
+                    stripe_width,
+                    self.rect.height
+                )
+                if stripe_rect.right <= self.rect.right:
+                    darker_color = tuple(max(0, c - 30) for c in self.color)
+                    pygame.draw.rect(surface, darker_color, stripe_rect)
+
+            # 绘制边框
+            pygame.draw.rect(surface, (200, 200, 200), self.rect, 2)

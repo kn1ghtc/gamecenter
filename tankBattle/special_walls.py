@@ -97,8 +97,8 @@ class SpecialWall(pygame.sprite.Sprite):
             # 爆炸符号
             pygame.draw.circle(surface, (255, 255, 255), (center_x, center_y), 6, 2)
             for angle in range(0, 360, 45):
-                x = center_x + 10 * math.cos(math.radians(angle))
-                y = center_y + 10 * math.sin(math.radians(angle))
+                x = center_x + 40 * math.cos(math.radians(angle))
+                y = center_y + 40 * math.sin(math.radians(angle))
                 pygame.draw.line(surface, (255, 255, 255),
                                (center_x, center_y), (x, y), 2)
 
@@ -169,12 +169,12 @@ class SpecialEffectManager:
     def __init__(self):
         self.active_effects = {}  # 玩家当前激活的效果
         self.effect_durations = {
-            'piercing_ammo': 300,      # 5秒（60fps）
-            'explosive_ammo': 300,
-            'speed_boost': 600,        # 10秒
-            'shield': 450,             # 7.5秒
-            'multi_shot': 450,
-            'ghost_mode': 300,
+            'piercing_ammo': 600,      # 5秒（60fps）
+            'explosive_ammo': 600,
+            'speed_boost': 1200,        # 10秒
+            'shield': 900,             # 7.5秒
+            'multi_shot': 900,
+            'ghost_mode': 600,
         }
 
     def trigger_effect(self, effect_type, player, environment_manager, bullet_manager=None):

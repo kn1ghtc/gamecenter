@@ -6,15 +6,6 @@
   "saves": [
     {
       "id": 11,
-      "level": 10,
-      "score": 870,
-      "player_health": 100,
-      "bullet_type": "PIERCING",
-      "timestamp": "2025-09-07T13:43:05.457070",
-      "play_time": 0
-    },
-    {
-      "id": 11,
       "level": 11,
       "score": 970,
       "player_health": 5,
@@ -92,6 +83,15 @@
       "player_health": 100,
       "bullet_type": "EXPLOSIVE",
       "timestamp": "2025-09-07T14:30:51.436944",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 18,
+      "score": 90,
+      "player_health": 99,
+      "bullet_type": "EXPLOSIVE",
+      "timestamp": "2025-09-07T15:12:56.073829",
       "play_time": 0
     }
   ],

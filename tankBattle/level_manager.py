@@ -6,7 +6,7 @@ import os
 import random
 import math
 import pygame
-from config import (MAP_CONFIG, LEVEL_CONFIG, GAME_CONFIG, WALL_CONFIG)
+from config import (MAP_CONFIG, LEVEL_CONFIG, GAME_CONFIG, WALL_CONFIG, ENEMY_CONFIG)
 from environment import Wall, PlayerBase, EnemyBase
 from tank_system import EnemyTank
 from special_walls import SpecialWall, SpecialWallGenerator
@@ -87,14 +87,20 @@ class LevelManager:
         player_pos = self._get_player_start_position()
         self._create_safe_zone(grid, player_pos, cell_size)
 
+        # 清除基地位置的围墙
+        self._clear_base_areas(grid, cell_size)
+
         # 添加中间分割线（2排围墙）
         self._create_center_barrier(grid)
 
-        # 转换为墙壁数据
+        # 转换为墙壁数据 - 避免在屏幕边缘生成围墙
         normal_walls_data = []
-        for y in range(grid_height):
-            for x in range(grid_width):
-                if grid[y][x] == 1:
+        barrier_walls_data = []  # 隔离围墙数据
+        edge_margin = 2  # 屏幕边缘2格范围内不生成围墙
+
+        for y in range(edge_margin, grid_height - edge_margin):
+            for x in range(edge_margin, grid_width - edge_margin):
+                if grid[y][x] == 1:  # 普通围墙
                     normal_walls_data.append({
                         'x': x * cell_size,
                         'y': y * cell_size,
@@ -103,12 +109,24 @@ class LevelManager:
                         'health': WALL_CONFIG['HEALTH'],
                         'type': 'normal'
                     })
+                elif grid[y][x] == 2:  # 隔离围墙
+                    from config import BARRIER_WALL_CONFIG
+                    barrier_walls_data.append({
+                        'x': x * cell_size,
+                        'y': y * cell_size,
+                        'width': cell_size,
+                        'height': cell_size,
+                        'health': BARRIER_WALL_CONFIG['HEALTH'],
+                        'type': 'barrier',
+                        'destructible': BARRIER_WALL_CONFIG['DESTRUCTIBLE'],
+                        'piercing_passable': BARRIER_WALL_CONFIG['PIERCING_PASSABLE']
+                    })
 
         # 生成特殊围墙
         special_walls_data = self._generate_special_walls(normal_walls_data, level)
 
-        # 合并普通围墙和特殊围墙
-        all_walls_data = normal_walls_data + special_walls_data
+        # 合并普通围墙、隔离围墙和特殊围墙
+        all_walls_data = normal_walls_data + barrier_walls_data + special_walls_data
 
         return all_walls_data
 
@@ -143,39 +161,98 @@ class LevelManager:
                     if distance <= safe_radius:
                         grid[check_y][check_x] = 0  # 清除墙壁
 
+    def _clear_base_areas(self, grid, cell_size):
+        """清除基地位置的围墙"""
+        grid_width = len(grid[0])
+        grid_height = len(grid)
+
+        # 获取基地位置
+        player_base_pos = self._get_player_base_position()
+        enemy_base_pos = self._get_enemy_base_position()
+
+        # 基地尺寸
+        from config import BASE_CONFIG
+        base_size = BASE_CONFIG['PLAYER_BASE']['SIZE']
+
+        # 清除基地及周围区域的围墙（扩大清除范围确保基地周围有足够空间）
+        clear_radius = max(base_size[0], base_size[1]) + 50  # 基地尺寸加50像素缓冲
+
+        bases = [player_base_pos, enemy_base_pos]
+        for base_pos in bases:
+            base_center_x = base_pos['x'] + base_size[0] // 2
+            base_center_y = base_pos['y'] + base_size[1] // 2
+
+            # 计算网格范围
+            grid_x = int(base_center_x // cell_size)
+            grid_y = int(base_center_y // cell_size)
+            clear_radius_cells = int(clear_radius // cell_size) + 1
+
+            for dy in range(-clear_radius_cells, clear_radius_cells + 1):
+                for dx in range(-clear_radius_cells, clear_radius_cells + 1):
+                    check_x = grid_x + dx
+                    check_y = grid_y + dy
+
+                    # 检查是否在网格范围内
+                    if 0 <= check_x < grid_width and 0 <= check_y < grid_height:
+                        # 计算实际距离
+                        real_x = check_x * cell_size + cell_size // 2
+                        real_y = check_y * cell_size + cell_size // 2
+                        distance = math.sqrt(
+                            (real_x - base_center_x) ** 2 +
+                            (real_y - base_center_y) ** 2
+                        )
+
+                        if distance <= clear_radius:
+                            grid[check_y][check_x] = 0  # 清除墙壁
+
     def _create_center_barrier(self, grid):
-        """在地图中间创建2排围墙分割线"""
+        """在地图中间创建2排特殊隔离围墙分割线"""
         grid_width = len(grid[0])
         grid_height = len(grid)
 
         # 计算中间位置
         center_y = grid_height // 2
 
-        # 创建2排围墙（上下各一排）
+        # 创建2排隔离围墙（上下各一排）- 使用特殊标记
         barrier_rows = [center_y - 1, center_y]
 
         for row in barrier_rows:
             if 0 <= row < grid_height:
                 for x in range(grid_width):
-                    grid[row][x] = 1  # 设置为墙壁
+                    grid[row][x] = 2  # 使用2标记隔离围墙，区别于普通围墙(1)
 
-        # 在中间留几个通道口，让游戏不会完全隔离
-        passage_positions = [
-            grid_width // 4,           # 左侧通道
-            grid_width * 2 // 4,       # 中间通道
-            grid_width * 3 // 4        # 右侧通道
-        ]
+        # 随机预留3个通道位置
+        from config import BARRIER_WALL_CONFIG
+        passage_count = BARRIER_WALL_CONFIG['PASSAGE_COUNT']
+        passage_width = BARRIER_WALL_CONFIG['PASSAGE_WIDTH']
 
+        # 生成随机通道位置，确保有足够间距
+        min_spacing = 5  # 通道之间最小间距
+        available_positions = list(range(passage_width, grid_width - passage_width))
+        passage_positions = []
+
+        # 随机选择通道位置
+        for _ in range(passage_count):
+            if not available_positions:
+                break
+
+            pos = random.choice(available_positions)
+            passage_positions.append(pos)
+
+            # 移除周围位置确保间距
+            available_positions = [p for p in available_positions
+                                 if abs(p - pos) >= min_spacing]
+
+        # 创建通道
         for passage_x in passage_positions:
             if 0 <= passage_x < grid_width:
                 for row in barrier_rows:
                     if 0 <= row < grid_height:
-                        grid[row][passage_x] = 0  # 清除墙壁创建通道
-                        # 也清除通道两侧一格，让通道更宽
-                        if passage_x > 0:
-                            grid[row][passage_x - 1] = 0
-                        if passage_x < grid_width - 1:
-                            grid[row][passage_x + 1] = 0
+                        # 创建通道，宽度由配置决定
+                        for offset in range(-passage_width//2, passage_width//2 + 1):
+                            clear_x = passage_x + offset
+                            if 0 <= clear_x < grid_width:
+                                grid[row][clear_x] = 0  # 清除围墙创建通道
 
     def _generate_special_walls(self, normal_walls_data, level):
         """生成特殊围墙"""
@@ -267,19 +344,35 @@ class LevelManager:
 
         enemies_data = []
 
+        # 基于坦克尺寸的可行走区域判定（避免出生即与墙/边界相撞）
+        tank_w, tank_h = ENEMY_CONFIG['SIZE']
+
+        def cell_has_clearance(cx, cy):
+            # 以格中心生成坦克矩形，确保不与任何墙体相交，且完全在屏幕范围内
+            px = cx * cell_size + cell_size // 2
+            py = cy * cell_size + cell_size // 2
+            tank_rect = pygame.Rect(px - tank_w // 2, py - tank_h // 2, tank_w, tank_h)
+
+            # 屏幕边界检查，保留1像素容差
+            if (tank_rect.left < 1 or tank_rect.top < 1 or
+                tank_rect.right > GAME_CONFIG['WIDTH'] - 1 or
+                tank_rect.bottom > GAME_CONFIG['HEIGHT'] - 1):
+                return False
+
+            # 与任何墙（包含普通/特殊/隔离）碰撞即不可用
+            for w in walls_data:
+                w_rect = pygame.Rect(w['x'], w['y'], w['width'], w['height'])
+                if w_rect.colliderect(tank_rect):
+                    return False
+            return True
+
         # 生成在敌方势力范围的敌人（分散分布）
         enemy_territory_cells = []
         for y in range(territory_border):  # 上半部分
             for x in range(grid_width):
-                cell_rect = pygame.Rect(x * cell_size, y * cell_size, cell_size, cell_size)
-                is_blocked = any(
-                    cell_rect.colliderect(pygame.Rect(w['x'], w['y'], w['width'], w['height']))
-                    for w in walls_data
-                )
-
                 distance_to_player = max(abs(x - player_grid_x), abs(y - player_grid_y))
 
-                if not is_blocked and distance_to_player >= 4:
+                if cell_has_clearance(x, y) and distance_to_player >= 4:
                     enemy_territory_cells.append((x, y))
 
         # 随机打散并选择位置
@@ -313,16 +406,10 @@ class LevelManager:
         player_territory_cells = []
         for y in range(territory_border, grid_height):  # 下半部分
             for x in range(grid_width):
-                cell_rect = pygame.Rect(x * cell_size, y * cell_size, cell_size, cell_size)
-                is_blocked = any(
-                    cell_rect.colliderect(pygame.Rect(w['x'], w['y'], w['width'], w['height']))
-                    for w in walls_data
-                )
-
                 distance_to_player = max(abs(x - player_grid_x), abs(y - player_grid_y))
 
-                # 在玩家势力范围但不要太靠近玩家起始位置
-                if not is_blocked and distance_to_player >= 8:
+                # 在玩家势力范围但不要太靠近玩家起始位置，且需要坦克尺寸的净空
+                if cell_has_clearance(x, y) and distance_to_player >= 8:
                     player_territory_cells.append((x, y))
 
         random.shuffle(player_territory_cells)
@@ -375,6 +462,11 @@ class LevelManager:
                 if wall_type == 'special':
                     effect_type = wall.get('effect_type', 'normal')
                     f.write(f'SPECIAL_WALL {wall["x"]} {wall["y"]} {wall["width"]} {wall["height"]} {wall["health"]} {effect_type}\n')
+                elif wall_type == 'barrier':
+                    # 隔离围墙保存
+                    destructible = wall.get('destructible', False)
+                    piercing_passable = wall.get('piercing_passable', True)
+                    f.write(f'BARRIER_WALL {wall["x"]} {wall["y"]} {wall["width"]} {wall["height"]} {wall["health"]} {destructible} {piercing_passable}\n')
                 else:
                     f.write(f'WALL {wall["x"]} {wall["y"]} {wall["width"]} {wall["height"]} {wall["health"]}\n')
 
@@ -422,6 +514,18 @@ class LevelManager:
                         'type': 'special',
                         'effect_type': parts[6]
                     })
+                elif parts[0] == 'BARRIER_WALL' and len(parts) >= 8:
+                    # 加载隔离围墙
+                    level_data['walls'].append({
+                        'x': int(parts[1]),
+                        'y': int(parts[2]),
+                        'width': int(parts[3]),
+                        'height': int(parts[4]),
+                        'health': int(parts[5]),
+                        'type': 'barrier',
+                        'destructible': parts[6].lower() == 'true',
+                        'piercing_passable': parts[7].lower() == 'true'
+                    })
                 elif parts[0] == 'ENEMY' and len(parts) >= 4:
                     level_data['enemies'].append({
                         'x': float(parts[1]),
@@ -450,6 +554,7 @@ class LevelManager:
         """根据关卡数据创建游戏对象"""
         walls = []
         special_walls = []
+        barrier_walls = []  # 隔离围墙
         enemies = []
         player_pos = level_data.get('player_pos')
         player_base = None
@@ -465,6 +570,16 @@ class LevelManager:
                     wall_data.get('effect_type', 'normal')
                 )
                 special_walls.append(special_wall)
+            elif wall_data.get('type') == 'barrier':
+                # 创建隔离围墙
+                from environment import BarrierWall
+                barrier_wall = BarrierWall(
+                    (wall_data['x'], wall_data['y'], wall_data['width'], wall_data['height']),
+                    wall_data['health'],
+                    wall_data.get('destructible', False),
+                    wall_data.get('piercing_passable', True)
+                )
+                barrier_walls.append(barrier_wall)
             else:
                 # 创建普通围墙
                 wall = Wall((wall_data['x'], wall_data['y'],
@@ -473,7 +588,7 @@ class LevelManager:
                 walls.append(wall)
 
         # 合并所有围墙
-        all_walls = walls + special_walls
+        all_walls = walls + special_walls + barrier_walls
 
         # 创建敌人
         for enemy_data in level_data['enemies']:
@@ -492,6 +607,7 @@ class LevelManager:
         return {
             'walls': all_walls,
             'special_walls': special_walls,
+            'barrier_walls': barrier_walls,  # 添加隔离围墙
             'enemies': enemies,
             'player_pos': player_pos,
             'player_base': player_base,

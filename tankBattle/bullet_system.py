@@ -24,6 +24,12 @@ class Bullet(pygame.sprite.Sprite):
         self.can_pierce_wall = config['CAN_PIERCE_WALL']
         self.wall_damage = config['WALL_DAMAGE']
 
+        # 掩体弹特殊属性
+        self.creates_wall = config.get('CREATES_WALL', False)
+        if self.creates_wall:
+            self.barricade_health = config['BARRICADE_HEALTH']
+            self.barricade_size = config['BARRICADE_SIZE']
+
         # 确定子弹颜色
         if config['COLOR']:
             self.color = config['COLOR']
@@ -95,6 +101,31 @@ class Bullet(pygame.sprite.Sprite):
                         damaged_objects.append((obj, damage))
 
         return damaged_objects
+
+    def create_barricade_wall(self):
+        """为掩体弹创建掩体墙"""
+        if not self.creates_wall:
+            return None
+
+        from environment import Wall
+        from config import BULLET_TYPES
+
+        # 获取掩体弹配置
+        barricade_config = BULLET_TYPES.get('BARRICADE', {})
+        barricade_health = barricade_config.get('BARRICADE_HEALTH', 15)
+
+        # 计算掩体墙的位置（在子弹碰撞位置前方）
+        wall_size = 30  # 掩体墙大小
+        wall_x = self.x - wall_size // 2
+        wall_y = self.y - wall_size // 2
+
+        # 创建矩形对象
+        wall_rect = (wall_x, wall_y, wall_size, wall_size)
+
+        # 创建掩体墙
+        barricade_wall = Wall(wall_rect, barricade_health)
+
+        return barricade_wall
 
 class BulletManager:
     """子弹管理器"""

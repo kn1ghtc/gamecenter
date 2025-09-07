@@ -356,7 +356,7 @@ class GameManager:
                     self.explosion_sound.play()
             else:
                 enemy.update()
-                enemy.update_ai(self.player, walls, self.bullet_manager)
+                enemy.update_ai(self.player, walls, self.bullet_manager, self.environment_manager)
 
     def update_bullets(self):
         """更新子弹"""
@@ -387,16 +387,43 @@ class GameManager:
         # 检查普通围墙
         for wall in walls:
             if bullet.rect.colliderect(wall.rect):
+                # 检查是否是隔离围墙
+                if hasattr(wall, 'wall_type') and wall.wall_type == 'barrier':
+                    # 隔离围墙特殊处理
+                    if bullet.bullet_type == 'PIERCING' and wall.can_bullet_pass('piercing'):
+                        # 穿甲子弹可以穿过隔离围墙，不被阻挡
+                        continue
+                    elif not wall.destructible:
+                        # 非穿甲子弹碰到不可破坏的隔离围墙，直接移除子弹
+                        self.bullet_manager.remove_bullet(bullet)
+                        if self.explosion_sound:
+                            self.explosion_sound.play()
+                        return True
+
+                # 处理掩体弹：生成掩体墙
+                if bullet.creates_wall and bullet.owner == 'player':
+                    barricade_wall = bullet.create_barricade_wall()
+                    if barricade_wall:
+                        self.environment_manager.add_wall(barricade_wall)
+
                 # 造成伤害
-                destroyed = wall.take_damage(bullet.wall_damage)
+                if hasattr(wall, 'take_damage'):
+                    if hasattr(wall, 'wall_type') and wall.wall_type == 'barrier':
+                        # 隔离围墙有特殊的take_damage方法
+                        destroyed = wall.take_damage(bullet.wall_damage, bullet.bullet_type.lower())
+                    else:
+                        # 普通围墙
+                        destroyed = wall.take_damage(bullet.wall_damage)
+                else:
+                    destroyed = False
                 if destroyed:
                     self.stats['walls_destroyed'] += 1
 
                 # 移除被摧毁的墙壁
                 self.environment_manager.remove_destroyed_walls()
 
-                # 如果不能穿墙，移除子弹
-                if not bullet.can_pierce_wall:
+                # 移除子弹（掩体弹碰撞后也要移除）
+                if not bullet.can_pierce_wall or bullet.creates_wall:
                     self.bullet_manager.remove_bullet(bullet)
                     if self.explosion_sound:
                         self.explosion_sound.play()

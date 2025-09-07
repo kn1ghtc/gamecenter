@@ -63,16 +63,18 @@ ENEMY_CONFIG = {
     'TURRET_WIDTH': 7,
     'COLOR': COLORS['ENEMY'],
     'IMAGE': os.path.join('assets', 'PNG', 'Tanks', 'tankRed.png'),
-    'FIRE_RATE': 0.03,  # 增加射击频率，每帧射击概率
-    'AI_ROTATION_THRESHOLD': 0.08,  # 减小旋转阈值，让AI更精确
-    'AI_VISION_RANGE': min(GAME_CONFIG['WIDTH'], GAME_CONFIG['HEIGHT']) * 0.95,  # 视野范围为屏幕较短边的85%
-    'AI_ATTACK_RANGE': min(GAME_CONFIG['WIDTH'], GAME_CONFIG['HEIGHT']) * 0.45,  # 攻击范围为屏幕较短边的45%
-    'AI_OBSTACLE_DETECTION_DISTANCE': 150,  # 增加障碍物检测距离
-    'AI_STUCK_THRESHOLD': 90,  # 减少被困阈值，让AI更快重新规划
-    'AI_PATH_PLANNING_COOLDOWN': 20,  # 减少路径规划冷却时间
-    'AI_PURSUIT_RANGE': min(GAME_CONFIG['WIDTH'], GAME_CONFIG['HEIGHT']) * 0.65,  # 追击范围为屏幕较短边的65%
-    'AI_MIN_FIRE_DISTANCE': 120,  # 最小开火距离，避免近距离误伤
-    'AI_MAX_FIRE_DISTANCE': min(GAME_CONFIG['WIDTH'], GAME_CONFIG['HEIGHT']) * 0.4  # 最大开火距离
+    'FIRE_RATE': 0.12,  # 进一步提高射击频率，让AI更积极攻击障碍
+    'AI_ROTATION_THRESHOLD': 0.12,  # 适中的旋转阈值
+    'AI_VISION_RANGE': 400,  # 固定视野范围
+    'AI_ATTACK_RANGE': 300,  # 主要攻击范围
+    'AI_CLOSE_COMBAT_RANGE': 120,  # 近战范围
+    'AI_OBSTACLE_DETECTION_DISTANCE': 60,  # 障碍物检测距离
+    'AI_STUCK_THRESHOLD': 45,  # 进一步降低被困阈值，更快响应
+    'AI_PATH_PLANNING_COOLDOWN': 10,  # 路径规划冷却时间
+    'AI_PURSUIT_RANGE': 350,  # 追击范围
+    'AI_MIN_FIRE_DISTANCE': 30,  # 最小开火距离
+    'AI_MAX_FIRE_DISTANCE': 400,  # 最大开火距离
+    'AI_AGGRESSIVE_THRESHOLD': 0.7,  # 攻击性阈值
 }
 
 # 子弹类型配置
@@ -88,7 +90,7 @@ BULLET_TYPES = {
     'PIERCING': {
         'RADIUS': 6,
         'SPEED': 8,
-        'DAMAGE': 2,
+        'DAMAGE': 3,
         'CAN_PIERCE_WALL': True,
         'COLOR': (255, 255, 0),  # 黄色
         'WALL_DAMAGE': 2
@@ -101,7 +103,7 @@ BULLET_TYPES = {
         'COLOR': (255, 128, 0),  # 橙色
         'WALL_DAMAGE': 3,
         'EXPLOSION_RADIUS': 50,
-        'EXPLOSION_DAMAGE': 2
+        'EXPLOSION_DAMAGE': 6
     },
     'RAPID': {
         'RADIUS': 4,
@@ -118,6 +120,18 @@ BULLET_TYPES = {
         'CAN_PIERCE_WALL': False,
         'COLOR': (255, 50, 50),  # 红色
         'WALL_DAMAGE': 4
+    },
+    'BARRICADE': {
+        'RADIUS': 7,
+        'SPEED': 6,
+        'DAMAGE': 0,  # 掩体弹不造成伤害
+        'CAN_PIERCE_WALL': False,
+        'COLOR': (150, 75, 0),  # 棕色
+        'WALL_DAMAGE': 0,
+        'CREATES_WALL': True,  # 标记为创建墙体的子弹
+        'BARRICADE_HEALTH': 5,  # 生成的掩体墙血量
+        'BARRICADE_SIZE': (50, 25),  # 掩体墙尺寸 (宽, 高)
+        'COOLDOWN': 180  # 冷却时间(帧数) - 3秒@60FPS
     }
 }
 
@@ -134,6 +148,17 @@ ENEMY_BULLET_CONFIG = {
 WALL_CONFIG = {
     'HEALTH': 3,
     'COLOR': COLORS['WALL']
+}
+
+# 隔离围墙配置
+BARRIER_WALL_CONFIG = {
+    'HEALTH': 999999,  # 无敌围墙
+    'COLOR': (80, 80, 150),  # 深蓝色，区别于普通围墙
+    'THICKNESS': 2,  # 双排围墙厚度
+    'PASSAGE_COUNT': 3,  # 随机预留3个通道
+    'PASSAGE_WIDTH': 2,  # 每个通道宽度（网格单位）
+    'DESTRUCTIBLE': False,  # 不可被常规攻击摧毁
+    'PIERCING_PASSABLE': True  # 穿甲子弹可以穿过
 }
 
 # 基地配置
@@ -171,11 +196,11 @@ WIN_CONDITION = {
 # 关卡生成配置
 LEVEL_CONFIG = {
     'ENEMIES_BASE': 8,  # 基础敌人数量
-    'ENEMIES_INCREMENT': 2,  # 每5关增加的敌人数量
-    'ENEMIES_INCREMENT_INTERVAL': 5,  # 每几关增加敌人
-    'MAX_ENEMIES': 20,  # 最大敌人数量
+    'ENEMIES_INCREMENT': 3,  # 每1关增加的敌人数量
+    'ENEMIES_INCREMENT_INTERVAL': 1,  # 每几关增加敌人
+    'MAX_ENEMIES': 40,  # 最大敌人数量
     'MAZE_COMPLEXITY_INCREMENT': 2,  # 每几关增加迷宫复杂度
-    'PLAYER_SAFE_ZONE_RADIUS': 125  # 玩家初始位置安全区域半径
+    'PLAYER_SAFE_ZONE_RADIUS': 80  # 玩家初始位置安全区域半径
 }
 
 # UI显示配置
