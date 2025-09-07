@@ -448,11 +448,10 @@ class EnemyTank(BaseTank):
     """敌方坦克"""
     def __init__(self, x, y, angle=0):
         super().__init__(x, y, angle, ENEMY_CONFIG, ENEMY_BULLET_CONFIG)
-
         # AI 相关属性
         self.ai_target = None
         self.ai_state = 'seek_player'  # seek_player, attack, avoid_obstacle, destroy_obstacle
-        self.ai_mode = 'attack'  # defense: 防守模式, attack: 攻击模式 - 默认攻击模式，鼓励积极推进
+        self.ai_mode = 'attack'  # 默认攻击模式，鼓励积极推进
         self.territory_check_timer = 0  # 领域检查计时器
         self.last_shot_time = 0
         self.stuck_timer = 0  # 被困计时器
@@ -469,6 +468,14 @@ class EnemyTank(BaseTank):
         self.decision_timer = 0  # 决策计时器
         self.force_action_threshold = 30  # 强制行动阈值（帧数）
 
+        # 通道导航：使用持久化的中央通道信息
+        self._locked_passage = None           # 当前锁定的通道 {'x': int, 'y': int}
+        self._locked_passage_timer = 0        # 锁定超时计时器（帧）
+        self._locked_passage_goal = None      # 通过该通道的目标点（通道另一侧的一点）
+        self._locked_passage_timeout = 300    # 锁定超时（帧）
+
+
+
     def get_owner(self):
         return 'enemy'
 
@@ -476,6 +483,9 @@ class EnemyTank(BaseTank):
         """更新AI行为 - 优化的智能算法"""
         if not player or player.health <= 0:
             return
+
+        # 缓存墙体引用（供射击前的隔离墙校验使用）
+        self._cached_walls = walls
 
         # 更新AI模式（每30帧检查一次，提高响应速度）
         self.territory_check_timer += 1
@@ -648,22 +658,22 @@ class EnemyTank(BaseTank):
         if distance <= close_combat_range:
             # 近战：若被隔离墙阻挡，优先绕行；若普通障碍阻挡，智能清理；否则直接攻击
             if front_blocked == 'barrier_wall':
-                self._execute_barrier_avoidance(walls, target_angle)
+                self._execute_barrier_avoidance(walls, target_angle, environment_manager)
             elif front_blocked:
-                bullet = self._execute_intelligent_obstacle_clearing(walls, target_angle, angle_diff, target_type)
+                bullet = self._execute_intelligent_obstacle_clearing(walls, target_angle, angle_diff, target_type, environment_manager)
                 if bullet:
                     bullet_manager.add_bullet(bullet)
             else:
-                bullet = self._execute_target_combat(angle_diff, distance, rotation_threshold, bullet_manager, walls, target_type)
+                bullet = self._execute_target_combat(angle_diff, distance, rotation_threshold, bullet_manager, walls, target_type, environment_manager)
                 if bullet:
                     bullet_manager.add_bullet(bullet)
         elif distance <= attack_range:
             # 攻击范围：智能处理障碍物
             if front_blocked == 'barrier_wall':
                 # 遇到隔离围墙，执行绕行策略
-                self._execute_barrier_avoidance(walls, target_angle)
+                self._execute_barrier_avoidance(walls, target_angle, environment_manager)
             elif front_blocked:
-                bullet = self._execute_intelligent_obstacle_clearing(walls, target_angle, angle_diff, target_type)
+                bullet = self._execute_intelligent_obstacle_clearing(walls, target_angle, angle_diff, target_type, environment_manager)
                 if bullet:
                     bullet_manager.add_bullet(bullet)
             else:
@@ -674,7 +684,7 @@ class EnemyTank(BaseTank):
             # 视野范围：接近目标
             if front_blocked == 'barrier_wall':
                 # 遇到隔离围墙，执行绕行策略
-                self._execute_barrier_avoidance(walls, target_angle)
+                self._execute_barrier_avoidance(walls, target_angle, environment_manager)
             else:
                 bullet = self._execute_target_approach(angle_diff, rotation_threshold, walls, target_type)
                 if bullet:
@@ -684,24 +694,38 @@ class EnemyTank(BaseTank):
             self._execute_search_patrol(walls, front_blocked)
 
     def _is_path_blocked_to_target(self, walls, target_angle):
-        """检查到目标的路径是否被障碍物阻挡（长距离射线，优先识别隔离墙）"""
+        """检查到目标的路径是否被障碍物阻挡（扇形多射线，优先识别隔离墙）"""
         start_x = self.x + self.size[0] // 2
         start_y = self.y + self.size[1] // 2
-        # 使用逐步射线检测较长距离，避免远处隔离墙未被识别的问题
         max_distance = ENEMY_CONFIG.get('AI_VISION_RANGE', 300)
-        step = 20
-        for distance in range(step, max_distance + step, step):
-            check_x = start_x + distance * math.cos(target_angle)
-            check_y = start_y + distance * math.sin(target_angle)
-            check_rect = pygame.Rect(check_x - 10, check_y - 10, 20, 20)
-            for wall in walls:
-                if wall.health > 0 and wall.rect.colliderect(check_rect):
-                    if hasattr(wall, 'wall_type') and wall.wall_type == 'barrier':
-                        return 'barrier_wall'  # 隔离墙：必须绕行
-                    return True  # 普通墙：可清理
+        step = 18
+        # 扇形角度偏移（弧度）
+        offsets = [-0.3, -0.15, 0.0, 0.15, 0.3]
+        barrier_seen = False
+        normal_block = False
+        for off in offsets:
+            ang = target_angle + off
+            for distance in range(step, max_distance + step, step):
+                check_x = start_x + distance * math.cos(ang)
+                check_y = start_y + distance * math.sin(ang)
+                check_rect = pygame.Rect(check_x - 10, check_y - 10, 20, 20)
+                for wall in walls:
+                    if wall.health > 0 and wall.rect.colliderect(check_rect):
+                        if hasattr(wall, 'wall_type') and wall.wall_type == 'barrier':
+                            barrier_seen = True
+                            break
+                        else:
+                            normal_block = True
+                            break
+                if barrier_seen or normal_block:
+                    break
+            if barrier_seen:
+                return 'barrier_wall'
+            if normal_block:
+                return True
         return False
 
-    def _execute_target_combat(self, angle_diff, distance, rotation_threshold, bullet_manager, walls, target_type):
+    def _execute_target_combat(self, angle_diff, distance, rotation_threshold, bullet_manager, walls, target_type, environment_manager=None):
         """执行目标导向的战斗"""
         # 根据目标类型调整射击频率
         if target_type == 'player':
@@ -716,16 +740,21 @@ class EnemyTank(BaseTank):
             target_angle = self.angle + angle_diff
             path_block = self._is_path_blocked_to_target(walls, target_angle)
             if path_block == 'barrier_wall':
-                self._execute_barrier_avoidance(walls, target_angle)
+                self._execute_barrier_avoidance(walls, target_angle, environment_manager)
                 return None
             # 高频射击
             if random.random() < ENEMY_CONFIG['FIRE_RATE'] * fire_rate_multiplier:
                 return self.fire()
         return None
 
-    def _execute_intelligent_obstacle_clearing(self, walls, target_angle, angle_diff, target_type):
+    def _execute_intelligent_obstacle_clearing(self, walls, target_angle, angle_diff, target_type, environment_manager=None):
         """智能障碍物清理 - 只清理阻挡到目标路径的障碍物"""
         # 找到阻挡到目标路径的障碍物
+        front_block = self._is_path_blocked_to_target(walls, target_angle)
+        if front_block == 'barrier_wall':
+            # 前方是隔离墙，执行绕行而非清障
+            self._execute_barrier_avoidance(walls, target_angle, environment_manager)
+            return None
         blocking_wall = self._find_blocking_wall_to_target(walls, target_angle)
 
         if blocking_wall:
@@ -752,13 +781,13 @@ class EnemyTank(BaseTank):
     def _find_blocking_wall_to_target(self, walls, target_angle):
         """找到阻挡到目标路径的墙体"""
         # 在目标方向上检查障碍物
-        max_distance = 150  # 最大检查距离
-        step = 20  # 检查步长
+        max_distance = max(ENEMY_CONFIG.get('AI_VISION_RANGE', 300) // 2, 200)  # 更远的检查
+        step = 15  # 更细步长
 
         for distance in range(step, max_distance, step):
             check_x = self.x + self.size[0]//2 + distance * math.cos(target_angle)
             check_y = self.y + self.size[1]//2 + distance * math.sin(target_angle)
-            check_rect = pygame.Rect(check_x - 15, check_y - 15, 30, 30)
+            check_rect = pygame.Rect(check_x - 18, check_y - 18, 36, 36)
 
             for wall in walls:
                 if hasattr(wall, 'wall_type') and wall.wall_type == 'barrier':
@@ -1566,9 +1595,64 @@ class EnemyTank(BaseTank):
             elif in_enemy_territory:
                 self.ai_mode = 'attack'
 
-    def _execute_barrier_avoidance(self, walls, target_angle):
-        """执行隔离围墙绕行策略"""
-        # 寻找隔离围墙的通道
+    def _execute_barrier_avoidance(self, walls, target_angle, environment_manager=None):
+        """执行隔离围墙绕行策略：优先使用持久化通道，其次本地扫描"""
+        # 优先使用持久化的中央通道
+        persisted_passages = environment_manager.get_barrier_passages() if environment_manager else []
+
+        # 维护锁定计时
+        if self._locked_passage:
+            self._locked_passage_timer += 1
+            if self._locked_passage_timer > self._locked_passage_timeout:
+                # 超时释放
+                self._locked_passage = None
+                self._locked_passage_goal = None
+                self._locked_passage_timer = 0
+
+        # 若有通道数据
+        if persisted_passages:
+            # 若未锁定，选择最近通道并生成目标点（通道另一侧）
+            if not self._locked_passage:
+                chosen = self._choose_nearest_persisted_passage(persisted_passages)
+                if chosen:
+                    self._locked_passage = chosen
+                    self._locked_passage_timer = 0
+                    # 通过通道后目标点：沿目标方向在通道线的另一侧偏移一定距离
+                    sign = 1 if math.sin(target_angle) > 0 else -1
+                    offset = max(70, ENEMY_CONFIG.get('AI_PATH_CHECK_DISTANCE', 80))
+                    self._locked_passage_goal = {
+                        'x': chosen['x'],
+                        'y': chosen['y'] + sign * offset
+                    }
+
+            # 若已锁定，向锁定目标点移动，接近后解除锁定
+            if self._locked_passage and self._locked_passage_goal:
+                tank_cx = self.x + self.size[0] // 2
+                tank_cy = self.y + self.size[1] // 2
+                gx = self._locked_passage_goal['x']
+                gy = self._locked_passage_goal['y']
+                passage_angle = math.atan2(gy - tank_cy, gx - tank_cx)
+                angle_diff = (passage_angle - self.angle + math.pi) % (2 * math.pi) - math.pi
+
+                # 调整朝向
+                if abs(angle_diff) > 0.12:
+                    self.rotate(3 if angle_diff > 0 else -3)
+                else:
+                    if self._can_move_forward(walls):
+                        self.move(1, walls)
+                    else:
+                        # 被其它墙阻挡时，尝试智能清理或侧移
+                        self._execute_wall_following_behavior(walls, target_angle)
+
+                # 解锁条件：接近目标点视为已通过通道
+                dist = math.hypot(gx - tank_cx, gy - tank_cy)
+                if dist < 28:
+                    self._locked_passage = None
+                    self._locked_passage_goal = None
+                    self._locked_passage_timer = 0
+                return
+
+        # 无可用持久化通道或未能锁定到通道 —— 回退到本地扫描
         passage_found = self._find_barrier_passage(walls, target_angle)
 
         if passage_found:
@@ -1583,8 +1667,26 @@ class EnemyTank(BaseTank):
                 if self._can_move_forward(walls):
                     self.move(1, walls)
         else:
-            # 没找到通道，执行绕行策略
+            # 没找到通道，执行沿墙策略
             self._execute_wall_following_behavior(walls, target_angle)
+
+    def _choose_nearest_persisted_passage(self, passages):
+        """从持久化列表中选择距离最近的通道"""
+        if not passages:
+            return None
+        tx = self.x + self.size[0] // 2
+        ty = self.y + self.size[1] // 2
+        best = None
+        best_d = float('inf')
+        for p in passages:
+            # p: {'x': int/float, 'y': int/float}
+            dx = p['x'] - tx
+            dy = p['y'] - ty
+            d = dx*dx + dy*dy
+            if d < best_d:
+                best_d = d
+                best = p
+        return best
 
     def _find_barrier_passage(self, walls, target_angle):
         """寻找隔离围墙的通道"""

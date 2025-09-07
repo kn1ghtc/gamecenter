@@ -123,6 +123,8 @@ class EnvironmentManager:
         self.player_base = None
         self.enemy_base = None
 
+        self._barrier_passages = []  # 中央隔离带通道（像素点列表）
+
     def add_wall(self, wall):
         """添加墙壁"""
         self.walls.append(wall)
@@ -155,6 +157,15 @@ class EnvironmentManager:
         """获取所有存活的墙壁"""
         return [wall for wall in self.walls if wall.health > 0]
 
+    # 通道管理
+    def set_barrier_passages(self, passages):
+        """设置中央隔离墙通道点列表，元素格式: {'x': int, 'y': int}"""
+        self._barrier_passages = passages or []
+
+    def get_barrier_passages(self):
+        """获取中央隔离墙通道列表"""
+        return self._barrier_passages
+
     def remove_destroyed_walls(self):
         """移除被摧毁的墙壁"""
         self.walls = [wall for wall in self.walls if wall.health > 0]
@@ -178,6 +189,8 @@ class EnvironmentManager:
         self.walls.clear()
         self.player_base = None
         self.enemy_base = None
+
+        self._barrier_passages = []
 
 
 class BarrierWall(pygame.sprite.Sprite):

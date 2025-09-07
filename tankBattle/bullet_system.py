@@ -102,30 +102,69 @@ class Bullet(pygame.sprite.Sprite):
 
         return damaged_objects
 
-    def create_barricade_wall(self):
-        """为掩体弹创建掩体墙"""
-        if not self.creates_wall:
+    def create_barricade_wall(self, environment_manager, hit_wall):
+        """为掩体弹创建一个对齐网格的普通迷宫墙
+
+        规则:
+        - 使用当前屏幕网格大小对齐到网格单元
+        - 在命中的墙体的子弹射击方向一侧相邻单元生成
+        - 如果目标单元已有任何墙体，则不创建（避免覆盖/重复）
+        - 生成普通墙（与迷宫墙一致），使用默认墙体生命值
+        """
+        if not self.creates_wall or environment_manager is None or hit_wall is None:
             return None
 
         from environment import Wall
-        from config import BULLET_TYPES
+        from config import MAP_CONFIG, GAME_CONFIG
 
-        # 获取掩体弹配置
-        barricade_config = BULLET_TYPES.get('BARRICADE', {})
-        barricade_health = barricade_config.get('BARRICADE_HEALTH', 15)
+        cell = MAP_CONFIG['CELL_SIZE']
+        game_w = GAME_CONFIG['WIDTH']
+        game_h = GAME_CONFIG['HEIGHT']
 
-        # 计算掩体墙的位置（在子弹碰撞位置前方）
-        wall_size = 30  # 掩体墙大小
-        wall_x = self.x - wall_size // 2
-        wall_y = self.y - wall_size // 2
+        # 根据子弹角度判断主方向（水平/垂直）
+        dx = math.cos(self.angle)
+        dy = math.sin(self.angle)
 
-        # 创建矩形对象
-        wall_rect = (wall_x, wall_y, wall_size, wall_size)
+        # 目标单元左上角
+        target_left = 0
+        target_top = 0
 
-        # 创建掩体墙
-        barricade_wall = Wall(wall_rect, barricade_health)
+        if abs(dx) >= abs(dy):
+            # 水平方向为主
+            if dx >= 0:
+                # 命中墙体右侧的相邻单元
+                target_left = ((hit_wall.rect.right + 0) // cell) * cell
+            else:
+                # 命中墙体左侧的相邻单元
+                target_left = ((hit_wall.rect.left - cell) // cell) * cell
 
-        return barricade_wall
+            # 与子弹所在的行对齐
+            target_top = int(self.y // cell) * cell
+        else:
+            # 垂直方向为主
+            if dy >= 0:
+                # 命中墙体下侧相邻单元
+                target_top = ((hit_wall.rect.bottom + 0) // cell) * cell
+            else:
+                # 命中墙体上侧相邻单元
+                target_top = ((hit_wall.rect.top - cell) // cell) * cell
+
+            # 与子弹所在的列对齐
+            target_left = int(self.x // cell) * cell
+
+        # 边界裁剪
+        target_left = max(0, min(target_left, game_w - cell))
+        target_top = max(0, min(target_top, game_h - cell))
+
+        candidate = pygame.Rect(target_left, target_top, cell, cell)
+
+        # 如果该单元已有墙体（任意类型），则不创建
+        for w in environment_manager.get_all_walls():
+            if w.rect.colliderect(candidate):
+                return None
+
+        # 创建普通墙
+        return Wall(candidate, None)
 
 class BulletManager:
     """子弹管理器"""

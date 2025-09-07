@@ -25,8 +25,8 @@ class LevelManager:
 
     def generate_level_data(self, level):
         """生成关卡数据"""
-        # 生成迷宫墙壁
-        walls_data = self._generate_maze(level)
+        # 生成迷宫墙壁与中部通道
+        walls_data, barrier_passages = self._generate_maze(level)
 
         # 玩家起始位置
         player_pos = self._get_player_start_position()
@@ -43,7 +43,8 @@ class LevelManager:
             'player_pos': player_pos,
             'player_base_pos': player_base_pos,
             'enemy_base_pos': enemy_base_pos,
-            'enemies': enemies_data
+            'enemies': enemies_data,
+            'barrier_passages': barrier_passages
         }
 
     def _generate_maze(self, level):
@@ -90,8 +91,8 @@ class LevelManager:
         # 清除基地位置的围墙
         self._clear_base_areas(grid, cell_size)
 
-        # 添加中间分割线（2排围墙）
-        self._create_center_barrier(grid)
+        # 添加中间分割线（2排围墙）并获取通道位置
+        passage_positions, barrier_rows = self._create_center_barrier(grid)
 
         # 转换为墙壁数据 - 避免在屏幕边缘生成围墙
         normal_walls_data = []
@@ -128,7 +129,16 @@ class LevelManager:
         # 合并普通围墙、隔离围墙和特殊围墙
         all_walls_data = normal_walls_data + barrier_walls_data + special_walls_data
 
-        return all_walls_data
+        # 计算通道的像素坐标（用于AI导航）
+        barrier_passages = []
+        if passage_positions:
+            # 两排行：如 [center_y-1, center_y]，通道垂直方向的中线位于 (barrier_rows[0]+1)*cell_size
+            midline_y = (barrier_rows[0] + 1) * cell_size
+            for px in passage_positions:
+                passage_px = px * cell_size + cell_size // 2
+                barrier_passages.append({'x': passage_px, 'y': midline_y})
+
+        return all_walls_data, barrier_passages
 
     def _create_safe_zone(self, grid, player_pos, cell_size):
         """在玩家周围创建安全区域"""
@@ -253,6 +263,7 @@ class LevelManager:
                             clear_x = passage_x + offset
                             if 0 <= clear_x < grid_width:
                                 grid[row][clear_x] = 0  # 清除围墙创建通道
+        return passage_positions, barrier_rows
 
     def _generate_special_walls(self, normal_walls_data, level):
         """生成特殊围墙"""
@@ -353,10 +364,11 @@ class LevelManager:
             py = cy * cell_size + cell_size // 2
             tank_rect = pygame.Rect(px - tank_w // 2, py - tank_h // 2, tank_w, tank_h)
 
-            # 屏幕边界检查，保留1像素容差
-            if (tank_rect.left < 1 or tank_rect.top < 1 or
-                tank_rect.right > GAME_CONFIG['WIDTH'] - 1 or
-                tank_rect.bottom > GAME_CONFIG['HEIGHT'] - 1):
+            # 屏幕边界检查：更严格的边缘安全距离，避免出生即贴边
+            edge_margin = max(24, min(tank_w, tank_h) // 2)
+            if (tank_rect.left < edge_margin or tank_rect.top < edge_margin or
+                tank_rect.right > GAME_CONFIG['WIDTH'] - edge_margin or
+                tank_rect.bottom > GAME_CONFIG['HEIGHT'] - edge_margin):
                 return False
 
             # 与任何墙（包含普通/特殊/隔离）碰撞即不可用
@@ -470,6 +482,10 @@ class LevelManager:
                 else:
                     f.write(f'WALL {wall["x"]} {wall["y"]} {wall["width"]} {wall["height"]} {wall["health"]}\n')
 
+            # 通道（用于AI）
+            for p in level_data.get('barrier_passages', []) or []:
+                f.write(f'PASSAGE {int(p["x"])} {int(p["y"])}\n')
+
             # 敌人
             for enemy in level_data['enemies']:
                 f.write(f'ENEMY {enemy["x"]} {enemy["y"]} {enemy["angle"]}\n')
@@ -486,7 +502,8 @@ class LevelManager:
             'player_pos': None,
             'player_base_pos': None,
             'enemy_base_pos': None,
-            'enemies': []
+            'enemies': [],
+            'barrier_passages': []
         }
 
         with open(map_file, 'r', encoding='utf-8') as f:
@@ -547,6 +564,8 @@ class LevelManager:
                         'x': float(parts[1]),
                         'y': float(parts[2])
                     }
+                elif parts[0] == 'PASSAGE' and len(parts) >= 3:
+                    level_data['barrier_passages'].append({'x': float(parts[1]), 'y': float(parts[2])})
 
         return level_data
 
@@ -556,6 +575,7 @@ class LevelManager:
         special_walls = []
         barrier_walls = []  # 隔离围墙
         enemies = []
+        barrier_passages = level_data.get('barrier_passages') or []
         player_pos = level_data.get('player_pos')
         player_base = None
         enemy_base = None
@@ -590,9 +610,11 @@ class LevelManager:
         # 合并所有围墙
         all_walls = walls + special_walls + barrier_walls
 
-        # 创建敌人
+        # 创建敌人（关卡文件中存的是中心坐标，这里转换为左上角以匹配坦克构造器要求）
+        from config import ENEMY_CONFIG
+        enemy_w, enemy_h = ENEMY_CONFIG['SIZE']
         for enemy_data in level_data['enemies']:
-            enemy = EnemyTank(enemy_data['x'], enemy_data['y'], enemy_data['angle'])
+            enemy = EnemyTank(enemy_data['x'] - enemy_w // 2, enemy_data['y'] - enemy_h // 2, enemy_data['angle'])
             enemies.append(enemy)
 
         # 创建基地
@@ -611,7 +633,8 @@ class LevelManager:
             'enemies': enemies,
             'player_pos': player_pos,
             'player_base': player_base,
-            'enemy_base': enemy_base
+            'enemy_base': enemy_base,
+            'barrier_passages': barrier_passages
         }
 
     def prepare_level(self, level):
@@ -623,7 +646,6 @@ class LevelManager:
             # 文件不存在，生成新关卡
             level_data = self.generate_level_data(level)
             self.save_level_to_file(level, level_data)
-
         return self.create_game_objects(level_data)
 
     def prepare_all_levels(self):

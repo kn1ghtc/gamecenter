@@ -137,7 +137,7 @@ BULLET_TYPES = {
 
 # 玩家和敌方子弹配置
 PLAYER_BULLET_CONFIG = {
-    'TYPE': 'NORMAL',  # 可以是 'NORMAL', 'PIERCING', 'EXPLOSIVE'
+    'TYPE': 'PIERCING',  # 可以是 'NORMAL', 'PIERCING', 'EXPLOSIVE'
 }
 
 ENEMY_BULLET_CONFIG = {
@@ -152,12 +152,12 @@ WALL_CONFIG = {
 
 # 隔离围墙配置
 BARRIER_WALL_CONFIG = {
-    'HEALTH': 999999,  # 无敌围墙
+    'HEALTH': 20,  # 可被攻击的围墙（按需调整）
     'COLOR': (80, 80, 150),  # 深蓝色，区别于普通围墙
     'THICKNESS': 2,  # 双排围墙厚度
     'PASSAGE_COUNT': 3,  # 随机预留3个通道
     'PASSAGE_WIDTH': 2,  # 每个通道宽度（网格单位）
-    'DESTRUCTIBLE': False,  # 不可被常规攻击摧毁
+    'DESTRUCTIBLE': True,  # 允许被攻击摧毁
     'PIERCING_PASSABLE': True  # 穿甲子弹可以穿过
 }
 
@@ -165,8 +165,8 @@ BARRIER_WALL_CONFIG = {
 BASE_CONFIG = {
     'PLAYER_BASE': {
         'SIZE': (50, 50),
-        'HEALTH': 5,
-        'MAX_HEALTH': 5,
+        'HEALTH': 100,
+        'MAX_HEALTH': 100,
         'COLOR': COLORS['PLAYER_BASE'],
         'POSITION': 'BOTTOM_CENTER'  # 或具体坐标
     },

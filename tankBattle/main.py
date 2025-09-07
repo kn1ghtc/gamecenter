@@ -29,8 +29,10 @@ import pygame
 import sys
 import os
 import random
+import argparse
+import math
 
-from config import GAME_CONFIG, SOUND_CONFIG, WIN_CONDITION
+from config import GAME_CONFIG, SOUND_CONFIG, WIN_CONDITION, PLAYER_CONFIG
 from tank_system import PlayerTank, EnemyTank
 from bullet_system import BulletManager
 from environment import EnvironmentManager
@@ -41,7 +43,7 @@ from ui_manager import UIManager
 
 class GameManager:
     """游戏管理器 - 主要的游戏逻辑控制"""
-    def __init__(self):
+    def __init__(self, smoke_test: bool = False, smoke_test_frames: int = 0):
         # 初始化Pygame
         pygame.init()
 
@@ -65,6 +67,11 @@ class GameManager:
         self.paused = False
         self.game_state = 'menu'  # 'menu', 'level_select', 'playing', 'level_complete', 'game_over', 'victory', 'help'
         self.show_help = False
+
+        # 测试模式
+        self.smoke_test = smoke_test
+        self.smoke_test_frames = smoke_test_frames
+        self._frames_executed = 0
 
         # 游戏数据
         self.score = 0
@@ -98,8 +105,23 @@ class GameManager:
         self.stats = {
             'shots_fired': 0,
             'enemies_destroyed': 0,
-            'walls_destroyed': 0
+            'walls_destroyed': 0,
+            # 自测关键指标
+            'barrier_blocked_shots': 0,          # 所有被隔离墙拦截的子弹
+            'enemy_shots_into_barrier': 0,       # 敌方子弹打到隔离墙（非穿甲）
+            'player_shots_into_barrier': 0,      # 玩家子弹打到隔离墙（非穿甲）
+            'edge_spawn_unsafe_enemies': 0,      # 过近边缘生成的敌人数
+            'total_enemies_loaded': 0,
+            'edge_unsafe_positions': [],         # 记录不安全出生点坐标
         }
+
+        # Smoke-test: 自动进入关卡进行无交互自测
+        if self.smoke_test:
+            # 强制重生成所有地图，避免沿用旧.map导致规则未更新
+            self.regenerate_all_maps()
+            self.current_level = 1
+            self.load_level(self.current_level)
+            self.game_state = 'playing'
 
     def load_sounds(self):
         """加载音效"""
@@ -128,16 +150,24 @@ class GameManager:
         # 创建玩家
         if level_objects['player_pos']:
             pos = level_objects['player_pos']
-            self.player = PlayerTank(pos['x'], pos['y'])
+            # level_data 中的玩家坐标为中心，需要转换为左上角
+            self.player = PlayerTank(
+                pos['x'] - PLAYER_CONFIG['SIZE'][0] // 2,
+                pos['y'] - PLAYER_CONFIG['SIZE'][1] // 2
+            )
         else:
             self.player = PlayerTank(100, GAME_CONFIG['HEIGHT'] // 2)
 
-        # 设置环境对象
+    # 设置环境对象
         for wall in level_objects['walls']:
             self.environment_manager.add_wall(wall)
 
         # 保存特殊围墙引用
         self.special_walls = level_objects.get('special_walls', [])
+
+        # 传递中央隔离墙通道给环境管理器
+        if 'barrier_passages' in level_objects:
+            self.environment_manager.set_barrier_passages(level_objects['barrier_passages'])
 
         if level_objects['player_base']:
             self.environment_manager.set_player_base(level_objects['player_base'])
@@ -147,6 +177,18 @@ class GameManager:
 
         # 设置敌人
         self.enemies = level_objects['enemies']
+        # 统计生成质量（是否靠边）
+        self.stats['total_enemies_loaded'] = len(self.enemies)
+        edge_margin_px = 24
+        for e in self.enemies:
+            if (e.rect.left <= edge_margin_px or e.rect.top <= edge_margin_px or
+                e.rect.right >= GAME_CONFIG['WIDTH'] - edge_margin_px or
+                e.rect.bottom >= GAME_CONFIG['HEIGHT'] - edge_margin_px):
+                self.stats['edge_spawn_unsafe_enemies'] += 1
+                if self.smoke_test:
+                    self.stats['edge_unsafe_positions'].append(
+                        (e.rect.left, e.rect.top, e.rect.right, e.rect.bottom)
+                    )
 
         # 重置时间
         self.start_time = pygame.time.get_ticks()
@@ -305,6 +347,14 @@ class GameManager:
         self.update_special_walls()
         self.update_special_effects()
 
+        # 自测：自动朝上方射击以验证隔离墙阻挡效果
+        if self.smoke_test and self.player and self.player.health > 0:
+            # 朝上
+            self.player.angle = -math.pi / 2
+            # 每隔 12 帧射击一次
+            if self._frames_executed % 12 == 0:
+                self.handle_player_fire()
+
         # 检查胜利/失败条件
         self.check_game_conditions()
 
@@ -398,13 +448,22 @@ class GameManager:
                         self.bullet_manager.remove_bullet(bullet)
                         if self.explosion_sound:
                             self.explosion_sound.play()
+                        # 统计
+                        self.stats['barrier_blocked_shots'] += 1
+                        if bullet.owner == 'enemy':
+                            self.stats['enemy_shots_into_barrier'] += 1
+                        elif bullet.owner == 'player':
+                            self.stats['player_shots_into_barrier'] += 1
                         return True
 
-                # 处理掩体弹：生成掩体墙
+                # 处理掩体弹：生成网格对齐的普通迷宫墙
                 if bullet.creates_wall and bullet.owner == 'player':
-                    barricade_wall = bullet.create_barricade_wall()
+                    barricade_wall = bullet.create_barricade_wall(self.environment_manager, wall)
                     if barricade_wall:
-                        self.environment_manager.add_wall(barricade_wall)
+                        # 避免与特殊围墙重叠
+                        overlap_special = any(barricade_wall.rect.colliderect(sw.rect) for sw in self.special_walls)
+                        if not overlap_special:
+                            self.environment_manager.add_wall(barricade_wall)
 
                 # 造成伤害
                 if hasattr(wall, 'take_damage'):
@@ -427,6 +486,13 @@ class GameManager:
                     self.bullet_manager.remove_bullet(bullet)
                     if self.explosion_sound:
                         self.explosion_sound.play()
+                    # 统计：被隔离墙拦截（非穿甲）
+                    if hasattr(wall, 'wall_type') and wall.wall_type == 'barrier' and not bullet.can_pierce_wall:
+                        self.stats['barrier_blocked_shots'] += 1
+                        if bullet.owner == 'enemy':
+                            self.stats['enemy_shots_into_barrier'] += 1
+                        elif bullet.owner == 'player':
+                            self.stats['player_shots_into_barrier'] += 1
                     return True
 
         # 检查特殊围墙
@@ -569,7 +635,17 @@ class GameManager:
         """重新开始游戏"""
         self.current_level = 1
         self.score = 0
-        self.stats = {'shots_fired': 0, 'enemies_destroyed': 0, 'walls_destroyed': 0}
+        self.stats = {
+            'shots_fired': 0,
+            'enemies_destroyed': 0,
+            'walls_destroyed': 0,
+            'barrier_blocked_shots': 0,
+            'enemy_shots_into_barrier': 0,
+            'player_shots_into_barrier': 0,
+            'edge_spawn_unsafe_enemies': 0,
+            'total_enemies_loaded': 0,
+            'edge_unsafe_positions': [],
+        }
         self.game_state = 'menu'
 
     def draw(self):
@@ -675,14 +751,46 @@ class GameManager:
     def run(self):
         """主游戏循环"""
         while self.running:
-            self.clock.tick(GAME_CONFIG['FPS'])
+            # 自测模式可放宽帧率以加速
+            self.clock.tick(GAME_CONFIG['FPS'] if not self.smoke_test else max(15, GAME_CONFIG['FPS']))
             self.handle_events()
             self.update()
-            self.draw()
+            # 自测模式下跳过绘制，加快运行
+            if not self.smoke_test:
+                self.draw()
+
+            if self.smoke_test:
+                self._frames_executed += 1
+                if 0 < self.smoke_test_frames <= self._frames_executed:
+                    # 输出摘要并退出
+                    self._print_smoke_test_summary()
+                    break
 
         pygame.quit()
         sys.exit()
 
+    def _print_smoke_test_summary(self):
+        """打印自测摘要到标准输出"""
+        print("==== Smoke Test Summary ====")
+        print(f"Frames: {self._frames_executed}")
+        print(f"Level: {self.current_level}")
+        print(f"Enemies loaded: {self.stats['total_enemies_loaded']}")
+        print(f"Edge-unsafe enemy spawns: {self.stats['edge_spawn_unsafe_enemies']}")
+        print(f"Shots fired (player): {self.stats['shots_fired']}")
+        print(f"Enemies destroyed: {self.stats['enemies_destroyed']}")
+        print(f"Walls destroyed: {self.stats['walls_destroyed']}")
+        print(f"Barrier blocked shots: {self.stats['barrier_blocked_shots']}")
+        print(f" - Enemy shots into barrier: {self.stats['enemy_shots_into_barrier']}")
+        print(f" - Player shots into barrier: {self.stats['player_shots_into_barrier']}")
+        if self.stats['edge_unsafe_positions']:
+            print(f"Unsafe spawn rects: {self.stats['edge_unsafe_positions']}")
+        print("============================")
+
 if __name__ == '__main__':
-    game = GameManager()
+    parser = argparse.ArgumentParser(description='Tank Battle Game')
+    parser.add_argument('--smoke-test', action='store_true', help='以自测模式运行，跳过渲染，仅运行固定帧数并输出摘要')
+    parser.add_argument('--frames', type=int, default=900, help='自测模式下运行的帧数，默认900帧')
+    args = parser.parse_args()
+
+    game = GameManager(smoke_test=args.smoke_test, smoke_test_frames=args.frames)
     game.run()
