@@ -136,8 +136,171 @@ class PlayerTank(BaseTank):
     def __init__(self, x, y, angle=0):
         super().__init__(x, y, angle, PLAYER_CONFIG, PLAYER_BULLET_CONFIG)
 
+        # 可选择的子弹类型
+        self.available_bullet_types = ['NORMAL', 'PIERCING', 'EXPLOSIVE', 'RAPID', 'HEAVY']
+        self.current_bullet_index = 0
+        self.bullet_type = self.available_bullet_types[self.current_bullet_index]
+
+        # 特殊效果属性
+        self.original_speed = self.speed
+        self.has_shield = False
+        self.multi_shot = False
+        self.ghost_mode = False
+
+        # 快速射击模式
+        self.rapid_fire_mode = False
+        self.rapid_fire_timer = 0
+        self.rapid_fire_cooldown = 5  # 快速射击间隔
+
     def get_owner(self):
         return 'player'
+
+    def switch_bullet_type(self, direction=1):
+        """切换子弹类型"""
+        self.current_bullet_index = (self.current_bullet_index + direction) % len(self.available_bullet_types)
+        self.bullet_type = self.available_bullet_types[self.current_bullet_index]
+        return self.bullet_type
+
+    def set_bullet_type(self, bullet_type):
+        """直接设置子弹类型"""
+        if bullet_type in self.available_bullet_types:
+            self.bullet_type = bullet_type
+            self.current_bullet_index = self.available_bullet_types.index(bullet_type)
+
+    def fire(self):
+        """发射子弹"""
+        bullets = []
+
+        # 检查射击冷却
+        can_fire = False
+        if self.bullet_type == 'RAPID' or self.rapid_fire_mode:
+            if self.rapid_fire_timer <= 0:
+                can_fire = True
+                self.rapid_fire_timer = self.rapid_fire_cooldown
+        else:
+            if self.reload == 0:
+                can_fire = True
+                self.reload = self.reload_time
+
+        if not can_fire:
+            return bullets
+
+        # 计算子弹发射位置
+        bx = self.x + self.size[0] // 2 + 18 * math.cos(self.angle)
+        by = self.y + self.size[1] // 2 + 18 * math.sin(self.angle)
+
+        if self.multi_shot:
+            # 多重射击模式 - 发射3发子弹
+            angles = [self.angle - 0.3, self.angle, self.angle + 0.3]
+            for angle in angles:
+                bullet_x = self.x + self.size[0] // 2 + 18 * math.cos(angle)
+                bullet_y = self.y + self.size[1] // 2 + 18 * math.sin(angle)
+                bullet = Bullet(bullet_x, bullet_y, angle, self.get_owner(), self.bullet_type)
+                bullets.append(bullet)
+        else:
+            # 普通射击
+            bullet = Bullet(bx, by, self.angle, self.get_owner(), self.bullet_type)
+            bullets.append(bullet)
+
+        return bullets
+
+    def update(self):
+        """更新坦克状态"""
+        super().update()
+
+        # 更新快速射击计时器
+        if self.rapid_fire_timer > 0:
+            self.rapid_fire_timer -= 1
+
+    def take_damage(self, damage):
+        """受到伤害（考虑护盾效果）"""
+        if self.has_shield:
+            # 护盾减少一半伤害
+            damage = max(1, damage // 2)
+
+        self.health -= damage
+        return self.health <= 0
+
+    def move(self, forward, walls):
+        """移动坦克（考虑幽灵模式）"""
+        dx = forward * self.speed * math.cos(self.angle)
+        dy = forward * self.speed * math.sin(self.angle)
+        new_rect = self.rect.move(dx, dy)
+
+        # 检查边界
+        from config import GAME_CONFIG
+        if (new_rect.left < 0 or new_rect.right > GAME_CONFIG['WIDTH'] or
+            new_rect.top < 0 or new_rect.bottom > GAME_CONFIG['HEIGHT']):
+            return
+
+        # 如果是幽灵模式，可以穿过墙壁
+        if self.ghost_mode:
+            self.x += dx
+            self.y += dy
+            self.rect.topleft = (self.x, self.y)
+        else:
+            # 检查墙壁碰撞
+            if not any(new_rect.colliderect(w.rect) for w in walls if w.health > 0):
+                self.x += dx
+                self.y += dy
+                self.rect.topleft = (self.x, self.y)
+
+    def draw(self, surface):
+        """绘制坦克（包含特殊效果）"""
+        cx = self.x + self.size[0] // 2
+        cy = self.y + self.size[1] // 2
+
+        # 特殊效果光环
+        if self.has_shield:
+            # 护盾效果
+            pygame.draw.circle(surface, (100, 150, 255), (int(cx), int(cy)), 35, 3)
+
+        if self.ghost_mode:
+            # 幽灵模式效果
+            alpha_surface = pygame.Surface(self.size, pygame.SRCALPHA)
+            alpha = 128  # 半透明
+        else:
+            alpha_surface = None
+            alpha = 255
+
+        # 绘制主体
+        if self.image:
+            rotated = pygame.transform.rotate(self.image, -math.degrees(self.angle))
+            if alpha_surface:
+                rotated.set_alpha(alpha)
+            rect = rotated.get_rect(center=(cx, cy))
+            surface.blit(rotated, rect.topleft)
+        else:
+            color = self.color if not self.ghost_mode else (*self.color, alpha)
+            if alpha_surface:
+                pygame.draw.rect(alpha_surface, color, (0, 0, *self.size), border_radius=8)
+                surface.blit(alpha_surface, (self.x, self.y))
+            else:
+                pygame.draw.rect(surface, color, (self.x, self.y, *self.size), border_radius=8)
+
+        # 绘制炮管
+        turret_end = (cx + self.turret_length * math.cos(self.angle),
+                     cy + self.turret_length * math.sin(self.angle))
+        turret_color = (80, 80, 80) if not self.ghost_mode else (80, 80, 80, alpha)
+        pygame.draw.line(surface, turret_color, (cx, cy), turret_end, self.turret_width)
+
+        # 绘制炮口（根据子弹类型改变颜色）
+        from config import BULLET_TYPES
+        bullet_config = BULLET_TYPES.get(self.bullet_type, BULLET_TYPES['NORMAL'])
+        muzzle_color = bullet_config.get('COLOR', (220, 220, 0))
+        if muzzle_color is None:
+            muzzle_color = (220, 220, 0)
+
+        pygame.draw.circle(surface, muzzle_color,
+                          (int(turret_end[0]), int(turret_end[1])),
+                          self.turret_width // 2)
+
+        # 绘制生命条
+        self._draw_health_bar(surface)
+
+    def _draw_bullet_type_indicator(self, surface):
+        """绘制子弹类型指示器（已禁用）"""
+        pass
 
 class EnemyTank(BaseTank):
     """敌方坦克"""
@@ -163,6 +326,9 @@ class EnemyTank(BaseTank):
         """更新AI行为 - 智能算法"""
         if not player or player.health <= 0:
             return
+
+        # 保存玩家引用供其他方法使用
+        self.ai_target = player
 
         # 检查是否被困
         self._check_if_stuck()
@@ -206,25 +372,38 @@ class EnemyTank(BaseTank):
     def _update_ai_state(self, distance, walls):
         """更新AI状态机"""
         # 如果被困太久，切换到摧毁障碍物模式
-        if self.stuck_timer > self.max_stuck_time:
+        if self.stuck_timer > ENEMY_CONFIG['AI_STUCK_THRESHOLD']:
             self.ai_state = 'destroy_obstacle'
             self._find_nearest_obstacle(walls)
             return
 
+        # 使用配置文件中的动态AI参数
+        attack_range = ENEMY_CONFIG['AI_ATTACK_RANGE']  # 动态计算的攻击范围
+        vision_range = ENEMY_CONFIG['AI_VISION_RANGE']  # 动态计算的视野范围
+        pursuit_range = ENEMY_CONFIG['AI_PURSUIT_RANGE']  # 追击范围
+        min_fire_distance = ENEMY_CONFIG['AI_MIN_FIRE_DISTANCE']  # 最小开火距离
+        max_fire_distance = ENEMY_CONFIG['AI_MAX_FIRE_DISTANCE']  # 最大开火距离
+
         # 检查前方是否有障碍物
         front_blocked = self._is_front_blocked(walls)
 
-        if distance <= 100:  # 攻击范围
-            if front_blocked:
+        # 改进的AI状态判断逻辑
+        if min_fire_distance <= distance <= max_fire_distance:  # 最佳攻击距离范围
+            if not front_blocked or distance <= min_fire_distance * 2:  # 前方无阻挡或距离很近
+                self.ai_state = 'attack'
+            else:
+                self.ai_state = 'avoid_obstacle'
+        elif distance <= pursuit_range:  # 追击范围内
+            if front_blocked and distance > min_fire_distance * 3:  # 距离较远且被阻挡时才避障
                 self.ai_state = 'avoid_obstacle'
             else:
-                self.ai_state = 'attack'
-        elif distance <= 300:  # 中等距离
+                self.ai_state = 'seek_player'
+        elif distance <= vision_range:  # 视野范围内，远距离搜寻
             if front_blocked:
                 self.ai_state = 'avoid_obstacle'
             else:
                 self.ai_state = 'seek_player'
-        else:  # 远距离
+        else:  # 超出视野范围，随机移动
             if front_blocked:
                 self.ai_state = 'avoid_obstacle'
             else:
@@ -276,18 +455,45 @@ class EnemyTank(BaseTank):
                 bullet_manager.add_bullet(bullet)
 
     def _attack_behavior(self, target_angle, bullet_manager):
-        """攻击行为"""
+        """攻击行为 - 改进版，可以边移动边攻击"""
         angle_diff = (target_angle - self.angle + math.pi) % (2 * math.pi) - math.pi
 
-        # 精确瞄准
-        if abs(angle_diff) > 0.05:  # 更精确的瞄准
-            self.rotate(1 if angle_diff > 0 else -1)
+        # 使用动态配置的旋转阈值
+        rotation_threshold = ENEMY_CONFIG['AI_ROTATION_THRESHOLD']
+        min_fire_distance = ENEMY_CONFIG['AI_MIN_FIRE_DISTANCE']
+        max_fire_distance = ENEMY_CONFIG['AI_MAX_FIRE_DISTANCE']
 
-        # 高频率射击
-        if random.random() < ENEMY_CONFIG['FIRE_RATE'] * 2:  # 攻击模式下射击频率加倍
-            bullet = self.fire()
-            if bullet:
-                bullet_manager.add_bullet(bullet)
+        # 精确瞄准
+        if abs(angle_diff) > rotation_threshold:
+            self.rotate(1 if angle_diff > 0 else -1)
+        else:
+            # 瞄准好了，根据距离调整位置
+            dx = self.ai_target.x - self.x if self.ai_target else 0
+            dy = self.ai_target.y - self.y if self.ai_target else 0
+            distance = math.sqrt(dx * dx + dy * dy)
+
+            # 保持在最佳攻击距离
+            if distance > max_fire_distance:  # 距离太远，靠近
+                if self._can_move_forward([]):
+                    self.move(1, [])
+            elif distance < min_fire_distance:  # 距离太近，后退
+                if self._can_move_forward([]):
+                    self.move(-1, [])
+
+        # 动态射击频率，距离越近射击越频繁
+        if self.ai_target:
+            dx = self.ai_target.x - self.x
+            dy = self.ai_target.y - self.y
+            distance = math.sqrt(dx * dx + dy * dy)
+
+            # 根据距离调整射击频率
+            distance_factor = max(0.5, 1.0 - distance / max_fire_distance)
+            fire_rate = ENEMY_CONFIG['FIRE_RATE'] * (1 + distance_factor * 2)
+
+            if abs(angle_diff) <= rotation_threshold * 2 and random.random() < fire_rate:
+                bullet = self.fire()
+                if bullet:
+                    bullet_manager.add_bullet(bullet)
 
     def _avoid_obstacle_behavior(self, walls):
         """避障行为"""
