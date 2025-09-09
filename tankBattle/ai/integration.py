@@ -160,13 +160,38 @@ class AISystemManager:
         model_dir = os.path.join(os.path.dirname(__file__), 'models')
         
         if ai_instance.rl_agent and os.path.exists(model_dir):
-            model_path = os.path.join(model_dir, 'tank_rl_model.pth')
-            if os.path.exists(model_path):
+            # 优先级：best_model.pth -> best_model_ep*.pth(最新) -> final_model.pth -> tank_rl_model.pth(兼容)
+            candidates = []
+            best_alias = os.path.join(model_dir, 'best_model.pth')
+            if os.path.exists(best_alias):
+                candidates.append(best_alias)
+
+            # 收集带epoch的best文件，按修改时间逆序
+            try:
+                best_eps = [
+                    os.path.join(model_dir, f) for f in os.listdir(model_dir)
+                    if f.startswith('best_model_ep') and f.endswith('.pth')
+                ]
+                best_eps.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+                candidates.extend(best_eps)
+            except Exception:
+                pass
+
+            final_path = os.path.join(model_dir, 'final_model.pth')
+            if os.path.exists(final_path):
+                candidates.append(final_path)
+
+            legacy = os.path.join(model_dir, 'tank_rl_model.pth')
+            if os.path.exists(legacy):
+                candidates.append(legacy)
+
+            for path in candidates:
                 try:
-                    ai_instance.rl_agent.load_model(model_path)
-                    logger.info("✓ 预训练强化学习模型加载成功")
+                    ai_instance.rl_agent.load_model(path)
+                    logger.info(f"✓ 预训练强化学习模型加载成功: {os.path.basename(path)}")
+                    break
                 except Exception as e:
-                    logger.warning(f"预训练模型加载失败: {e}")
+                    logger.warning(f"预训练模型加载失败 ({os.path.basename(path)}): {e}")
     
     def optimize_performance(self, tank_count: int) -> Dict[str, Any]:
         """根据坦克数量优化性能"""

@@ -77,46 +77,64 @@ class TankBattleTrainingEnvironment:
         self.map_width = config.get('map_width', 1500)
         self.map_height = config.get('map_height', 900)
         self.max_episode_steps = config.get('max_episode_steps', 3000)
-        
+
         # 训练状态
         self.current_step = 0
         self.episode_count = 0
         self.total_reward = 0
-        
+
         # 环境状态
         self.tank_position = (self.map_width // 2, self.map_height // 2)
         self.tank_angle = 0
         self.tank_health = 100
-        
+
         # 模拟玩家位置
         self.player_position = (200, 200)
         self.player_health = 100
         self.player_velocity = (0, 0)
-        
+
         # 模拟墙体和障碍物
         self.walls = self._generate_walls()
         self.special_walls = self._generate_special_walls()
-        
+
         # 游戏对象状态
         self.bullets = []
         self.last_shot_time = 0
         self.shot_cooldown = 20  # 帧数
-        
-        # 奖励参数 - 重新平衡，避免过高胜率
+
+        # 课程难度参数（可爬坡）
+        self.player_attack_prob = 0.02  # 玩家攻击概率（每步）
+        self.player_hit_scale = 0.35    # 玩家命中率缩放
+        self.player_speed_scale = 1.0   # 玩家速度缩放
+
+        # 奖励参数 - 重新优化，提高正向奖励
         self.reward_config = {
-            'survival': 0.01,          # 降低存活奖励
-            'hit_player': 10.0,        # 命中玩家奖励
-            'kill_player': 100.0,      # 击杀玩家奖励
-            'damage_taken': -5.0,      # 增加受伤惩罚
-            'death': -50.0,            # 增加死亡惩罚
-            'movement': 0.005,         # 降低移动奖励
-            'stuck_penalty': -0.5,     # 增加卡住惩罚
-            'wall_hit': 2.0,           # 击中特殊墙体
-            'distance_to_player': 0.001, # 降低接近奖励
-            'miss_shot': -1.0,         # 新增：射击未命中惩罚
-            'efficient_movement': 0.1,  # 新增：高效移动奖励
-            'defensive_bonus': 0.5     # 新增：防守奖励
+            'survival': 0.05,            # 提高存活奖励
+            'hit_player': 20.0,          # 提高命中奖励
+            'kill_player': 200.0,        # 大幅提高击杀奖励
+            'damage_taken': -1.5,        # 降低受伤惩罚
+            'death': -50.0,              # 降低死亡惩罚
+            'movement': 0.02,            # 鼓励移动
+            'stuck_penalty': -0.05,      # 大幅降低卡住惩罚
+            'wall_hit': 3.0,             # 击中特殊墙体
+            'distance_to_player': 0.002, # 提高接近奖励
+            'miss_shot': -0.1,           # 降低未命中惩罚
+            'efficient_movement': 0.1,   # 提高移动效率奖励
+            'defensive_bonus': 0.5,      # 提高防守奖励
+            'angle_align': 0.05          # 提高瞄准奖励
         }
+
+    def set_curriculum(self, level: float):
+        """设置课程难度 [0,1]，延缓难度提升"""
+        level = max(0.0, min(1.0, float(level)))
+        # 延缓难度提升，确保AI先学会基础技能
+        adjusted_level = level * 0.5  # 减慢课程进度
+        # 攻击概率从 0.01 → 0.04 (降低初始和最大攻击频率)
+        self.player_attack_prob = 0.01 + 0.03 * adjusted_level
+        # 命中率缩放从 0.2 → 0.6 (降低初始和最大命中率)
+        self.player_hit_scale = 0.2 + 0.4 * adjusted_level
+        # 速度缩放从 0.6 → 1.2 (降低初始速度)
+        self.player_speed_scale = 0.6 + 0.6 * adjusted_level
     
     def _generate_walls(self) -> List[Dict]:
         """生成训练用墙体"""
@@ -267,6 +285,17 @@ class TankBattleTrainingEnvironment:
         distance_to_player = self._get_distance_to_player()
         if distance_to_player < 300:
             reward += self.reward_config['distance_to_player'] * (300 - distance_to_player)
+
+            # 角度对齐奖励（鼓励朝向目标）
+            dx = self.player_position[0] - self.tank_position[0]
+            dy = self.player_position[1] - self.tank_position[1]
+            target_angle = np.arctan2(dy, dx)
+            angle_diff = abs(self.tank_angle - target_angle)
+            if angle_diff > np.pi:
+                angle_diff = 2 * np.pi - angle_diff
+            # angle in [0, pi] -> normalized alignment in [0,1]
+            align_reward = (1 - angle_diff / np.pi) * self.reward_config['angle_align']
+            reward += align_reward
         
         return reward
     
@@ -287,12 +316,12 @@ class TankBattleTrainingEnvironment:
         if angle_diff > np.pi:
             angle_diff = 2 * np.pi - angle_diff
         
-        # 重新平衡命中概率 - 降低过高的命中率
+        # 重新平衡命中概率 - 提高AI成功率
         distance_factor = max(0, 1 - distance_to_player / 400)
-        angle_factor = max(0, 1 - angle_diff / 0.3)  # 更严格的角度要求
+        angle_factor = max(0, 1 - angle_diff / 0.5)  # 放宽角度要求
         
-        # 基础命中率降低
-        base_hit_rate = 0.4  # 从0.8降低到0.4
+        # 提高基础命中率以增加正向反馈
+        base_hit_rate = 0.6  # 从0.4提高到0.6
         hit_probability = distance_factor * angle_factor * base_hit_rate
         
         # 子弹类型修正
@@ -332,15 +361,15 @@ class TankBattleTrainingEnvironment:
         # 随机改变玩家速度
         if random.random() < 0.05:  # 5%概率改变方向
             self.player_velocity = (
-                random.uniform(-2, 2),
-                random.uniform(-2, 2)
+                random.uniform(-2, 2) * self.player_speed_scale,
+                random.uniform(-2, 2) * self.player_speed_scale
             )
-        
-        # 模拟玩家攻击 - 增加挑战性
-        if random.random() < 0.04:  # 增加到4%概率攻击
+
+        # 模拟玩家攻击 - 难度可调
+        if random.random() < self.player_attack_prob:
             distance_to_tank = self._get_distance_to_player()
-            if distance_to_tank < 350:  # 增加攻击范围
-                hit_prob = 0.6 * (1 - distance_to_tank / 350)  # 提高命中率
+            if distance_to_tank < 350:
+                hit_prob = self.player_hit_scale * max(0.0, (1 - distance_to_tank / 350))
                 if random.random() < hit_prob:
                     damage = random.randint(20, 35)  # 随机伤害
                     self.tank_health -= damage
@@ -461,7 +490,36 @@ class OfflineTrainer:
         self.environment = TankBattleTrainingEnvironment(self.config['environment'])
         
         if PYTORCH_AVAILABLE:
-            self.agent = TankRLAgent()
+            # 设备与优化设定
+            desired_gpu = (self.config.get('training', {}).get('use_gpu', True) or
+                           self.config.get('agent', {}).get('use_gpu', True) or
+                           self.config.get('optimization', {}).get('use_gpu', True))
+            device = 'cuda' if (desired_gpu and torch.cuda.is_available()) else 'cpu'
+            if device == 'cuda':
+                try:
+                    torch.set_float32_matmul_precision('high')
+                except Exception:
+                    pass
+            # 构建Agent，确保与训练/推理一致
+            agent_cfg = self.config.get('agent', {})
+            opt_cfg = self.config.get('optimization', {})
+            self.agent = TankRLAgent(
+                state_size=128,
+                action_size=8,
+                lr=agent_cfg.get('learning_rate', 5e-5),
+                device=device,
+                auto_load_model=False,
+                mixed_precision=opt_cfg.get('mixed_precision', False),
+                double_dqn=agent_cfg.get('double_dqn', True),
+                huber_delta=1.0,
+                batch_size=agent_cfg.get('batch_size', 128),
+                memory_size=agent_cfg.get('memory_size', 100000),
+                epsilon_start=agent_cfg.get('epsilon_start', 1.0),
+                epsilon_end=agent_cfg.get('epsilon_end', 0.05),
+                epsilon_decay=agent_cfg.get('epsilon_decay', 0.9995),
+                target_update_frequency=agent_cfg.get('target_update_frequency', 200),
+                compile_models=opt_cfg.get('compile_models', True)
+            )
         else:
             print("PyTorch不可用，无法进行深度强化学习训练")
             return
@@ -473,12 +531,47 @@ class OfflineTrainer:
             'best_reward': float('-inf'),
             'recent_rewards': deque(maxlen=100),
             'win_rate': 0.0,
-            'average_episode_length': 0.0
+            'recent_wins': deque(maxlen=100),
+            'average_episode_length': 0.0,
+            'best_win_rate': 0.0,
+            'best_avg_reward': float('-inf')
         }
         
         # 模型保存路径
         self.models_dir = os.path.join(os.path.dirname(__file__), 'models')
         os.makedirs(self.models_dir, exist_ok=True)
+        # 日志文件路径
+        self.training_log_file = os.path.join(self.models_dir, 'training_log.jsonl')
+        self.training_meta_file = os.path.join(self.models_dir, 'training_meta.json')
+        # 初始化训练日志头信息（仅一次）
+        self._init_training_log()
+
+    def _init_training_log(self):
+        """初始化训练日志元信息，包含配置与设备信息"""
+        try:
+            meta = {
+                'timestamp': time.time(),
+                'config': self.config,
+                'device_info': {
+                    'device': str(self.agent.device) if hasattr(self, 'agent') else 'cpu',
+                    'cuda_available': (torch.cuda.is_available() if PYTORCH_AVAILABLE else False),
+                    'gpu_name': (torch.cuda.get_device_name() if PYTORCH_AVAILABLE and torch.cuda.is_available() else None)
+                }
+            }
+            with open(self.training_meta_file, 'w', encoding='utf-8') as f:
+                json.dump(meta, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"⚠️ 初始化训练日志失败: {e}")
+
+    def _append_training_log(self, record: Dict):
+        """追加一条训练记录到JSONL"""
+        try:
+            with open(self.training_log_file, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        except Exception as e:
+            # 不影响训练流程
+            if (self.training_stats.get('episodes', 0) % 50) == 0:
+                print(f"⚠️ 写入训练日志失败: {e}")
     
     def _load_config(self, config_path: str) -> Dict:
         """加载配置"""
@@ -496,13 +589,13 @@ class OfflineTrainer:
                 'early_stopping_patience': 2000
             },
             'agent': {
-                'learning_rate': 0.001,
+                'learning_rate': 0.0002,     # 提高学习率
                 'epsilon_start': 1.0,
-                'epsilon_end': 0.01,
-                'epsilon_decay': 0.995,
+                'epsilon_end': 0.05,         # 提高最小探索率
+                'epsilon_decay': 0.9998,     # 减慢衰减
                 'batch_size': 64,
-                'memory_size': 50000,
-                'target_update_frequency': 100
+                'memory_size': 100000,
+                'target_update_frequency': 300  # 减慢目标网络更新
             }
         }
         
@@ -527,7 +620,7 @@ class OfflineTrainer:
         if not PYTORCH_AVAILABLE:
             print("❌ PyTorch不可用，无法训练")
             return
-        
+
         print("🚀 开始离线强化学习训练...")
         print(f"训练目标: {self.config['training']['total_episodes']} episodes")
         print(f"目标胜率: {self.config['training']['target_win_rate']:.1%}")
@@ -551,25 +644,79 @@ class OfflineTrainer:
         
         try:
             for episode in pbar:
+                # 课程难度爬坡：延缓难度提升，确保基础技能学习
+                progress = (episode + 1) / max(1, self.config['training']['total_episodes'])
+                win_boost = float(self.training_stats['win_rate']) if self.training_stats['episodes'] > 0 else 0.0
+                # 只有当胜率超过20%时才开始提高难度
+                if win_boost > 0.2:
+                    curriculum_level = min(progress * 0.3 + win_boost * 0.5, 0.8)
+                else:
+                    curriculum_level = min(progress * 0.1, 0.2)  # 保持低难度
+                self.environment.set_curriculum(curriculum_level)
+
                 episode_reward, episode_length, won = self._run_episode()
                 
                 # 更新统计
                 self.training_stats['episodes'] += 1
                 self.training_stats['total_steps'] += episode_length
                 self.training_stats['recent_rewards'].append(episode_reward)
+                self.training_stats['recent_wins'].append(1 if won else 0)
                 
                 # 计算胜率
-                recent_wins = sum(1 for r in list(self.training_stats['recent_rewards']) if r > 30)
-                self.training_stats['win_rate'] = recent_wins / len(self.training_stats['recent_rewards'])
+                if len(self.training_stats['recent_wins']) > 0:
+                    self.training_stats['win_rate'] = (
+                        sum(self.training_stats['recent_wins']) / len(self.training_stats['recent_wins'])
+                    )
                 
-                # 更新最佳奖励
+                # 更新最佳指标并保存
+                updated_best = False
                 if episode_reward > self.training_stats['best_reward']:
                     self.training_stats['best_reward'] = episode_reward
                     episodes_without_improvement = 0
-                    # 保存最佳模型
-                    self._save_model(f'best_model_ep{episode}.pth')
+                    updated_best = True
                 else:
                     episodes_without_improvement += 1
+
+                avg_reward = np.mean(self.training_stats['recent_rewards'])
+                if avg_reward > self.training_stats['best_avg_reward']:
+                    self.training_stats['best_avg_reward'] = float(avg_reward)
+                    updated_best = True
+
+                if self.training_stats['win_rate'] > self.training_stats['best_win_rate']:
+                    self.training_stats['best_win_rate'] = float(self.training_stats['win_rate'])
+                    updated_best = True
+
+                if updated_best:
+                    self._save_model(f'best_model_ep{episode}.pth')
+
+                # 每回合写入训练日志
+                try:
+                    avg_reward_100 = float(np.mean(self.training_stats['recent_rewards'])) if len(self.training_stats['recent_rewards']) > 0 else 0.0
+                    lr = float(self.agent.optimizer.param_groups[0]['lr']) if hasattr(self.agent, 'optimizer') else None
+                    recent_loss = None
+                    if hasattr(self.agent, 'losses') and self.agent.losses:
+                        recent_slice = self.agent.losses[-50:] if len(self.agent.losses) >= 50 else self.agent.losses
+                        recent_loss = float(np.mean(recent_slice))
+                    record = {
+                        'episode': int(self.training_stats['episodes']),
+                        'reward': float(episode_reward),
+                        'length': int(episode_length),
+                        'won': bool(won),
+                        'epsilon': float(self.agent.epsilon),
+                        'win_rate': float(self.training_stats['win_rate']),
+                        'avg_reward_100': avg_reward_100,
+                        'curriculum_level': float(curriculum_level),
+                        'lr': lr,
+                        'recent_loss': recent_loss,
+                        'memory_size': int(len(self.agent.memory)),
+                        'training_step': int(getattr(self.agent, 'training_step', 0)),
+                        'total_steps': int(self.training_stats['total_steps']),
+                        'timestamp': time.time()
+                    }
+                    self._append_training_log(record)
+                except Exception as log_e:
+                    if (self.training_stats['episodes'] % 50) == 0:
+                        print(f"⚠️ 记录训练日志异常: {log_e}")
                 
                 # 更新进度条信息
                 avg_reward = np.mean(self.training_stats['recent_rewards'])
@@ -628,11 +775,11 @@ class OfflineTrainer:
             raise
         
         pbar.close()
-        
+
         # 保存最终模型
         self._save_model('final_model.pth')
         self._save_training_stats()
-        
+
         total_time = time.time() - start_time
         self._print_training_report(total_time)
     
@@ -726,34 +873,33 @@ class OfflineTrainer:
     def _run_episode(self) -> Tuple[float, int, bool]:
         """运行一个训练episode"""
         state = self.environment.reset()
-        total_reward = 0
+        total_reward = 0.0
         steps = 0
         won = False
-        replay_frequency = 4  # 每4步训练一次，提高效率
-        
+        replay_frequency = max(1, int(self.config.get('training', {}).get('replay_frequency', 2)))
+
         while True:
             # 选择动作
             action = self.agent.act(state, training=True)
-            
+
             # 执行动作
             next_state, reward, done, info = self.environment.step(action)
-            
+
             # 存储经验
             self.agent.remember(state, action, reward, next_state, done)
-            
+
             # 训练 - 优化频率控制
-            if (len(self.agent.memory) > self.agent.batch_size and 
-                steps % replay_frequency == 0):
+            if (len(self.agent.memory) > self.agent.batch_size and steps % replay_frequency == 0):
                 self.agent.replay()
-            
+
             state = next_state
             total_reward += reward
             steps += 1
-            
+
             if done:
                 won = info.get('player_health', 100) <= 0  # 击败玩家算胜利
                 break
-        
+
         return total_reward, steps, won
     
     def _save_model(self, filename: str):
@@ -762,8 +908,8 @@ class OfflineTrainer:
         
         # 创建完整的检查点
         checkpoint = {
-            'q_network_state_dict': self.agent.q_network.state_dict(),
-            'target_network_state_dict': self.agent.target_network.state_dict(),
+            'q_network_state_dict': getattr(self.agent, '_get_model_state_dict')(self.agent.q_network),
+            'target_network_state_dict': getattr(self.agent, '_get_model_state_dict')(self.agent.target_network),
             'optimizer_state_dict': self.agent.optimizer.state_dict(),
             'training_stats': {
                 'episodes': self.training_stats['episodes'],
@@ -778,6 +924,14 @@ class OfflineTrainer:
         
         try:
             torch.save(checkpoint, filepath)
+            # 如果是最佳模型，额外写入统一命名best_model.pth以便集成自动加载
+            try:
+                if 'best_model' in filename:
+                    alias_path = os.path.join(self.models_dir, 'best_model.pth')
+                    # 复制保存一次，避免硬链接/符号链接跨平台问题
+                    torch.save(checkpoint, alias_path)
+            except Exception:
+                pass
             # 只在重要保存时输出日志
             if 'best_model' in filename or 'final_model' in filename:
                 print(f"💾 模型已保存: {filename}")
@@ -791,11 +945,13 @@ class OfflineTrainer:
             return False
         
         try:
-            checkpoint = torch.load(model_path, map_location=self.agent.device)
+            # PyTorch 2.6+ 默认 weights_only=True，需显式关闭以支持完整checkpoint
+            checkpoint = torch.load(model_path, map_location=self.agent.device, weights_only=False)
             
-            # 加载网络状态
-            self.agent.q_network.load_state_dict(checkpoint['q_network_state_dict'])
-            self.agent.target_network.load_state_dict(checkpoint['target_network_state_dict'])
+            # 加载网络状态（兼容编译后的模块）
+            load_helper = getattr(self.agent, '_load_model_state_dict')
+            load_helper(self.agent.q_network, checkpoint['q_network_state_dict'], strict=False)
+            load_helper(self.agent.target_network, checkpoint['target_network_state_dict'], strict=False)
             
             # 如果有优化器状态，也加载
             if 'optimizer_state_dict' in checkpoint and hasattr(self.agent, 'optimizer'):
@@ -812,6 +968,7 @@ class OfflineTrainer:
             
         except Exception as e:
             print(f"❌ 模型加载失败: {e}")
+            # 返回空评估结构而不是中断调用方
             return False
     
     def _save_training_stats(self):
@@ -821,6 +978,7 @@ class OfflineTrainer:
         # 转换不可序列化的对象
         stats_to_save = self.training_stats.copy()
         stats_to_save['recent_rewards'] = list(stats_to_save['recent_rewards'])
+        stats_to_save['recent_wins'] = list(stats_to_save['recent_wins'])  # 修复：转换recent_wins deque
         stats_to_save['config'] = self.config
         stats_to_save['timestamp'] = time.time()
         stats_to_save['device_info'] = {
@@ -840,7 +998,19 @@ class OfflineTrainer:
         
         # 加载模型
         if not self._load_model(model_path):
-            return {}
+            # 返回包含基本字段的空结果，避免调用方KeyError
+            return {
+                'wins': 0,
+                'total_episodes': 0,
+                'total_reward': 0.0,
+                'episode_rewards': [],
+                'episode_lengths': [],
+                'damage_dealt': [],
+                'survival_times': [],
+                'shot_accuracy': [],
+                'win_rate': 0.0,
+                'average_reward': 0.0,
+            }
         
         # 评估统计
         eval_stats = {

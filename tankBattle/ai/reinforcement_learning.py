@@ -24,6 +24,7 @@ try:
     import torch.nn as nn
     import torch.optim as optim
     import torch.nn.functional as F
+    from torch.cuda.amp import autocast
     PYTORCH_AVAILABLE = True
 except ImportError:
     PYTORCH_AVAILABLE = False
@@ -78,25 +79,25 @@ class TankDQN(nn.Module):
         
         if hidden_sizes is None:
             hidden_sizes = [512, 256, 128]  # 更大的默认网络
-        
+
         layers = []
         prev_size = state_size
-        
-        # 构建隐藏层 - 添加批标准化和更好的激活函数
+
+        # 构建隐藏层 - 使用LayerNorm避免小批量不稳定
         for i, hidden_size in enumerate(hidden_sizes):
             layers.extend([
                 nn.Linear(prev_size, hidden_size),
-                nn.BatchNorm1d(hidden_size),
-                nn.ReLU(),
+                nn.LayerNorm(hidden_size),
+                nn.ReLU(inplace=True),
                 nn.Dropout(0.1 if i < len(hidden_sizes) - 1 else 0.2)  # 渐进式dropout
             ])
             prev_size = hidden_size
-        
+
         # 输出层 - 添加最终的线性层
         layers.extend([
             nn.Linear(prev_size, action_size)
         ])
-        
+
         self.network = nn.Sequential(*layers)
         
         # 权重初始化 - 使用Xavier初始化
@@ -115,7 +116,11 @@ class TankRLAgent:
     """强化学习坦克AI智能体"""
     
     def __init__(self, state_size: int = 128, action_size: int = 8, 
-                 lr: float = 1e-4, device: str = None, auto_load_model: bool = True):
+                 lr: float = 1e-4, device: str = None, auto_load_model: bool = True,
+                 mixed_precision: bool = False, double_dqn: bool = True, huber_delta: float = 1.0,
+                 batch_size: int = 64, memory_size: int = 100000,
+                 epsilon_start: float = None, epsilon_end: float = None, epsilon_decay: float = None,
+                 target_update_frequency: int = 200, compile_models: bool = True):
         
         if not PYTORCH_AVAILABLE:
             raise ImportError("PyTorch未安装，无法创建强化学习智能体")
@@ -134,48 +139,67 @@ class TankRLAgent:
         
         self.state_size = state_size
         self.action_size = action_size
-        
-        # 神经网络 - 使用更大的网络结构
+
+        # 神经网络 - 使用更大的网络结构（先不编译，加载权重后再编译）
         self.q_network = TankDQN(state_size, action_size, hidden_sizes=[512, 256, 128]).to(self.device)
         self.target_network = TankDQN(state_size, action_size, hidden_sizes=[512, 256, 128]).to(self.device)
-        
+        self._compiled = False
+        self._compile_enabled = compile_models
+
         # 优化器 - 使用AdamW提高稳定性
         self.optimizer = optim.AdamW(
-            self.q_network.parameters(), 
-            lr=lr, 
+            self.q_network.parameters(),
+            lr=lr,
             weight_decay=1e-4,
             amsgrad=True
         )
-        
+
         # 学习率调度器 - 更长的周期
         self.scheduler = optim.lr_scheduler.CosineAnnealingLR(
             self.optimizer, T_max=10000, eta_min=1e-6
         )
-        
+
+        # AMP与训练选项
+        self.use_amp = mixed_precision and (str(self.device) == 'cuda')
+        try:
+            # New API: torch.amp.GradScaler('cuda', ...)
+            self.scaler = torch.amp.GradScaler('cuda', enabled=self.use_amp) if hasattr(torch, 'amp') else None
+        except Exception:
+            # Fallback for older versions
+            from torch.cuda.amp import GradScaler as CudaGradScaler
+            self.scaler = CudaGradScaler(enabled=self.use_amp)
+
+        # 算法选项
+        self.double_dqn = double_dqn
+        self.huber_delta = huber_delta
+
         # 将目标网络初始化为与主网络相同的权重
         self.update_target_network()
-        
+
         # 经验回放 - 更大的经验池
-        self.memory = deque(maxlen=100000)
-        self.batch_size = 64  # 增大批次大小
-        
+        self.memory = deque(maxlen=memory_size)
+        self.batch_size = batch_size  # 可配置批次大小
+
         # 超参数 - 优化为最佳训练效果
-        self.epsilon = 1.0      # 探索率
-        self.epsilon_min = 0.01  # 保持更多探索
-        self.epsilon_decay = 0.9995  # 更慢的衰减
+        self.epsilon = 1.0 if epsilon_start is None else float(epsilon_start)
+        self.epsilon_min = 0.01 if epsilon_end is None else float(epsilon_end)
+        self.epsilon_decay = 0.9995 if epsilon_decay is None else float(epsilon_decay)
         self.gamma = 0.99       # 更高的折扣因子
-        self.tau = 1e-3         # 软更新参数
-        
+        self.tau = 5e-3         # 软更新参数略大，加速收敛
+        self.target_update_frequency = int(target_update_frequency or 200)
+
         # 动作映射
         self.actions = [
             'move_forward', 'move_backward', 'rotate_left', 'rotate_right',
             'fire_normal', 'fire_piercing', 'fire_explosive', 'stay_still'
         ]
-        
+
         # 自动加载预训练模型
         if auto_load_model:
             self._auto_load_best_model()
-        
+        # 加载后再选择性编译
+        self._maybe_compile()
+
         # 训练统计
         self.training_step = 0
         self.losses = []
@@ -183,55 +207,73 @@ class TankRLAgent:
     def _auto_load_best_model(self):
         """自动加载最佳可用模型"""
         try:
-            models_dir = "ai/models"
+            models_dir = os.path.join(os.path.dirname(__file__), 'models')
             if not os.path.exists(models_dir):
                 print("ℹ️ 模型目录不存在，将使用随机初始化的模型")
                 return
-            
-            # 查找可用模型文件
-            model_files = []
-            for file in os.listdir(models_dir):
-                if file.endswith('.pth'):
-                    model_files.append(file)
-            
+
+            model_files = [f for f in os.listdir(models_dir) if f.endswith('.pth')]
             if not model_files:
                 print("ℹ️ 未找到训练好的模型，将使用随机初始化的模型")
                 return
-            
-            # 优先级排序：best_model > final_model > checkpoint
-            best_model = None
-            for file in model_files:
-                if file.startswith('best_model_'):
-                    best_model = file
-                    break
-            
-            if not best_model:
-                for file in model_files:
-                    if file.startswith('final_model'):
-                        best_model = file
-                        break
-            
-            if not best_model:
-                for file in model_files:
-                    if file.startswith('checkpoint_'):
-                        best_model = file
-                        break
-            
+
+            # 优先级：best_model.pth / best_model_* > final_model* > checkpoint_*
+            candidates = sorted(model_files, key=lambda x: (
+                3 if x == 'best_model.pth' or x.startswith('best_model_') else 2 if x.startswith('final_model') else 1 if x.startswith('checkpoint_') else 0
+            ), reverse=True)
+
+            best_model = candidates[0] if candidates else None
             if best_model:
                 model_path = os.path.join(models_dir, best_model)
                 try:
-                    # 尝试加载模型，如果结构不匹配则跳过
-                    checkpoint = torch.load(model_path, map_location=self.device)
-                    self.q_network.load_state_dict(checkpoint['q_network_state_dict'], strict=False)
+                    checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
+                    self._load_model_state_dict(self.q_network, checkpoint['q_network_state_dict'], strict=False)
+                    if 'target_network_state_dict' in checkpoint:
+                        self._load_model_state_dict(self.target_network, checkpoint['target_network_state_dict'], strict=False)
                     print(f"✅ 自动加载模型: {best_model} (部分兼容)")
                 except Exception as load_error:
-                    print(f"⚠️ 模型 {best_model} 结构不兼容，使用随机初始化: {str(load_error)[:100]}...")
+                    print(f"⚠️ 模型 {best_model} 结构不兼容或损坏，使用随机初始化: {str(load_error)[:100]}...")
             else:
                 print("ℹ️ 未找到合适的模型文件，将使用随机初始化的模型")
-                
+
         except Exception as e:
             print(f"⚠️ 自动加载模型失败: {str(e)[:100]}...")
             print("ℹ️ 使用随机初始化的模型")
+
+    def _maybe_compile(self):
+        """在CUDA上按需编译模型（PyTorch 2）"""
+        if self._compiled:
+            return
+        try:
+            if self._compile_enabled and hasattr(torch, 'compile') and str(self.device) == 'cuda':
+                # 仅在triton可用时启用编译，避免运行期后端失败
+                try:
+                    import importlib.util
+                    triton_ok = importlib.util.find_spec('triton') is not None
+                except Exception:
+                    triton_ok = False
+                if not triton_ok:
+                    # 无triton则跳过编译，保持eager
+                    return
+                self.q_network = torch.compile(self.q_network)
+                self.target_network = torch.compile(self.target_network)
+                self._compiled = True
+        except Exception:
+            pass
+
+    @staticmethod
+    def _get_model_state_dict(model):
+        try:
+            return model._orig_mod.state_dict()
+        except AttributeError:
+            return model.state_dict()
+
+    @staticmethod
+    def _load_model_state_dict(model, state_dict, strict: bool = False):
+        try:
+            model._orig_mod.load_state_dict(state_dict, strict=strict)
+        except AttributeError:
+            model.load_state_dict(state_dict, strict=strict)
         
     def get_state(self, tank, player, walls, bullets, environment) -> np.ndarray:
         """提取环境状态特征"""
@@ -656,16 +698,29 @@ class TankRLAgent:
         next_states = torch.from_numpy(next_states_array).to(self.device)
         dones = torch.from_numpy(dones_array).to(self.device)
         
-        current_q_values = self.q_network(states).gather(1, actions.unsqueeze(1))
-        next_q_values = self.target_network(next_states).max(1)[0].detach()
-        target_q_values = rewards + (self.gamma * next_q_values * ~dones)
+        with torch.amp.autocast('cuda', enabled=self.use_amp):
+            current_q_values = self.q_network(states).gather(1, actions.unsqueeze(1)).squeeze(1)
+            if self.double_dqn:
+                # Double DQN: 使用在线网络选择动作，目标网络评估
+                next_actions = self.q_network(next_states).argmax(1).detach()
+                next_q_values = self.target_network(next_states).gather(1, next_actions.unsqueeze(1)).squeeze(1).detach()
+            else:
+                next_q_values = self.target_network(next_states).max(1)[0].detach()
+            target_q_values = rewards + (self.gamma * next_q_values * (~dones))
+
+            # Huber损失更稳定
+            loss = F.smooth_l1_loss(current_q_values, target_q_values, beta=self.huber_delta)
         
-        loss = F.mse_loss(current_q_values.squeeze(), target_q_values)
-        
-        self.optimizer.zero_grad()
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.q_network.parameters(), 1.0)
-        self.optimizer.step()
+        self.optimizer.zero_grad(set_to_none=True)
+        if self.use_amp:
+            self.scaler.scale(loss).backward()
+            torch.nn.utils.clip_grad_norm_(self.q_network.parameters(), 1.0)
+            self.scaler.step(self.optimizer)
+            self.scaler.update()
+        else:
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.q_network.parameters(), 1.0)
+            self.optimizer.step()
         
         # 更新学习率
         self.scheduler.step()
@@ -681,6 +736,9 @@ class TankRLAgent:
         # 定期软更新目标网络
         if self.training_step % 4 == 0:
             self.soft_update_target_network()
+        # 周期性硬更新（可配置）
+        if self.training_step % max(1, self.target_update_frequency) == 0:
+            self.update_target_network()
     
     def soft_update_target_network(self):
         """软更新目标网络"""
@@ -696,8 +754,8 @@ class TankRLAgent:
     def save_model(self, filepath: str):
         """保存模型"""
         checkpoint = {
-            'q_network_state_dict': self.q_network.state_dict(),
-            'target_network_state_dict': self.target_network.state_dict(),
+            'q_network_state_dict': self._get_model_state_dict(self.q_network),
+            'target_network_state_dict': self._get_model_state_dict(self.target_network),
             'optimizer_state_dict': self.optimizer.state_dict(),
             'scheduler_state_dict': self.scheduler.state_dict(),
             'epsilon': self.epsilon,
@@ -707,18 +765,20 @@ class TankRLAgent:
     
     def load_model(self, filepath: str):
         """加载模型"""
-        checkpoint = torch.load(filepath, map_location=self.device)
-        
-        self.q_network.load_state_dict(checkpoint['q_network_state_dict'])
-        self.target_network.load_state_dict(checkpoint['target_network_state_dict'])
+        checkpoint = torch.load(filepath, map_location=self.device, weights_only=False)
+
+        self._load_model_state_dict(self.q_network, checkpoint['q_network_state_dict'], strict=False)
+        self._load_model_state_dict(self.target_network, checkpoint['target_network_state_dict'], strict=False)
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        
+
         # 加载调度器状态（如果存在）
         if 'scheduler_state_dict' in checkpoint:
             self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
-        
+
         self.epsilon = checkpoint.get('epsilon', self.epsilon)
         self.training_step = checkpoint.get('training_step', 0)
+        # 加载后按需编译
+        self._maybe_compile()
     
     def get_training_stats(self) -> Dict:
         """获取训练统计信息"""
@@ -881,59 +941,4 @@ class RewardCalculator:
             return False
         return True
     
-    def _auto_load_best_model(self):
-        """自动加载最佳的预训练模型"""
-        import os
-        import glob
-        
-        models_dir = os.path.join(os.path.dirname(__file__), 'models')
-        if not os.path.exists(models_dir):
-            return  # 没有模型目录，跳过
-        
-        # 搜索所有模型文件
-        model_patterns = [
-            'best_model_*.pth',
-            'final_model.pth',
-            'checkpoint_*.pth'
-        ]
-        
-        best_model = None
-        best_score = -1
-        
-        for pattern in model_patterns:
-            model_files = glob.glob(os.path.join(models_dir, pattern))
-            
-            for model_file in model_files:
-                try:
-                    # 尝试从文件名提取信息
-                    if 'best_model_ep' in model_file:
-                        # 从best_model_ep{episode}.pth提取episode数
-                        episode_str = model_file.split('best_model_ep')[1].split('.pth')[0]
-                        episode = int(episode_str)
-                        score = episode  # 以episode数作为评分
-                    elif 'final_model' in model_file:
-                        score = 1000000  # 最终模型优先级最高
-                    elif 'checkpoint_ep' in model_file:
-                        episode_str = model_file.split('checkpoint_ep')[1].split('.pth')[0]
-                        episode = int(episode_str)
-                        score = episode * 0.8  # checkpoint优先级略低
-                    else:
-                        score = 0
-                    
-                    if score > best_score:
-                        best_score = score
-                        best_model = model_file
-                        
-                except (ValueError, IndexError):
-                    continue
-        
-        if best_model:
-            try:
-                self.load_model(best_model)
-                # 加载后降低探索率，因为是预训练模型
-                self.epsilon = 0.1  # 降低探索，更多利用
-                print(f"✅ 自动加载预训练模型: {os.path.basename(best_model)}")
-            except Exception as e:
-                print(f"⚠️ 预训练模型加载失败: {e}")
-        else:
-            print("ℹ️ 未找到可用的预训练模型，将从头训练")
+    

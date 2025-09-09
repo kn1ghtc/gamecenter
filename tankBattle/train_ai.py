@@ -39,13 +39,13 @@ def create_training_config():
         },
         "agent": {
             "use_gpu": True,          # 启用GPU（如果可用）
-            "learning_rate": 0.0001,  # 更低的学习率提高稳定性
+            "learning_rate": 0.0002,  # 提高学习率，加速初期学习
             "epsilon_start": 1.0,
-            "epsilon_end": 0.01,      # 保持探索
-            "epsilon_decay": 0.9995,  # 更慢的衰减
-            "batch_size": 64,         # 更大的批次
+            "epsilon_end": 0.05,      # 提高最小探索率
+            "epsilon_decay": 0.9998,  # 减慢衰减速度
+            "batch_size": 256,         # 更大的批次
             "memory_size": 100000,    # 更大的经验池
-            "target_update_frequency": 100,  # 更稳定的目标网络更新
+            "target_update_frequency": 300,  # 减慢目标网络更新
             "double_dqn": True,       # 启用Double DQN
             "dueling_dqn": False,     # 暂时禁用以保持稳定
             "gradient_clipping": 1.0,
@@ -73,6 +73,7 @@ def main():
     parser.add_argument('--resume', type=str, help='从指定模型继续训练')
     parser.add_argument('--episodes', type=int, default=5000, help='训练回合数')
     parser.add_argument('--eval', action='store_true', help='评估模式')
+    parser.add_argument('--eval-episodes', type=int, default=100, help='评估回合数，默认100')
     parser.add_argument('--model', type=str, help='评估的模型路径')
     
     args = parser.parse_args()
@@ -123,7 +124,7 @@ def main():
             
             trainer = OfflineTrainer(config_path)
             print(f"🔍 评估模型: {args.model}")
-            results = trainer.evaluate(args.model, num_episodes=100)
+            results = trainer.evaluate(args.model, num_episodes=max(1, int(args.eval_episodes)))
             
             print(f"\n📊 评估结果:")
             print(f"胜率: {results['win_rate']:.1%}")
