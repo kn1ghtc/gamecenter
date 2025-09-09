@@ -245,3 +245,11 @@ class BarrierWall(pygame.sprite.Sprite):
 
             # 绘制边框
             pygame.draw.rect(surface, (200, 200, 200), self.rect, 2)
+    
+    def get_all_ai_tanks(self):
+        """获取所有AI坦克列表（用于避免友军伤害）"""
+        return getattr(self, 'all_enemies', [])
+    
+    def get_special_walls(self):
+        """获取特殊墙体列表"""
+        return getattr(self, 'special_walls', [])

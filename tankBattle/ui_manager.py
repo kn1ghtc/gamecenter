@@ -2,18 +2,19 @@
 UI管理器 - 处理透明UI和显示控制
 """
 import pygame
-from config import UI_CONFIG, COLORS
+from config import UI_CONFIG, COLORS, get_chinese_font
 
 class UIManager:
     """UI管理器"""
     def __init__(self):
-        # 尝试使用支持中文的字体
+        # 使用改进的中文字体配置
         try:
-            # 使用系统中可用的中文字体
-            self.font = pygame.font.SysFont(['arialunicode', 'pingfang', 'hiraginosansgb', 'stheitimedium'], UI_CONFIG['FONT_SIZE'])
-            self.big_font = pygame.font.SysFont(['arialunicode', 'pingfang', 'hiraginosansgb', 'stheitimedium'], UI_CONFIG['BIG_FONT_SIZE'])
-        except:
-            # 降级到默认字体
+            self.font = get_chinese_font(UI_CONFIG['FONT_SIZE'])
+            self.big_font = get_chinese_font(UI_CONFIG['BIG_FONT_SIZE'])
+            print(f"✓ UI字体初始化成功: {self.font}")
+        except Exception as e:
+            print(f"⚠ UI字体初始化失败: {e}")
+            # 最终降级方案
             self.font = pygame.font.Font(None, UI_CONFIG['FONT_SIZE'])
             self.big_font = pygame.font.Font(None, UI_CONFIG['BIG_FONT_SIZE'])
 

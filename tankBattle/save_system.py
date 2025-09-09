@@ -6,6 +6,7 @@ import os
 import json
 import pygame
 from datetime import datetime
+from config import get_chinese_font
 
 class SaveSystem:
     """存档管理系统"""
@@ -136,11 +137,13 @@ class LevelSelector:
     """关卡选择器"""
     def __init__(self, save_system):
         self.save_system = save_system
-        # 使用支持中文的字体，调整为更小的尺寸
+        # 使用改进的中文字体配置
         try:
-            self.font = pygame.font.SysFont(['arialunicode', 'pingfang', 'hiraginosansgb', 'stheitimedium'], 24)
-            self.big_font = pygame.font.SysFont(['arialunicode', 'pingfang', 'hiraginosansgb', 'stheitimedium'], 32)
-        except:
+            self.font = get_chinese_font(24)
+            self.big_font = get_chinese_font(32)
+            print(f"✓ 关卡选择器字体初始化成功")
+        except Exception as e:
+            print(f"⚠ 关卡选择器字体初始化失败: {e}")
             self.font = pygame.font.Font(None, 24)
             self.big_font = pygame.font.Font(None, 32)
 

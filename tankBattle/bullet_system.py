@@ -8,13 +8,14 @@ from config import BULLET_TYPES, COLORS
 
 class Bullet(pygame.sprite.Sprite):
     """基础子弹类"""
-    def __init__(self, x, y, angle, owner, bullet_type='NORMAL'):
+    def __init__(self, x, y, angle, owner, bullet_type='NORMAL', shooting_tank=None):
         super().__init__()
         self.x = x
         self.y = y
         self.angle = angle
         self.owner = owner  # 'player' 或 'enemy'
         self.bullet_type = bullet_type
+        self.shooting_tank = shooting_tank  # 发射该子弹的坦克对象
 
         # 从配置获取子弹属性
         config = BULLET_TYPES[bullet_type]
@@ -23,6 +24,12 @@ class Bullet(pygame.sprite.Sprite):
         self.damage = config['DAMAGE']
         self.can_pierce_wall = config['CAN_PIERCE_WALL']
         self.wall_damage = config['WALL_DAMAGE']
+        
+        # 射程限制
+        self.max_range = config.get('MAX_RANGE', 400)
+        self.lifetime = config.get('LIFETIME', int(self.max_range / self.speed))
+        self.distance_traveled = 0
+        self.frames_alive = 0
 
         # 掩体弹特殊属性
         self.creates_wall = config.get('CREATES_WALL', False)
@@ -49,9 +56,20 @@ class Bullet(pygame.sprite.Sprite):
 
     def update(self):
         """更新子弹位置"""
+        # 记录移动距离
+        move_distance = self.speed
+        self.distance_traveled += move_distance
+        self.frames_alive += 1
+        
+        # 更新位置
         self.x += self.speed * math.cos(self.angle)
         self.y += self.speed * math.sin(self.angle)
         self.rect.center = (self.x, self.y)
+    
+    def is_expired(self):
+        """检查子弹是否超过射程或生命周期"""
+        return (self.distance_traveled >= self.max_range or 
+                self.frames_alive >= self.lifetime)
 
     def draw(self, surface):
         """绘制子弹"""
@@ -182,6 +200,11 @@ class BulletManager:
 
             # 移除超出边界的子弹
             if not (0 < bullet.x < game_width and 0 < bullet.y < game_height):
+                self.bullets.remove(bullet)
+                continue
+            
+            # 移除超过射程的子弹
+            if bullet.is_expired():
                 self.bullets.remove(bullet)
 
     def draw(self, surface):

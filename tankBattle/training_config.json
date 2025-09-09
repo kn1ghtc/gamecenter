@@ -1,0 +1,39 @@
+{
+  "environment": {
+    "map_width": 1500,
+    "map_height": 900,
+    "max_episode_steps": 3000,
+    "training_mode": true,
+    "render": false
+  },
+  "training": {
+    "use_gpu": true,
+    "total_episodes": 1000,
+    "save_frequency": 100,
+    "eval_frequency": 200,
+    "target_win_rate": 0.8,
+    "early_stopping_patience": 1000,
+    "warmup_episodes": 200,
+    "replay_frequency": 1
+  },
+  "agent": {
+    "use_gpu": true,
+    "learning_rate": 0.0001,
+    "epsilon_start": 1.0,
+    "epsilon_end": 0.01,
+    "epsilon_decay": 0.9995,
+    "batch_size": 64,
+    "memory_size": 100000,
+    "target_update_frequency": 100,
+    "double_dqn": true,
+    "dueling_dqn": false,
+    "gradient_clipping": 1.0,
+    "weight_decay": 0.0001
+  },
+  "optimization": {
+    "use_gpu": true,
+    "mixed_precision": false,
+    "lr_scheduler": "cosine",
+    "min_lr": 1e-06
+  }
+}

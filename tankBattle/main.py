@@ -32,7 +32,7 @@ import random
 import argparse
 import math
 
-from config import GAME_CONFIG, SOUND_CONFIG, WIN_CONDITION, PLAYER_CONFIG
+from config import GAME_CONFIG, SOUND_CONFIG, WIN_CONDITION, PLAYER_CONFIG, AI_CONFIG, get_chinese_font
 from tank_system import PlayerTank, EnemyTank
 from bullet_system import BulletManager
 from environment import EnvironmentManager
@@ -40,6 +40,19 @@ from level_manager import LevelManager
 from save_system import SaveSystem, LevelSelector, SaveMenu
 from special_walls import SpecialEffectManager
 from ui_manager import UIManager
+
+# AI系统集成
+try:
+    from ai.integration import get_ai_manager, get_performance_optimizer
+    AI_MANAGER_AVAILABLE = True
+    print("✓ AI管理器可用")
+except ImportError as e:
+    AI_MANAGER_AVAILABLE = False
+    print(f"✗ AI管理器不可用: {e}")
+    def get_ai_manager():
+        return None
+    def get_performance_optimizer():
+        return None
 
 class GameManager:
     """游戏管理器 - 主要的游戏逻辑控制"""
@@ -52,13 +65,14 @@ class GameManager:
         pygame.display.set_caption(GAME_CONFIG['TITLE'])
         self.clock = pygame.time.Clock()
 
-        # 字体 - 支持中文显示，优化大小
+        # 字体 - 使用改进的中文字体配置
         try:
-            # 使用系统中可用的中文字体，调整为更小的尺寸
-            self.font = pygame.font.SysFont(['arialunicode', 'pingfang', 'hiraginosansgb', 'stheitimedium'], 24)
-            self.big_font = pygame.font.SysFont(['arialunicode', 'pingfang', 'hiraginosansgb', 'stheitimedium'], 32)
-        except:
-            # 降级到默认字体
+            self.font = get_chinese_font(24)
+            self.big_font = get_chinese_font(32)
+            print(f"✓ 主游戏字体初始化成功")
+        except Exception as e:
+            print(f"⚠ 主游戏字体初始化失败: {e}")
+            # 最终降级方案
             self.font = pygame.font.Font(None, 24)
             self.big_font = pygame.font.Font(None, 32)
 
@@ -85,6 +99,11 @@ class GameManager:
         self.save_system = SaveSystem()
         self.special_effect_manager = SpecialEffectManager()
         self.ui_manager = UIManager()
+
+        # AI系统管理器
+        self.ai_manager = None
+        self.performance_optimizer = None
+        self._initialize_ai_system()
 
         # 菜单系统
         self.level_selector = LevelSelector(self.save_system)
@@ -122,6 +141,26 @@ class GameManager:
             self.current_level = 1
             self.load_level(self.current_level)
             self.game_state = 'playing'
+
+    def _initialize_ai_system(self):
+        """初始化AI系统"""
+        if AI_MANAGER_AVAILABLE and AI_CONFIG['ENABLED']:
+            try:
+                self.ai_manager = get_ai_manager()
+                self.performance_optimizer = get_performance_optimizer()
+                if self.ai_manager:
+                    print("✓ AI系统初始化成功")
+                    # 获取系统状态
+                    status = self.ai_manager.get_system_status()
+                    print(f"  {status['summary']}")
+                else:
+                    print("○ AI管理器创建失败，使用基础AI")
+            except Exception as e:
+                print(f"⚠ AI系统初始化失败: {e}")
+                self.ai_manager = None
+                self.performance_optimizer = None
+        else:
+            print("○ AI系统被禁用或不可用")
 
     def load_sounds(self):
         """加载音效"""
@@ -396,6 +435,10 @@ class GameManager:
     def update_enemies(self):
         """更新敌人"""
         walls = self.environment_manager.get_all_walls()
+        
+        # 为环境管理器设置AI坦克列表（用于避免友军伤害）
+        self.environment_manager.all_enemies = self.enemies.copy()
+        self.environment_manager.special_walls = self.special_walls.copy()
 
         for enemy in self.enemies[:]:
             if enemy.health <= 0:
@@ -508,12 +551,23 @@ class GameManager:
                             effect_type, self.player, self.environment_manager, self.bullet_manager
                         )
                     elif bullet.owner == 'enemy':
-                        # 敌人打破特殊围墙，随机选择一个敌人获得效果
-                        if self.enemies:
+                        # 敌人打破特殊围墙，子弹射击者获得效果和特殊子弹能力
+                        shooting_enemy = bullet.shooting_tank
+                        if shooting_enemy:
+                            self.special_effect_manager.trigger_effect(
+                                effect_type, shooting_enemy, self.environment_manager, self.bullet_manager
+                            )
+                            # 给予该AI坦克特殊子弹能力
+                            if hasattr(shooting_enemy, 'grant_special_bullet_effect'):
+                                shooting_enemy.grant_special_bullet_effect(effect_type)
+                        elif self.enemies:
+                            # 备用：如果没有shooting_tank信息，随机选择一个敌人
                             beneficiary = random.choice(self.enemies)
                             self.special_effect_manager.trigger_effect(
                                 effect_type, beneficiary, self.environment_manager, self.bullet_manager
                             )
+                            if hasattr(beneficiary, 'grant_special_bullet_effect'):
+                                beneficiary.grant_special_bullet_effect(effect_type)
 
                 if destroyed:
                     self.special_walls.remove(wall)

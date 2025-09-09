@@ -611,10 +611,19 @@ class LevelManager:
         all_walls = walls + special_walls + barrier_walls
 
         # 创建敌人（关卡文件中存的是中心坐标，这里转换为左上角以匹配坦克构造器要求）
-        from config import ENEMY_CONFIG
+        from config import ENEMY_CONFIG, AI_CONFIG
         enemy_w, enemy_h = ENEMY_CONFIG['SIZE']
+        ai_level = AI_CONFIG.get('DEFAULT_LEVEL', 'auto')  # 从配置获取默认AI级别
+        
         for enemy_data in level_data['enemies']:
-            enemy = EnemyTank(enemy_data['x'] - enemy_w // 2, enemy_data['y'] - enemy_h // 2, enemy_data['angle'])
+            # 支持AI级别参数
+            enemy_ai_level = enemy_data.get('ai_level', ai_level)
+            enemy = EnemyTank(
+                enemy_data['x'] - enemy_w // 2, 
+                enemy_data['y'] - enemy_h // 2, 
+                enemy_data['angle'],
+                enemy_ai_level
+            )
             enemies.append(enemy)
 
         # 创建基地

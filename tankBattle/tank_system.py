@@ -1,13 +1,28 @@
 """
 坦克系统模块
 包含玩家坦克和敌方坦克类
+支持智能AI系统集成
 """
 import pygame
 import math
 import os
 import random
+import logging
 from config import PLAYER_CONFIG, ENEMY_CONFIG, PLAYER_BULLET_CONFIG, ENEMY_BULLET_CONFIG
 from bullet_system import Bullet
+
+# AI系统集成
+try:
+    from ai.integration import create_smart_tank, get_ai_capabilities
+    AI_AVAILABLE = True
+    logging.info("✓ AI系统可用")
+except ImportError as e:
+    AI_AVAILABLE = False
+    logging.warning(f"✗ AI系统不可用: {e}")
+    def create_smart_tank(tank_instance, ai_level='basic'):
+        return None
+    def get_ai_capabilities():
+        return None
 
 class BaseTank(pygame.sprite.Sprite):
     """坦克基类"""
@@ -29,7 +44,12 @@ class BaseTank(pygame.sprite.Sprite):
         self.color = config['COLOR']
 
         # 子弹配置
-        self.bullet_type = bullet_config['TYPE']
+        if 'TYPE' in bullet_config:
+            # 兼容旧配置格式
+            self.bullet_type = bullet_config['TYPE']
+        else:
+            # 新配置格式
+            self.bullet_type = bullet_config.get('DEFAULT_TYPE', 'NORMAL')
 
         # 游戏状态
         self.rect = pygame.Rect(x, y, *self.size)
@@ -188,8 +208,12 @@ class BaseTank(pygame.sprite.Sprite):
             by = self.y + self.size[1] // 2 + 18 * math.sin(self.angle)
 
             self.reload = self.reload_time
-            return Bullet(bx, by, self.angle, self.get_owner(), self.bullet_type)
+            return Bullet(bx, by, self.angle, self.get_owner(), self.bullet_type, self)
         return None
+
+    def can_fire(self):
+        """检查是否可以射击"""
+        return self.reload == 0
 
     def update(self):
         """更新坦克状态"""
@@ -253,8 +277,11 @@ class PlayerTank(BaseTank):
     def __init__(self, x, y, angle=0):
         super().__init__(x, y, angle, PLAYER_CONFIG, PLAYER_BULLET_CONFIG)
 
-        # 可选择的子弹类型
-        self.available_bullet_types = ['NORMAL', 'PIERCING', 'EXPLOSIVE', 'RAPID', 'HEAVY', 'BARRICADE']
+        # 从配置获取可用子弹类型
+        self.available_bullet_types = PLAYER_BULLET_CONFIG.get('AVAILABLE_TYPES', ['NORMAL'])
+        self.unlimited_ammo = PLAYER_BULLET_CONFIG.get('UNLIMITED_AMMO', False)
+        self.free_switching = PLAYER_BULLET_CONFIG.get('FREE_SWITCHING', False)
+        
         self.current_bullet_index = 0
         self.bullet_type = self.available_bullet_types[self.current_bullet_index]
 
@@ -269,7 +296,7 @@ class PlayerTank(BaseTank):
         self.rapid_fire_timer = 0
         self.rapid_fire_cooldown = 5  # 快速射击间隔
 
-        # 掩体弹冷却机制
+        # 掩体弹冷却机制（仅在非自由切换模式下生效）
         self.barricade_cooldown = 0
 
     def get_owner(self):
@@ -291,24 +318,34 @@ class PlayerTank(BaseTank):
         """发射子弹"""
         bullets = []
 
-        # 检查掩体弹的特殊冷却
-        if self.bullet_type == 'BARRICADE':
-            if self.barricade_cooldown > 0:
-                return bullets  # 掩体弹还在冷却中
-            else:
-                # 设置掩体弹冷却
-                from config import BULLET_TYPES
-                self.barricade_cooldown = BULLET_TYPES['BARRICADE']['COOLDOWN']
-
-        # 检查射击冷却
-        can_fire = False
-        if self.bullet_type == 'RAPID' or self.rapid_fire_mode:
-            if self.rapid_fire_timer <= 0:
-                can_fire = True
-                self.rapid_fire_timer = self.rapid_fire_cooldown
-        else:
+        # 如果是自由切换模式，跳过大部分冷却检查
+        if self.free_switching:
+            # 只检查基础射击冷却
             if self.reload == 0:
                 can_fire = True
+                self.reload = self.reload_time
+            else:
+                can_fire = False
+        else:
+            # 原有的冷却检查逻辑
+            # 检查掩体弹的特殊冷却
+            if self.bullet_type == 'BARRICADE':
+                if self.barricade_cooldown > 0:
+                    return bullets  # 掩体弹还在冷却中
+                else:
+                    # 设置掩体弹冷却
+                    from config import BULLET_TYPES
+                    self.barricade_cooldown = BULLET_TYPES['BARRICADE']['COOLDOWN']
+
+            # 检查射击冷却
+            can_fire = False
+            if self.bullet_type == 'RAPID' or self.rapid_fire_mode:
+                if self.rapid_fire_timer <= 0:
+                    can_fire = True
+                    self.rapid_fire_timer = self.rapid_fire_cooldown
+            else:
+                if self.reload == 0:
+                    can_fire = True
                 self.reload = self.reload_time
 
         if not can_fire and self.bullet_type != 'BARRICADE':
@@ -324,11 +361,11 @@ class PlayerTank(BaseTank):
             for angle in angles:
                 bullet_x = self.x + self.size[0] // 2 + 18 * math.cos(angle)
                 bullet_y = self.y + self.size[1] // 2 + 18 * math.sin(angle)
-                bullet = Bullet(bullet_x, bullet_y, angle, self.get_owner(), self.bullet_type)
+                bullet = Bullet(bullet_x, bullet_y, angle, self.get_owner(), self.bullet_type, self)
                 bullets.append(bullet)
         else:
             # 普通射击
-            bullet = Bullet(bx, by, self.angle, self.get_owner(), self.bullet_type)
+            bullet = Bullet(bx, by, self.angle, self.get_owner(), self.bullet_type, self)
             bullets.append(bullet)
 
         return bullets
@@ -445,10 +482,17 @@ class PlayerTank(BaseTank):
         pass
 
 class EnemyTank(BaseTank):
-    """敌方坦克"""
-    def __init__(self, x, y, angle=0):
+    """敌方坦克 - 支持智能AI系统"""
+    def __init__(self, x, y, angle=0, ai_level='auto'):
         super().__init__(x, y, angle, ENEMY_CONFIG, ENEMY_BULLET_CONFIG)
-        # AI 相关属性
+        
+        # 子弹类型管理
+        self.base_bullet_types = ENEMY_BULLET_CONFIG.get('BASE_AVAILABLE_TYPES', ['NORMAL']).copy()
+        self.available_bullet_types = self.base_bullet_types.copy()
+        self.special_bullet_effects = {}  # 存储特殊子弹效果: {bullet_type: remaining_shots}
+        self.current_bullet_index = 0
+        
+        # 原有AI 相关属性（保持兼容性）
         self.ai_target = None
         self.ai_state = 'seek_player'  # seek_player, attack, avoid_obstacle, destroy_obstacle
         self.ai_mode = 'attack'  # 默认攻击模式，鼓励积极推进
@@ -474,16 +518,289 @@ class EnemyTank(BaseTank):
         self._locked_passage_goal = None      # 通过该通道的目标点（通道另一侧的一点）
         self._locked_passage_timeout = 300    # 锁定超时（帧）
 
+        # 智能AI系统集成
+        self.ai_level = ai_level
+        self.smart_ai = None  # 智能AI实例
+        self.ai_enabled = False  # AI是否启用
+        self.fallback_mode = False  # 是否启用回退模式
+        
+        # 初始化智能AI系统
+        self._initialize_smart_ai()
+
+    def _initialize_smart_ai(self):
+        """初始化智能AI系统"""
+        if AI_AVAILABLE:
+            try:
+                self.smart_ai = create_smart_tank(self, self.ai_level)
+                if self.smart_ai is not None:
+                    self.ai_enabled = True
+                    logging.info(f"✓ 坦克({self.x}, {self.y})智能AI启用成功，级别: {self.ai_level}")
+                else:
+                    self.ai_enabled = False
+                    self.fallback_mode = True
+                    logging.info(f"○ 坦克({self.x}, {self.y})使用基础AI（回退模式）")
+            except Exception as e:
+                self.ai_enabled = False
+                self.fallback_mode = True
+                logging.warning(f"⚠ 坦克({self.x}, {self.y})智能AI初始化失败，使用基础AI: {e}")
+        else:
+            self.ai_enabled = False
+            self.fallback_mode = True
+            logging.info(f"○ 坦克({self.x}, {self.y})AI系统不可用，使用基础AI")
+
+    def switch_ai_level(self, new_level):
+        """切换AI级别"""
+        if self.ai_level != new_level:
+            self.ai_level = new_level
+            logging.info(f"坦克AI级别切换为: {new_level}")
+            self._initialize_smart_ai()
+
+    def get_ai_status(self):
+        """获取AI状态"""
+        return {
+            'ai_enabled': self.ai_enabled,
+            'ai_level': self.ai_level,
+            'fallback_mode': self.fallback_mode,
+            'smart_ai_available': self.smart_ai is not None
+        }
+
 
 
     def get_owner(self):
         return 'enemy'
+    
+    def grant_special_bullet_effect(self, effect_type, shots_count=10):
+        """授予特殊子弹效果"""
+        effect_to_bullet_map = {
+            'piercing_ammo': 'PIERCING',
+            'explosive_ammo': 'EXPLOSIVE',
+            'multi_shot': 'RAPID',
+            'wall_destroyer': 'HEAVY'
+        }
+        
+        bullet_type = effect_to_bullet_map.get(effect_type)
+        if bullet_type:
+            self.special_bullet_effects[bullet_type] = shots_count
+            if bullet_type not in self.available_bullet_types:
+                self.available_bullet_types.append(bullet_type)
+            print(f"AI坦克获得特殊子弹效果: {effect_type} -> {bullet_type} ({shots_count}发)")
+    
+    def select_best_bullet_type(self, target_distance=None, target_type='player'):
+        """AI智能选择最佳子弹类型"""
+        # 如果有特殊子弹，优先使用
+        for bullet_type, remaining_shots in self.special_bullet_effects.items():
+            if remaining_shots > 0:
+                if target_distance:
+                    # 根据距离选择合适的特殊子弹
+                    if bullet_type == 'PIERCING' and target_distance > 200:
+                        self.bullet_type = bullet_type
+                        return bullet_type
+                    elif bullet_type == 'EXPLOSIVE' and target_distance < 150:
+                        self.bullet_type = bullet_type
+                        return bullet_type
+                    elif bullet_type == 'RAPID':
+                        self.bullet_type = bullet_type
+                        return bullet_type
+                    elif bullet_type == 'HEAVY' and target_type == 'wall':
+                        self.bullet_type = bullet_type
+                        return bullet_type
+                else:
+                    # 没有距离信息时，使用第一个可用的特殊子弹
+                    self.bullet_type = bullet_type
+                    return bullet_type
+        
+        # 没有特殊子弹，使用默认子弹
+        self.bullet_type = self.base_bullet_types[0]
+        return self.bullet_type
+    
+    def fire(self):
+        """AI坦克射击"""
+        if self.reload > 0:
+            return None
+        
+        # 如果使用特殊子弹，减少剩余次数
+        if self.bullet_type in self.special_bullet_effects:
+            if self.special_bullet_effects[self.bullet_type] > 0:
+                self.special_bullet_effects[self.bullet_type] -= 1
+                if self.special_bullet_effects[self.bullet_type] == 0:
+                    # 特殊子弹用完，从可用列表中移除
+                    if self.bullet_type in self.available_bullet_types:
+                        self.available_bullet_types.remove(self.bullet_type)
+                    del self.special_bullet_effects[self.bullet_type]
+                    # 切换回默认子弹
+                    self.bullet_type = self.base_bullet_types[0]
+                    print(f"AI坦克特殊子弹用完，切换回: {self.bullet_type}")
+            else:
+                # 不应该发生，但为了安全起见
+                self.bullet_type = self.base_bullet_types[0]
+                return None
+        
+        # 设置射击冷却
+        self.reload = self.reload_time
+        
+        # 计算子弹发射位置
+        bx = self.x + self.size[0] // 2 + self.turret_length * math.cos(self.angle)
+        by = self.y + self.size[1] // 2 + self.turret_length * math.sin(self.angle)
+        
+        # 创建子弹
+        from bullet_system import Bullet
+        return Bullet(bx, by, self.angle, self.get_owner(), self.bullet_type, self)
 
     def update_ai(self, player, walls, bullet_manager, environment_manager=None):
-        """更新AI行为 - 优化的智能算法"""
+        """更新AI行为 - 智能AI系统集成"""
         if not player or player.health <= 0:
             return
 
+        # 尝试使用智能AI系统
+        if self.ai_enabled and self.smart_ai is not None:
+            try:
+                # 使用智能AI系统
+                bullet = self._update_smart_ai(player, walls, bullet_manager, environment_manager)
+                if bullet:
+                    bullet_manager.add_bullet(bullet)
+                return
+            except Exception as e:
+                logging.warning(f"智能AI执行失败: {e}")
+                # 切换到回退模式
+                self.ai_enabled = False
+                self.fallback_mode = True
+
+        # 使用原有AI系统（回退模式）
+        self._update_legacy_ai(player, walls, bullet_manager, environment_manager)
+
+    def _update_smart_ai(self, player, walls, bullet_manager, environment_manager):
+        """使用智能AI系统更新 - 增强版本，包含完整游戏状态"""
+        # 计算到玩家的距离
+        player_pos = (player.x + player.size[0]//2, player.y + player.size[1]//2)
+        tank_pos = (self.x + self.size[0]//2, self.y + self.size[1]//2)
+        distance = math.sqrt((tank_pos[0] - player_pos[0])**2 + (tank_pos[1] - player_pos[1])**2)
+        
+        # AI智能选择子弹类型（基于当前可用子弹）
+        self.select_best_bullet_type(distance, 'player')
+        
+        # 收集所有AI坦克信息（避免友伤）
+        all_enemies = []
+        if hasattr(environment_manager, 'get_all_ai_tanks'):
+            all_enemies = environment_manager.get_all_ai_tanks()
+        
+        # 收集特殊墙体信息
+        special_walls = []
+        if hasattr(environment_manager, 'get_special_walls'):
+            special_walls = environment_manager.get_special_walls()
+        
+        # 准备扩展的游戏状态数据
+        game_state = {
+            'player': player,
+            'walls': walls,
+            'environment_manager': environment_manager,
+            'bullet_manager': bullet_manager,
+            'all_enemies': all_enemies,
+            'special_walls': special_walls,
+            'tank_position': tank_pos,
+            'player_position': player_pos,
+            'distance_to_player': distance,
+            'available_bullets': getattr(self, 'available_bullet_types', ['NORMAL']),
+            'current_bullet': getattr(self, 'bullet_type', 'NORMAL'),
+            'tank_health': self.health,
+            'player_health': player.health
+        }
+        
+        # 获取AI决策
+        decision = self.smart_ai.get_decision(game_state)
+        
+        # 执行AI决策并收集反馈信息
+        bullet = None
+        action_feedback = {
+            'hit_target': False,
+            'hit_friendly': False,
+            'target_type': 'none',
+            'target_distance': distance,
+            'aiming_accuracy': 0.0,
+            'target_selection_score': 0.0,
+            'avoided_friendly_fire': False,
+            'optimal_distance': 100 <= distance <= 250
+        }
+        
+        if decision:
+            # 执行移动
+            if decision.get('move_forward', 0) != 0:
+                old_pos = (self.x, self.y)
+                self.move(decision['move_forward'], walls)
+                new_pos = (self.x, self.y)
+                
+                # 检查移动是否有效
+                if old_pos != new_pos:
+                    action_feedback['movement_successful'] = True
+            
+            # 执行旋转
+            if decision.get('rotate', 0) != 0:
+                old_angle = self.angle
+                self.rotate(decision['rotate'])
+                
+                # 计算瞄准精度
+                target_angle = math.atan2(player_pos[1] - tank_pos[1], player_pos[0] - tank_pos[0])
+                angle_diff = abs((self.angle - target_angle + math.pi) % (2 * math.pi) - math.pi)
+                action_feedback['aiming_accuracy'] = max(0, 1.0 - angle_diff / math.pi)
+            
+            # 执行射击
+            if decision.get('fire', False):
+                # 检查射击目标合理性
+                target_angle = math.atan2(player_pos[1] - tank_pos[1], player_pos[0] - tank_pos[0])
+                angle_diff = abs((self.angle - target_angle + math.pi) % (2 * math.pi) - math.pi)
+                
+                # 检查是否会误击友方
+                friendly_fire_risk = self._check_friendly_fire_risk(all_enemies, target_angle)
+                
+                if friendly_fire_risk:
+                    action_feedback['avoided_friendly_fire'] = True
+                    # 不射击，避免友伤
+                else:
+                    bullet = self.fire()
+                    if bullet:
+                        # 记录射击信息用于后续反馈
+                        bullet.feedback_info = action_feedback
+                        
+                        # 评估目标选择分数
+                        if angle_diff < 0.2:  # 较好的瞄准
+                            action_feedback['target_selection_score'] = 1.0
+                            action_feedback['target_type'] = 'player'
+                        elif angle_diff < 0.5:
+                            action_feedback['target_selection_score'] = 0.5
+        
+        # 提供训练反馈给强化学习系统
+        if hasattr(self.smart_ai, 'rl_agent') and self.smart_ai.rl_agent:
+            game_state.update(action_feedback)
+            self.smart_ai._update_training(game_state, player, walls, bullet_manager, environment_manager)
+        
+        return bullet
+    
+    def _check_friendly_fire_risk(self, all_enemies, target_angle):
+        """检查射击是否有友军伤害风险"""
+        tank_pos = (self.x + self.size[0]//2, self.y + self.size[1]//2)
+        
+        for enemy in all_enemies:
+            if enemy == self or enemy.health <= 0:
+                continue
+            
+            enemy_pos = (enemy.x + enemy.size[0]//2, enemy.y + enemy.size[1]//2)
+            
+            # 计算到友军的距离和角度
+            dx = enemy_pos[0] - tank_pos[0]
+            dy = enemy_pos[1] - tank_pos[1]
+            distance = math.sqrt(dx*dx + dy*dy)
+            angle_to_enemy = math.atan2(dy, dx)
+            
+            # 检查友军是否在射击路径上
+            angle_diff = abs((target_angle - angle_to_enemy + math.pi) % (2 * math.pi) - math.pi)
+            
+            # 如果友军在射击方向30度内且距离小于200像素，认为有风险
+            if angle_diff < math.pi/6 and distance < 200:
+                return True
+        
+        return False
+
+    def _update_legacy_ai(self, player, walls, bullet_manager, environment_manager=None):
+        """使用原有AI系统更新（兼容性保证）"""
         # 缓存墙体引用（供射击前的隔离墙校验使用）
         self._cached_walls = walls
 
