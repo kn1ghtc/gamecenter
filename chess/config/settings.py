@@ -1,0 +1,75 @@
+# 国际象棋项目配置
+import os
+
+# 游戏配置
+BOARD_SIZE = 8
+SQUARE_SIZE = 80
+WINDOW_WIDTH = BOARD_SIZE * SQUARE_SIZE + 400  # 预留侧边栏空间
+WINDOW_HEIGHT = BOARD_SIZE * SQUARE_SIZE + 100
+FPS = 60
+
+# 颜色配置 (RGB)
+COLORS = {
+    'WHITE': (255, 255, 255),
+    'BLACK': (0, 0, 0),
+    'LIGHT_SQUARE': (240, 217, 181),
+    'DARK_SQUARE': (181, 136, 99),
+    'HIGHLIGHT': (255, 255, 0, 128),
+    'MOVE_HINT': (0, 255, 0, 100),
+    'DANGER': (255, 0, 0, 100),
+    'BACKGROUND': (50, 50, 50),
+    'UI_PANEL': (70, 70, 70),
+    'TEXT': (255, 255, 255),
+    'BUTTON': (100, 100, 100),
+    'BUTTON_HOVER': (130, 130, 130)
+}
+
+# AI 配置
+AI_LEVELS = {
+    'EASY': {
+        'type': 'minimax',
+        'depth': 3,
+        'time_limit': 1.0
+    },
+    'MEDIUM': {
+        'type': 'neural_network',
+        'model_path': 'models/chess_nn.pth',
+        'time_limit': 2.0
+    },
+    'HARD': {
+        'type': 'gpt',
+        'model': 'gpt-4o-mini',
+        'time_limit': 5.0
+    }
+}
+
+# 数据库配置
+import os as _os
+_current_dir = _os.path.dirname(_os.path.abspath(__file__))
+_chess_dir = _os.path.dirname(_current_dir)
+DATABASE_PATH = _os.path.join(_chess_dir, 'data', 'chess_games.db')
+
+# OpenAI 配置
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+# 训练配置
+TRAINING_CONFIG = {
+    'batch_size': 64,
+    'learning_rate': 0.001,
+    'epochs': 100,
+    'save_interval': 10,
+    'device': 'cuda' if os.path.exists('torch') else 'cpu'
+}
+
+# 文件路径
+PATHS = {
+    'models': 'training/models/',
+    'data': 'data/',
+    'assets': 'assets/',
+    'logs': 'data/logs/',
+    'games': 'data/games/'
+}
+
+# 确保目录存在
+for path in PATHS.values():
+    os.makedirs(path, exist_ok=True)

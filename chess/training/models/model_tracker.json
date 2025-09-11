@@ -1,0 +1,20 @@
+{
+  "best_model_path": null,
+  "best_win_rate": 0.0,
+  "best_model_games": 0,
+  "current_model_performance": 0.0,
+  "training_history": [
+    {
+      "game_num": 20,
+      "win_rate": 0.0,
+      "model_updates": 0,
+      "timestamp": "2025-09-11T12:31:59.980882"
+    }
+  ],
+  "path": "D:\\pyproject\\gamecenter\\chess\\training\\models\\ml_ai_model.pth",
+  "filename": "ml_ai_model.pth",
+  "win_rate": 0.0,
+  "games": 0,
+  "stats_file": null,
+  "model_updates": 0
+}
