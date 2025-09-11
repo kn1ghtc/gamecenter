@@ -10,25 +10,19 @@ project_root = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, project_root)
 
 try:
-    # 修复相对导入问题
-    from config.settings import *
-    from game.game_state import ChessGameState, GameState, GameMode
-    from game.pieces import PieceColor
-    from ai.basic_ai import BasicAI
-    from ai.ml_ai import ChessMLAI
-    from ai.gpt_ai import GPTChessAI
-    from ui.board_renderer import ChessBoardRenderer, AnimationManager
+    # 先加载配置
+    from config.settings import PATHS, DATABASE_PATH
     
-    import pygame
-    from typing import Optional, Dict, List
-    
-    # 直接导入ChessUI类
+    # 仅按需导入
     from ui.gui import ChessUI
+    import pygame
     
     def main():
         """主函数"""
         print("🏆 Starting Professional Chess Game...")
         print("Loading game components...")
+        print(f"📁 Models: {PATHS['models']}")
+        print(f"🗄️ Database: {DATABASE_PATH}")
         
         try:
             chess_game = ChessUI()

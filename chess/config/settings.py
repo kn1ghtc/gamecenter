@@ -28,12 +28,13 @@ COLORS = {
 AI_LEVELS = {
     'EASY': {
         'type': 'minimax',
-        'depth': 3,
+        'depth': 5,
         'time_limit': 1.0
     },
     'MEDIUM': {
         'type': 'neural_network',
-        'model_path': 'models/chess_nn.pth',
+        # 统一到训练导出的默认模型路径（由 PATHS['models'] 决定）
+        'model_path': None,  # 启动时用 PATHS['models']/ml_ai_model.pth 填充
         'time_limit': 2.0
     },
     'HARD': {
@@ -47,6 +48,8 @@ AI_LEVELS = {
 import os as _os
 _current_dir = _os.path.dirname(_os.path.abspath(__file__))
 _chess_dir = _os.path.dirname(_current_dir)
+# 仓库根目录（.. 上溯一层到 gamecenter，再上溯到仓库根）
+_repo_root = _os.path.dirname(_os.path.dirname(_chess_dir))
 DATABASE_PATH = _os.path.join(_chess_dir, 'data', 'chess_games.db')
 
 # OpenAI 配置
@@ -58,18 +61,26 @@ TRAINING_CONFIG = {
     'learning_rate': 0.001,
     'epochs': 100,
     'save_interval': 10,
-    'device': 'cuda' if os.path.exists('torch') else 'cpu'
+    # 延后到使用处根据 torch.cuda.is_available() 决定
+    'device': 'auto'
 }
 
 # 文件路径
 PATHS = {
-    'models': 'training/models/',
-    'data': 'data/',
-    'assets': 'assets/',
-    'logs': 'data/logs/',
-    'games': 'data/games/'
+    # 统一为绝对路径，避免依赖进程当前目录
+    'models': _os.path.join(_chess_dir, 'training', 'models'),
+    'data': _os.path.join(_chess_dir, 'data'),
+    'assets': _os.path.join(_repo_root, 'assets'),  # 仓库根下的 assets
+    'logs': _os.path.join(_chess_dir, 'data', 'logs'),
+    'games': _os.path.join(_chess_dir, 'data', 'games')
 }
 
 # 确保目录存在
 for path in PATHS.values():
     os.makedirs(path, exist_ok=True)
+# 确保数据库目录存在
+os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
+
+# 回填 MEDIUM 模型路径（若未显式指定）
+if AI_LEVELS['MEDIUM'].get('model_path') in (None, ''):
+    AI_LEVELS['MEDIUM']['model_path'] = os.path.join(PATHS['models'], 'ml_ai_model.pth')

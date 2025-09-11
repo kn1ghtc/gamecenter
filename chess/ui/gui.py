@@ -6,6 +6,7 @@ import pygame
 import sys
 import os
 from typing import Optional, Dict, List
+from datetime import datetime, timedelta
 
 # 添加当前目录到路径
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,6 +18,14 @@ from game.game_state import ChessGameState, GameState, GameMode
 from game.pieces import PieceColor
 from ai.ai_factory import ai_factory
 from ui.board_renderer import ChessBoardRenderer, AnimationManager
+from data.database import ChessDatabase
+from game.board import ChessBoard
+
+try:
+    # 备用直连ML模型（当ai_factory不可用或未实现MEDIUM时）
+    from ai.ml_ai import ChessMLAI
+except Exception:
+    ChessMLAI = None
 
 class ChessUI:
     """国际象棋用户界面"""
@@ -24,36 +33,49 @@ class ChessUI:
     def __init__(self):
         pygame.init()
         pygame.font.init()
-        
+
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("🏆 Professional Chess Game")
         self.clock = pygame.time.Clock()
-        
+
         # 游戏组件
         self.game_state = ChessGameState()
         self.board_renderer = ChessBoardRenderer()
         self.animation_manager = AnimationManager()
-        
+
         # AI对手（延迟加载）
         self.ai_opponents = {
             'EASY': None,    # BasicAI
-            'MEDIUM': None,  # ChessMLAI  
+            'MEDIUM': None,  # ChessMLAI
             'HARD': None     # GPTChessAI
         }
-        
+
         # UI组件
         self.fonts = self._init_fonts()
         self.buttons = {}
         self.panels = {}
         self._init_ui_components()
-        
+
         # 事件处理
         self.game_state.add_observer(self._on_game_event)
-        
-        # 音效（可选）
+
+        # 资源与状态
         self.sounds = self._load_sounds()
-        
+        # 数据库（用于保存对局与训练样本）
+        try:
+            self.db = ChessDatabase(DATABASE_PATH)
+        except Exception:
+            # 回退：尝试使用相对路径
+            chess_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            fallback_db = os.path.join(chess_dir, "data", "chess_games.db")
+            os.makedirs(os.path.dirname(fallback_db), exist_ok=True)
+            self.db = ChessDatabase(fallback_db)
+
+        # 运行标志
         self.running = True
+
+        # 主菜单与游戏按钮
+        # 菜单选择按钮保持原先的大致位置
     
     def _init_fonts(self) -> Dict:
         """初始化字体"""
@@ -64,48 +86,65 @@ class ChessUI:
             'small': pygame.font.Font(None, 18)
         }
     
+
     def _init_ui_components(self):
-        """初始化UI组件"""
-        # 主菜单按钮
-        button_width = 200
-        button_height = 50
-        button_x = WINDOW_WIDTH - button_width - 20
-        
-        self.buttons = {
-            'vs_human': pygame.Rect(button_x, 120, button_width, button_height),
-            'vs_ai_easy': pygame.Rect(button_x, 190, button_width, button_height),
-            'vs_ai_medium': pygame.Rect(button_x, 260, button_width, button_height),
-            'vs_ai_hard': pygame.Rect(button_x, 330, button_width, button_height),
-            
-            # 游戏界面按钮（调整布局以适应4个按钮）
-            'new_game': pygame.Rect(button_x, 400, button_width, 30),
-            'undo': pygame.Rect(button_x, 440, button_width // 2 - 5, 30),
-            'pause': pygame.Rect(button_x + button_width // 2 + 5, 440, button_width // 2 - 5, 30),
-            'menu': pygame.Rect(button_x, 480, button_width, 30)
-        }
-        
-        # 面板区域
+        # 初始化面板与按钮，确保先有 captured 面板再计算按钮位置
         self.panels = {
             'board': pygame.Rect(30, 30, BOARD_SIZE * SQUARE_SIZE, BOARD_SIZE * SQUARE_SIZE),
             'info': pygame.Rect(BOARD_SIZE * SQUARE_SIZE + 60, 30, 320, 200),
             'moves': pygame.Rect(BOARD_SIZE * SQUARE_SIZE + 60, 250, 320, 200),
             'captured': pygame.Rect(BOARD_SIZE * SQUARE_SIZE + 60, 470, 320, 100)
         }
+
+        # 先清空并设置菜单按钮（主菜单显示用）
+        self.buttons = {}
+        menu_button_width = 200
+        menu_button_x = WINDOW_WIDTH - menu_button_width - 20
+        self.buttons['vs_human'] = pygame.Rect(menu_button_x, 120, menu_button_width, 50)
+        self.buttons['vs_ai_easy'] = pygame.Rect(menu_button_x, 190, menu_button_width, 50)
+        self.buttons['vs_ai_medium'] = pygame.Rect(menu_button_x, 260, menu_button_width, 50)
+        self.buttons['vs_ai_hard'] = pygame.Rect(menu_button_x, 330, menu_button_width, 50)
+
+        # 游戏界面按钮：两排布局，放在 captured 面板下方
+        button_height = 36
+        base_y = self.panels['captured'].bottom + 20
+        gap_x = 16
+        gap_y = 10
+
+        # 两列宽度计算：按钮不遮挡右侧边距
+        total_width = 320  # 与右侧面板统一宽度
+        col_width = (total_width - gap_x) // 2
+        left_x = self.panels['captured'].x
+        right_x = left_x + col_width + gap_x
+
+        # 第一排：New Game | Menu
+        self.buttons['new_game'] = pygame.Rect(left_x, base_y, col_width, button_height)
+        self.buttons['menu'] = pygame.Rect(right_x, base_y, col_width, button_height)
+        # 第二排：Undo | Pause
+        row2_y = base_y + button_height + gap_y
+        self.buttons['undo'] = pygame.Rect(left_x, row2_y, col_width, button_height)
+        self.buttons['pause'] = pygame.Rect(right_x, row2_y, col_width, button_height)
     
     def _load_sounds(self) -> Dict:
-        """加载音效"""
+        """加载音效（优先加载本地 OGG 文件）"""
         sounds = {}
-        sound_dir = os.path.join(os.path.dirname(__file__), "..", "assets", "sounds")
-        
-        # 如果有音效文件，加载它们
+        sound_dir = os.path.join(PATHS['assets'], "sounds")
+        move_path = os.path.join(sound_dir, "move.ogg")
+        capture_path = os.path.join(sound_dir, "capture.ogg")
+        check_path = os.path.join(sound_dir, "check.ogg")
+
         try:
             pygame.mixer.init()
-            # sounds['move'] = pygame.mixer.Sound(os.path.join(sound_dir, "move.wav"))
-            # sounds['capture'] = pygame.mixer.Sound(os.path.join(sound_dir, "capture.wav"))
-            # sounds['check'] = pygame.mixer.Sound(os.path.join(sound_dir, "check.wav"))
-        except:
+            if os.path.exists(move_path):
+                sounds['move'] = pygame.mixer.Sound(move_path)
+            if os.path.exists(capture_path):
+                sounds['capture'] = pygame.mixer.Sound(capture_path)
+            if os.path.exists(check_path):
+                sounds['check'] = pygame.mixer.Sound(check_path)
+        except Exception as e:
+            # 声音不是关键路径，失败时静默
             pass
-        
+
         return sounds
     
     def _on_game_event(self, event: str, data: Dict):
@@ -123,6 +162,11 @@ class ChessUI:
                 self.animation_manager.add_move_animation(piece, from_pos, to_pos)
         
         elif event == 'game_ended':
+            # 保存对局并提示
+            try:
+                self._save_game_to_db(data)
+            except Exception as e:
+                print(f"⚠️ 保存对局到数据库失败: {e}")
             self._show_game_over_message(data)
     
     def run(self):
@@ -259,7 +303,23 @@ class ChessUI:
         # 预加载AI（显示加载进度）
         if difficulty not in self.ai_opponents or self.ai_opponents[difficulty] is None:
             print(f"🔄 正在加载{difficulty}级AI...")
-            ai = ai_factory.create_ai(difficulty)
+            ai = None
+            try:
+                # 优先通过工厂创建
+                ai = ai_factory.create_ai(difficulty)
+            except Exception as e:
+                print(f"⚠️ AI工厂创建失败: {e}")
+                ai = None
+
+            # MEDIUM 使用训练好的ML模型作为回退
+            if (ai is None or not hasattr(ai, 'get_best_move')) and difficulty == 'MEDIUM' and ChessMLAI:
+                try:
+                    model_path = AI_LEVELS['MEDIUM'].get('model_path')
+                    print(f"📦 直接加载ML模型: {model_path}")
+                    ai = ChessMLAI(model_path)
+                except Exception as e:
+                    print(f"⚠️ ML模型加载失败: {e}")
+                    ai = None
             if ai:
                 self.ai_opponents[difficulty] = ai
                 print(f"✅ {difficulty}级AI加载完成")
@@ -273,6 +333,145 @@ class ChessUI:
         
         # 开始游戏
         self.game_state.start_new_game(GameMode.HUMAN_VS_AI, difficulty)
+
+    # --- 数据与持久化 ---
+    def _save_game_to_db(self, data: Dict):
+        """保存当前对局到数据库（用于后续训练）"""
+        end_time_dt = datetime.now()
+        game_info = self.game_state.get_game_info()
+        duration_sec = float(game_info.get('game_time', 0.0) or 0.0)
+        start_time_dt = end_time_dt - timedelta(seconds=duration_sec)
+
+        # 结果映射
+        result = data.get('result', 'draw')
+        if result not in ('white_wins', 'black_wins', 'draw'):
+            # 兼容其他标记
+            if result in ('white', 'White'):
+                result = 'white_wins'
+            elif result in ('black', 'Black'):
+                result = 'black_wins'
+            else:
+                result = 'draw'
+
+        total_moves = len(self.game_state.board.move_history)
+        final_position = self._encode_board_simple_fen()
+
+        # 玩家信息（尽量推断）
+        mode = self.game_state.mode
+        ai_level = self.game_state.ai_level if mode == GameMode.HUMAN_VS_AI else None
+        white_type = 'human'
+        black_type = 'human'
+        if mode == GameMode.HUMAN_VS_AI:
+            # 简化：默认白方为人类、黑方为AI（具体方位可根据项目需求调整）
+            white_type = 'human'
+            black_type = 'ai'
+
+        game_data = {
+            'start_time': start_time_dt.isoformat(timespec='seconds'),
+            'end_time': end_time_dt.isoformat(timespec='seconds'),
+            'white_player': 'Human' if white_type == 'human' else f"AI-{ai_level or ''}",
+            'black_player': 'Human' if black_type == 'human' else f"AI-{ai_level or ''}",
+            'white_type': white_type,
+            'black_type': black_type,
+            'ai_level': ai_level,
+            'result': result,
+            'total_moves': total_moves,
+            'game_duration': duration_sec,
+            'pgn': '',  # 可后续替换为真实PGN
+            'final_position': final_position
+        }
+
+        game_id = self.db.save_game(game_data)
+
+        # 使用临时棋盘回放每一步，以获取 position_after（简化FEN）
+        temp_board = ChessBoard()
+
+        # 保存每一步（尽力填充字段）
+        for idx, mv in enumerate(self.game_state.board.move_history, start=1):
+            try:
+                if isinstance(mv, dict):
+                    from_pos = mv.get('from')
+                    to_pos = mv.get('to')
+                    notation = mv.get('notation', None)
+                    player_color = mv.get('player') or ( 'white' if idx % 2 == 1 else 'black')
+                else:
+                    # 对象形式的兼容
+                    from_pos = getattr(mv, 'from_pos', None)
+                    to_pos = getattr(mv, 'to_pos', None)
+                    notation = getattr(mv, 'notation', None)
+                    player_color = getattr(mv, 'player_color', ('white' if idx % 2 == 1 else 'black'))
+
+                from_sq = self._board_pos_to_square(from_pos) if from_pos else ''
+                to_sq = self._board_pos_to_square(to_pos) if to_pos else ''
+
+                # 终局棋盘获取到达后的棋子类型（尽力而为）
+                piece = self.game_state.board.get_piece_at(to_pos) if to_pos else None
+                piece_type = piece.piece_type.name if piece else ''
+
+                # 在临时棋盘上回放一步并记录该步后的简化FEN
+                position_after_simple = ''
+                try:
+                    if from_pos and to_pos:
+                        temp_board.make_move(from_pos, to_pos)
+                        position_after_simple = self._encode_board_simple_fen_from_board(temp_board)
+                except Exception:
+                    position_after_simple = ''
+
+                self.db.save_move(game_id, {
+                    'move_number': idx,
+                    'player_color': player_color,
+                    'from_square': from_sq,
+                    'to_square': to_sq,
+                    'piece_type': piece_type,
+                    'captured_piece': None,
+                    'special_move': None,
+                    'notation': notation or f"{from_sq}-{to_sq}",
+                    'evaluation': None,
+                    'think_time': None,
+                    'position_after': position_after_simple
+                })
+            except Exception as e:
+                print(f"⚠️ 保存移动失败（第{idx}步）: {e}")
+
+    def _board_pos_to_square(self, pos):
+        """将(行,列)坐标转换为代数记谱（a1..h8），假设(0,0)=a8"""
+        try:
+            row, col = pos
+            file_char = chr(ord('a') + col)
+            rank_char = str(8 - row)
+            return f"{file_char}{rank_char}"
+        except Exception:
+            return ''
+
+    def _encode_board_simple_fen(self) -> str:
+        """生成简化FEN风格的棋盘编码（与训练侧兼容）"""
+        pieces_list = []
+        try:
+            for row in range(8):
+                for col in range(8):
+                    piece = self.game_state.board.get_piece_at((row, col))
+                    if piece:
+                        color = 'W' if piece.color.name == 'WHITE' else 'B'
+                        piece_type = piece.piece_type.name[0]
+                        pieces_list.append(f"{row}{col}{color}{piece_type}")
+        except Exception:
+            pass
+        return ';'.join(pieces_list)
+
+    def _encode_board_simple_fen_from_board(self, board: ChessBoard) -> str:
+        """基于给定棋盘生成简化FEN"""
+        pieces_list = []
+        try:
+            for row in range(8):
+                for col in range(8):
+                    piece = board.get_piece_at((row, col))
+                    if piece:
+                        color = 'W' if piece.color.name == 'WHITE' else 'B'
+                        piece_type = piece.piece_type.name[0]
+                        pieces_list.append(f"{row}{col}{color}{piece_type}")
+        except Exception:
+            pass
+        return ';'.join(pieces_list)
     
     def _render(self):
         """渲染画面"""

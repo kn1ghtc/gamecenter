@@ -17,12 +17,9 @@ import math
 import threading
 import queue
 import psutil
-import cpuinfo
 from datetime import datetime, timedelta
-from typing import List, Dict, Tuple, Optional
-from collections import deque
+from typing import List, Dict
 from tqdm import tqdm
-import torch.multiprocessing as mp
 import queue
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -61,29 +58,28 @@ class ModernChessTrainer:
                  database_path: str = "data/chess_games.db",
                  use_modern_architecture: bool = True,
                  load_best_model: bool = True):
-        
         # 设备和性能配置
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.num_workers = min(8, os.cpu_count())
         self.use_modern_architecture = use_modern_architecture
         self.load_best_model = load_best_model
-        
-        print(f"🚀 现代化象棋AI训练器初始化")
+
+        print("🚀 现代化象棋AI训练器初始化")
         print(f"   设备: {self.device}")
         print(f"   现代架构: {'启用' if use_modern_architecture else '禁用'}")
         print(f"   CPU核心: {os.cpu_count()}")
         print(f"   工作进程: {self.num_workers}")
         print(f"   加载最佳模型: {'是' if load_best_model else '否'}")
-        
+
         if torch.cuda.is_available():
             print(f"   GPU: {torch.cuda.get_device_name()}")
             print(f"   GPU显存: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f} GB")
-        
+
         # 目录设置
         self.training_data_dir = training_data_dir
         self.models_dir = os.path.join(training_data_dir, "models")
         os.makedirs(self.models_dir, exist_ok=True)
-        
+
         # 模型版本管理
         self.model_tracker = {
             'best_model_path': None,
@@ -92,7 +88,7 @@ class ModernChessTrainer:
             'current_model_performance': 0.0,
             'training_history': []
         }
-        
+
         # 查找并加载最佳模型
         if load_best_model:
             best_model_info = self._find_best_model()
@@ -102,32 +98,40 @@ class ModernChessTrainer:
                 print(f"📂 发现最佳模型: {best_model_info['filename']}")
                 print(f"   历史胜率: {best_model_info['win_rate']:.1f}%")
                 print(f"   训练局数: {best_model_info['games']:,}")
-        
+
+        # 并发安全锁（需在模型初始化前创建，供包装器使用）
+        self.model_lock = threading.Lock()
+
         # 初始化AI模型
         self._initialize_models(model_path)
-        
+
         # 数据库
         self.database = ChessDatabase(database_path)
-        
+
         # 训练配置
         self.config = {
-            'batch_size': 32,  # 降低批次大小以增加训练频率
-            'min_training_samples': 8,  # 最小训练样本数量
-            'max_moves_per_game': 200,  # 增加游戏长度以产生更多训练数据
-            'save_frequency': 25,  # 更频繁保存
-            'evaluation_frequency': 20,  # 更频繁评估
-            'learning_rate': 0.002,  # 增加学习率
+            'batch_size': 32,
+            'min_training_samples': 8,
+            'max_moves_per_game': 120,
+            'save_frequency': 25,
+            'evaluation_frequency': 20,
+            'learning_rate': 0.002,
             'weight_decay': 1e-4,
             'gradient_clip_norm': 1.0,
-            'temperature': 0.8,  # 降低温度，更确定性的决策
+            'temperature': 0.8,
             'c_puct': 1.0,
             'num_simulations': 400,
-            'train_every_n_games': 4,  # 每4局游戏就进行一次训练
+            'train_every_n_games': 2,
+            # 并行消费者可调参数
+            'consumer_queue_maxsize': 2048,
+            'consumer_batch_target': 256,
+            'consumer_min_batch': 64,
+            'consumer_flush_timeout_ms': 40,
         }
-        
+
         # 经验回放缓冲区
         self.experience_buffer = ExperienceReplayBuffer(capacity=100000)
-        
+
         # 高级训练组件
         if self.use_modern_architecture:
             self.training_strategy = AdvancedTrainingStrategy(self.neural_network, self.device)
@@ -138,7 +142,7 @@ class ModernChessTrainer:
                 num_simulations=self.config['num_simulations'],
                 device=self.device
             )
-        
+
         # 性能统计
         self.performance_stats = {
             'games_per_second': 0.0,
@@ -148,7 +152,7 @@ class ModernChessTrainer:
             'model_size_mb': 0.0,
             'batch_processing_time': 0.0
         }
-        
+
         # 训练统计
         self.training_stats = {
             'games_played': 0,
@@ -173,70 +177,49 @@ class ModernChessTrainer:
                 'learning_curve_slope': 0.0
             }
         }
-        
+
         # 设置优化器
         self._setup_optimizer()
-        
+
         # 计算模型统计
         self._calculate_model_stats()
-    
+
     def _find_best_model(self):
-        """查找历史上表现最佳的模型"""
+        """查找最佳模型信息（基于追踪文件或默认模型）"""
         try:
-            # 搜索所有训练统计文件
-            stats_files = []
-            for file in os.listdir(self.training_data_dir):
-                if file.startswith('training_stats_') and file.endswith('.json'):
-                    stats_files.append(file)
-            
-            best_model_info = None
-            best_win_rate = 0.0
-            
-            for stats_file in stats_files:
-                try:
-                    stats_path = os.path.join(self.training_data_dir, stats_file)
-                    with open(stats_path, 'r', encoding='utf-8') as f:
-                        stats = json.load(f)
-                    
-                    # 计算模型性能指标
-                    total_games = stats['ml_ai_wins'] + stats['ml_ai_losses'] + stats['ml_ai_draws']
-                    if total_games >= 20:  # 至少20局游戏
-                        win_rate = (stats['ml_ai_wins'] / total_games) * 100
-                        
-                        # 寻找对应的模型文件
-                        timestamp = stats_file.replace('training_stats_', '').replace('.json', '')
-                        model_file = f"final_model_{timestamp}.pth"
-                        model_path = os.path.join(self.models_dir, model_file)
-                        
-                        if os.path.exists(model_path) and win_rate > best_win_rate:
-                            best_win_rate = win_rate
-                            best_model_info = {
-                                'path': model_path,
-                                'filename': model_file,
-                                'win_rate': win_rate,
-                                'games': total_games,
-                                'stats_file': stats_file,
-                                'model_updates': stats.get('model_updates', 0)
-                            }
-                
-                except Exception as e:
-                    continue
-            
-            # 如果没有找到历史最佳模型，检查是否有默认模型
-            if not best_model_info:
-                default_model = os.path.join(self.models_dir, "ml_ai_model.pth")
-                if os.path.exists(default_model):
-                    best_model_info = {
-                        'path': default_model,
-                        'filename': "ml_ai_model.pth",
-                        'win_rate': 0.0,
-                        'games': 0,
+            tracker_path = os.path.join(self.models_dir, "model_tracker.json")
+            if os.path.exists(tracker_path):
+                with open(tracker_path, 'r', encoding='utf-8') as f:
+                    tracker = json.load(f)
+                best_path = tracker.get('best_model_path')
+                if best_path and os.path.exists(best_path):
+                    filename = os.path.basename(best_path)
+                    last_updates = 0
+                    if tracker.get('training_history'):
+                        try:
+                            last_updates = int(tracker['training_history'][-1].get('model_updates', 0))
+                        except Exception:
+                            last_updates = 0
+                    return {
+                        'path': best_path,
+                        'filename': filename,
+                        'win_rate': float(tracker.get('best_win_rate', 0.0)),
+                        'games': int(tracker.get('best_model_games', 0)),
                         'stats_file': None,
-                        'model_updates': 0
+                        'model_updates': last_updates
                     }
-            
-            return best_model_info
-            
+            # 回退：默认模型
+            default_model = os.path.join(self.models_dir, "ml_ai_model.pth")
+            if os.path.exists(default_model):
+                return {
+                    'path': default_model,
+                    'filename': "ml_ai_model.pth",
+                    'win_rate': 0.0,
+                    'games': 0,
+                    'stats_file': None,
+                    'model_updates': 0
+                }
+            return None
         except Exception as e:
             print(f"⚠️ 查找最佳模型失败: {e}")
             return None
@@ -254,8 +237,30 @@ class ModernChessTrainer:
                 if model_path and os.path.exists(model_path):
                     try:
                         checkpoint = torch.load(model_path, map_location=self.device)
-                        self.neural_network.load_state_dict(checkpoint)
-                        print(f"✅ 已加载预训练模型: {model_path}")
+                        state_dict = None
+                        if isinstance(checkpoint, dict):
+                            if 'state_dict' in checkpoint and isinstance(checkpoint['state_dict'], dict):
+                                state_dict = checkpoint['state_dict']
+                            elif 'model_state_dict' in checkpoint and isinstance(checkpoint['model_state_dict'], dict):
+                                state_dict = checkpoint['model_state_dict']
+                            elif 'model' in checkpoint and isinstance(checkpoint['model'], dict):
+                                state_dict = checkpoint['model']
+                            else:
+                                # 可能直接是权重字典
+                                # 简单启发式：键里含有层名
+                                example_keys = list(checkpoint.keys())
+                                if example_keys and isinstance(example_keys[0], str):
+                                    state_dict = checkpoint
+                        
+                        if state_dict is not None:
+                            missing, unexpected = self.neural_network.load_state_dict(state_dict, strict=False)
+                            if missing:
+                                print(f"⚠️ 预训练模型缺失参数: {len(missing)} 项")
+                            if unexpected:
+                                print(f"⚠️ 预训练模型多余参数: {len(unexpected)} 项")
+                            print(f"✅ 已加载预训练模型: {model_path}")
+                        else:
+                            raise ValueError("不包含可用的 state_dict")
                     except Exception as e:
                         print(f"⚠️ 预训练模型加载失败，使用随机初始化: {e}")
                 
@@ -283,11 +288,13 @@ class ModernChessTrainer:
     
     def _create_modern_ml_ai_wrapper(self):
         """创建现代ML AI包装器以保持兼容性"""
+        model_lock = self.model_lock
         class ModernMLAIWrapper:
-            def __init__(self, neural_network, board_encoder, device):
+            def __init__(self, neural_network, board_encoder, device, model_lock):
                 self.model = neural_network
                 self.encoder = board_encoder
                 self.device = device
+                self.model_lock = model_lock
                 self.epsilon = 0.3  # 初始探索率
                 self.move_history = []  # 移动历史
             
@@ -351,41 +358,7 @@ class ModernChessTrainer:
                     # 回退到启发式移动选择
                     return self._get_heuristic_move(board, legal_moves)
             
-            def _evaluate_moves(self, board, legal_moves):
-                """使用神经网络评估所有移动"""
-                move_scores = {}
-                
-                with torch.no_grad():
-                    board_tensor = self._encode_board(board)
-                    
-                    # 获取神经网络输出
-                    if hasattr(self.model, 'forward'):
-                        outputs = self.model(board_tensor)
-                        if isinstance(outputs, tuple) and len(outputs) >= 2:
-                            policy, value = outputs[0], outputs[1]
-                        else:
-                            policy = outputs
-                            value = torch.zeros(1).to(self.device)
-                    else:
-                        policy = torch.randn(len(legal_moves)).to(self.device)
-                        value = torch.zeros(1).to(self.device)
-                    
-                    # 为每个移动计算分数
-                    for i, move in enumerate(legal_moves):
-                        # 基础神经网络分数
-                        if i < len(policy[0]) if len(policy.shape) > 1 else len(policy):
-                            neural_score = float(policy[0][i] if len(policy.shape) > 1 else policy[i])
-                        else:
-                            neural_score = random.uniform(-1, 1)
-                        
-                        # 位置价值评估
-                        position_score = self._evaluate_position_value(board, move)
-                        
-                        # 组合分数
-                        total_score = neural_score * 0.7 + position_score * 0.3
-                        move_scores[move] = total_score
-                
-                return move_scores
+            # 旧版 _evaluate_moves 已移除，保留加锁的修复版本
             
             def _evaluate_position_value(self, board, move):
                 """评估移动的位置价值 - 增强激进性"""
@@ -463,66 +436,55 @@ class ModernChessTrainer:
                 return score
             
             def _get_heuristic_move(self, board, legal_moves):
-                """启发式移动选择（回退策略）- 更激进的版本"""
+                """启发式选择移动（用于回退）"""
                 scored_moves = []
-                
                 for move in legal_moves:
                     from_pos, to_pos = move
-                    score = 0
-                    
-                    # 吃子优先级 - 增强
-                    if to_pos in board.pieces:
-                        target_piece = board.pieces[to_pos]
-                        piece_values = {
-                            'PAWN': 1, 'KNIGHT': 3, 'BISHOP': 3,
-                            'ROOK': 5, 'QUEEN': 9, 'KING': 100
-                        }
-                        piece_name = target_piece.piece_type.name
-                        score += piece_values.get(piece_name, 1) * 15  # 大幅增加吃子优先级
-                    
-                    # 中心控制 - 更精确
-                    center_squares = [(3, 3), (3, 4), (4, 3), (4, 4)]
-                    if to_pos in center_squares:
-                        score += 8
-                    else:
-                        # 中心距离评估
-                        center_distance = abs(to_pos[0] - 3.5) + abs(to_pos[1] - 3.5)
-                        score += (7 - center_distance) * 0.5
-                    
-                    # 前进激励
-                    if from_pos in board.pieces:
-                        piece = board.pieces[from_pos]
-                        if piece.piece_type.name == 'PAWN':
-                            # 兵的前进
-                            if piece.color.name == 'WHITE' and to_pos[0] < from_pos[0]:
-                                score += (from_pos[0] - to_pos[0]) * 3
-                            elif piece.color.name == 'BLACK' and to_pos[0] > from_pos[0]:
-                                score += (to_pos[0] - from_pos[0]) * 3
-                        else:
-                            # 其他棋子的移动距离奖励
-                            move_distance = abs(to_pos[0] - from_pos[0]) + abs(to_pos[1] - from_pos[1])
-                            score += move_distance * 1.5
-                    
-                    # 避免角落
-                    corners = [(0, 0), (0, 7), (7, 0), (7, 7)]
-                    if to_pos in corners:
-                        score -= 5
-                    
-                    # 增加随机性避免重复移动
-                    score += random.uniform(0, 4)
-                    
+                    score = 0.0
+                    try:
+                        # 吃子奖励
+                        if to_pos in board.pieces:
+                            target_piece = board.pieces[to_pos]
+                            piece_values = {
+                                'PAWN': 1, 'KNIGHT': 3, 'BISHOP': 3,
+                                'ROOK': 5, 'QUEEN': 9, 'KING': 100
+                            }
+                            score += piece_values.get(target_piece.piece_type.name, 1) * 3.0
+                        
+                        # 中心控制
+                        center_squares = [(3, 3), (3, 4), (4, 3), (4, 4)]
+                        if to_pos in center_squares:
+                            score += 1.0
+                        
+                        # 兵前进奖励 / 其他子力走远奖励
+                        if from_pos in board.pieces:
+                            piece = board.pieces[from_pos]
+                            if piece.piece_type.name == 'PAWN':
+                                if piece.color.name == 'WHITE' and to_pos[0] < from_pos[0]:
+                                    score += (from_pos[0] - to_pos[0]) * 0.6
+                                elif piece.color.name == 'BLACK' and to_pos[0] > from_pos[0]:
+                                    score += (to_pos[0] - from_pos[0]) * 0.6
+                            else:
+                                move_distance = abs(to_pos[0] - from_pos[0]) + abs(to_pos[1] - from_pos[1])
+                                score += move_distance * 0.3
+                        
+                        # 角落轻微惩罚
+                        corners = [(0, 0), (0, 7), (7, 0), (7, 7)]
+                        if to_pos in corners:
+                            score -= 0.5
+                        
+                        # 少量噪声
+                        score += random.uniform(-0.2, 0.2)
+                    except Exception:
+                        pass
                     scored_moves.append((move, score))
                 
-                # 选择高分移动，增加多样性
                 if not scored_moves:
                     return random.choice(legal_moves)
                 
                 scored_moves.sort(key=lambda x: x[1], reverse=True)
-                
-                # 从前30%的最佳移动中随机选择
                 top_count = max(1, len(scored_moves) // 3)
                 top_moves = scored_moves[:top_count]
-                
                 return random.choice(top_moves)[0]
             
             def _get_legal_moves(self, board):
@@ -561,44 +523,46 @@ class ModernChessTrainer:
                 move_scores = {}
                 
                 try:
-                    # 临时切换到评估模式避免BatchNorm问题
-                    self.model.eval()
-                    
-                    with torch.no_grad():
-                        board_tensor = self._encode_board(board)
+                    with self.model_lock:
+                        # 保存并设置推理模式
+                        prev_mode = self.model.training
+                        self.model.eval()
                         
-                        # 获取神经网络输出
-                        outputs = self.model(board_tensor)
-                        if isinstance(outputs, tuple) and len(outputs) >= 2:
-                            policy, value = outputs[0], outputs[1]
-                        else:
-                            policy = outputs if not isinstance(outputs, tuple) else outputs[0]
-                            value = torch.zeros(1).to(self.device)
+                        with torch.no_grad():
+                            board_tensor = self._encode_board(board)
+                            
+                            # 获取神经网络输出
+                            outputs = self.model(board_tensor)
+                            if isinstance(outputs, tuple) and len(outputs) >= 2:
+                                policy, value = outputs[0], outputs[1]
+                            else:
+                                policy = outputs if not isinstance(outputs, tuple) else outputs[0]
+                                value = torch.zeros(1).to(self.device)
+                            
+                            # 为每个移动计算分数
+                            for i, move in enumerate(legal_moves):
+                                try:
+                                    # 神经网络分数
+                                    if len(policy.shape) > 1 and i < policy.shape[1]:
+                                        neural_score = float(policy[0][i])
+                                    elif len(policy.shape) == 1 and i < len(policy):
+                                        neural_score = float(policy[i])
+                                    else:
+                                        neural_score = random.uniform(-1, 1)
+                                    
+                                    # 位置价值评估
+                                    position_score = self._evaluate_position_value(board, move)
+                                    
+                                    # 组合分数
+                                    total_score = neural_score * 0.6 + position_score * 0.4
+                                    move_scores[move] = total_score
+                                    
+                                except Exception:
+                                    # 如果单个移动评估失败，使用位置分数
+                                    move_scores[move] = self._evaluate_position_value(board, move)
                         
-                        # 为每个移动计算分数
-                        for i, move in enumerate(legal_moves):
-                            try:
-                                # 神经网络分数
-                                if len(policy.shape) > 1 and i < policy.shape[1]:
-                                    neural_score = float(policy[0][i])
-                                elif len(policy.shape) == 1 and i < len(policy):
-                                    neural_score = float(policy[i])
-                                else:
-                                    neural_score = random.uniform(-1, 1)
-                                
-                                # 位置价值评估
-                                position_score = self._evaluate_position_value(board, move)
-                                
-                                # 组合分数
-                                total_score = neural_score * 0.6 + position_score * 0.4
-                                move_scores[move] = total_score
-                                
-                            except Exception as e:
-                                # 如果单个移动评估失败，使用位置分数
-                                move_scores[move] = self._evaluate_position_value(board, move)
-                    
-                    # 恢复训练模式
-                    self.model.train()
+                        # 恢复原始模式
+                        self.model.train(prev_mode)
                     
                 except Exception as e:
                     print(f"⚠️ 神经网络评估失败: {e}")
@@ -615,8 +579,7 @@ class ModernChessTrainer:
             def update_epsilon(self, new_epsilon):
                 """更新探索率"""
                 self.epsilon = max(0.05, min(0.95, new_epsilon))
-        
-        return ModernMLAIWrapper(self.neural_network, self.board_encoder, self.device)
+        return ModernMLAIWrapper(self.neural_network, self.board_encoder, self.device, model_lock)
     
     def _setup_optimizer(self):
         """设置优化器和调度器"""
@@ -674,9 +637,8 @@ class ModernChessTrainer:
         start_time = time.time()
         
         if use_parallel and num_games >= 20:
-            # 禁用并行训练进行调试
-            print("🔄 使用串行模式进行调试")
-            self._run_serial_training(num_games, opponent_type, training_mode)
+            # 启用真正的并行训练流水线（生产者-消费者）
+            self._run_parallel_training(num_games, opponent_type, training_mode)
         else:
             # 使用串行训练
             self._run_serial_training(num_games, opponent_type, training_mode)
@@ -694,48 +656,51 @@ class ModernChessTrainer:
     def _run_parallel_training(self, num_games: int, opponent_type: str, training_mode: str):
         """并行训练"""
         print("🚀 启动并行训练模式")
-        
+
         # 并行参数
-        num_workers = min(8, os.cpu_count(), num_games // 4)
-        batch_size = min(64, num_games // 2)
-        
+        num_workers = min(8, os.cpu_count(), max(1, num_games // 4))
+        batch_size = min(64, max(1, num_games // 2))
+
         print(f"   并行游戏数: {num_workers}")
         print(f"   批处理大小: {batch_size}")
-        
-        # 游戏结果队列
-        game_queue = queue.Queue(maxsize=200)
-        
+
+        # 游戏结果队列（容量可配置，避免阻塞生产者）
+        queue_maxsize = int(self.config.get('consumer_queue_maxsize', 2048))
+        if queue_maxsize <= 0:
+            queue_maxsize = 0  # 0 表示无限
+        game_queue = queue.Queue(maxsize=queue_maxsize)
+
         # 启动训练消费者线程
         training_thread = threading.Thread(
-            target=self._training_consumer, 
+            target=self._training_consumer,
             args=(game_queue, num_games)
         )
         training_thread.start()
-        
+
         # 并行执行游戏
         completed_games = 0
-        
+
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
             with tqdm(total=num_games, desc="并行训练进度", unit="局") as pbar:
                 # 提交游戏任务
                 future_to_game = {
-                    executor.submit(self._play_parallel_game, opponent_type, i): i 
+                    executor.submit(self._play_parallel_game, opponent_type, i): i
                     for i in range(num_games)
                 }
-                
+
                 for future in as_completed(future_to_game):
                     game_id = future_to_game[future]
                     try:
                         game_result = future.result()
                         game_queue.put(game_result)
                         completed_games += 1
-                        
+
                         # 更新统计
                         self._update_stats(game_result)
-                        
+
                         # 更新进度条
                         pbar.update(1)
-                        
+
                         # 定期保存
                         if completed_games % 50 == 0:
                             win_rate = self._get_current_win_rate()
@@ -744,16 +709,16 @@ class ModernChessTrainer:
                                 'GPU': f"{self._get_gpu_usage():.1f}%"
                             })
                             self._evaluate_and_save(completed_games)
-                        
+
                     except Exception as e:
                         print(f"⚠️ 游戏 {game_id} 执行失败: {e}")
                         completed_games += 1
                         pbar.update(1)
-        
+
         # 停止训练消费者
         game_queue.put(None)  # 停止信号
         training_thread.join()
-        
+
         print("🎉 并行训练完成!")
     
     def _run_serial_training(self, num_games: int, opponent_type: str, training_mode: str):
@@ -963,76 +928,6 @@ class ModernChessTrainer:
         
         return random.choice(legal_moves) if legal_moves else None
     
-    def _play_parallel_game(self, opponent_type: str, game_id: int) -> Dict:
-        """并行游戏执行 - 线程安全"""
-        try:
-            board = ChessBoard()
-            game_moves = []
-            move_count = 0
-            
-            # 创建独立的Basic AI实例避免线程竞争
-            local_basic_ai = BasicAI(depth=2)  # 降低深度加速
-            
-            # 随机选择AI颜色
-            ml_ai_color = random.choice([PieceColor.WHITE, PieceColor.BLACK])
-            
-            while not board.is_game_over() and move_count < self.config['max_moves_per_game']:  # 使用统一配置
-                current_player = board.current_player
-                
-                if current_player == ml_ai_color:
-                    # ML AI的回合 - 使用共享模型但确保线程安全
-                    try:
-                        move = self._get_thread_safe_ml_move(board, current_player)
-                    except Exception as e:
-                        # 回退到随机移动
-                        move = self._get_random_move(board, current_player)
-                    ai_type = "ml_ai"
-                else:
-                    # 对手的回合 - 使用本地Basic AI
-                    if opponent_type == 'basic':
-                        move = local_basic_ai.get_best_move(board, current_player)
-                    else:
-                        move = self._get_random_move(board, current_player)
-                    ai_type = opponent_type
-                
-                if move is None:
-                    break
-                
-                # 记录移动数据（简化版本用于并行训练）
-                if ai_type == "ml_ai":
-                    game_moves.append({
-                        'move': move,
-                        'player': current_player,
-                        'board_fen': self._simple_board_encode(board)  # 简化编码
-                    })
-                
-                # 执行移动
-                from_pos, to_pos = move
-                success = board.move_piece(from_pos, to_pos)
-                
-                if success:
-                    move_count += 1
-                else:
-                    break
-            
-            # 确定游戏结果
-            game_result = self._determine_game_result(board, ml_ai_color, move_count)
-            game_result['game_id'] = game_id
-            game_result['moves'] = game_moves
-            
-            return game_result
-            
-        except Exception as e:
-            # 返回错误结果
-            return {
-                'game_id': game_id,
-                'result': 'error',
-                'ml_ai_result': 'error',
-                'moves': [],
-                'move_count': 0,
-                'error': str(e)
-            }
-    
     def _get_thread_safe_ml_move(self, board, color):
         """线程安全的ML AI移动获取"""
         # 使用锁确保线程安全，或者使用模型的副本
@@ -1041,56 +936,76 @@ class ModernChessTrainer:
         else:
             return self._get_random_move(board, color)
     
-    def _simple_board_encode(self, board):
-        """简化的棋盘编码用于并行训练"""
-        try:
-            # 简化的FEN编码
-            pieces_str = ""
-            for pos, piece in board.pieces.items():
-                pieces_str += f"{pos[0]}{pos[1]}{piece.color.name[0]}{piece.piece_type.name[0]};"
-            return pieces_str
-        except:
-            return "error"
+    
     
     def _training_consumer(self, game_queue: queue.Queue, total_games: int):
-        """训练数据消费者线程"""
+        """训练数据消费者线程（短超时+动态批次+节流日志）"""
         print("🧠 训练消费者线程启动")
-        
+
         processed_games = 0
-        batch_buffer = []
-        batch_size = 32
-        
+        batch_buffer: list = []
+        batch_target = int(self.config.get('consumer_batch_target', 256))  # 目标批大小
+        min_batch = int(self.config.get('consumer_min_batch', 64))         # 最小触发训练的批大小
+        flush_timeout_ms = float(self.config.get('consumer_flush_timeout_ms', 40))  # 动态刷新定时（毫秒）
+        last_flush_ts = time.perf_counter()
+        last_warn_ts = 0.0
+        warn_interval = 5.0  # 最短告警间隔（秒）
+
         while processed_games < total_games:
             try:
-                # 获取游戏结果
-                game_result = game_queue.get(timeout=30)
-                
+                # 短超时以避免长时间卡住
+                game_result = game_queue.get(timeout=0.25)
+
                 if game_result is None:  # 停止信号
                     break
-                
-                if game_result.get('result') != 'error':
+
+                if isinstance(game_result, dict) and game_result.get('result') != 'error':
                     # 提取训练样本
                     training_samples = self._extract_training_samples_parallel(game_result)
-                    batch_buffer.extend(training_samples)
-                    
-                    # 批量训练
-                    if len(batch_buffer) >= batch_size:
-                        self._train_batch_parallel(batch_buffer[:batch_size])
-                        batch_buffer = batch_buffer[batch_size:]
-                
+                    if training_samples:
+                        batch_buffer.extend(training_samples)
+
                 processed_games += 1
-                
+
+                # 动态批次刷新：达到目标批或到达最小批且超时
+                now = time.perf_counter()
+                if len(batch_buffer) >= batch_target or (
+                    len(batch_buffer) >= min_batch and (now - last_flush_ts) * 1000.0 >= flush_timeout_ms
+                ):
+                    # 使用经验回放+优化训练
+                    try:
+                        self._train_batch_parallel(batch_buffer[:batch_target])
+                    finally:
+                        # 滑动窗口保留尾部未训练样本
+                        batch_buffer = batch_buffer[batch_target:]
+                        last_flush_ts = now
+
             except queue.Empty:
-                print("⚠️ 训练消费者超时，等待游戏完成...")
+                # 定时检查是否需要基于时间刷新
+                now = time.perf_counter()
+                if len(batch_buffer) >= min_batch and (now - last_flush_ts) * 1000.0 >= flush_timeout_ms:
+                    try:
+                        self._train_batch_parallel(batch_buffer[:batch_target])
+                    finally:
+                        batch_buffer = batch_buffer[batch_target:]
+                        last_flush_ts = now
+                # 节流超时日志
+                if now - last_warn_ts >= warn_interval:
+                    print("⌛ 训练消费者等待数据...")
+                    last_warn_ts = now
                 continue
             except Exception as e:
-                print(f"⚠️ 训练消费者错误: {e}")
+                # 节流错误日志
+                now = time.perf_counter()
+                if now - last_warn_ts >= warn_interval:
+                    print(f"⚠️ 训练消费者错误: {e}")
+                    last_warn_ts = now
                 continue
-        
+
         # 处理剩余批次
         if batch_buffer:
             self._train_batch_parallel(batch_buffer)
-        
+
         print("🧠 训练消费者线程完成")
     
     def _extract_training_samples_parallel(self, game_result):
@@ -1147,7 +1062,7 @@ class ModernChessTrainer:
             move_count = 0
             
             # 创建独立的Basic AI实例
-            local_basic_ai = BasicAI(depth=2)
+            local_basic_ai = BasicAI(depth=3)
             
             # 随机选择AI颜色
             ml_ai_color = random.choice([PieceColor.WHITE, PieceColor.BLACK])
@@ -1188,7 +1103,8 @@ class ModernChessTrainer:
                 
                 # 执行移动
                 from_pos, to_pos = move
-                success = board.move_piece(from_pos, to_pos)
+                # 统一使用与串行路径相同的落子API，确保对局推进
+                success = board.make_move(from_pos, to_pos)
                 
                 if success:
                     move_count += 1
@@ -1295,9 +1211,9 @@ class ModernChessTrainer:
             # 解析简化的FEN格式: "位置颜色棋子类型;"
             pieces_data = board_fen.split(';')
             
-            # 创建8x8x12的特征张量 (8x8棋盘，12种棋子类型)
+            # 创建8x8x20的特征张量 (20通道：12个棋子通道 + 8个预留/状态通道)
             if self.use_modern_architecture:
-                features = np.zeros((12, 8, 8), dtype=np.float32)
+                features = np.zeros((20, 8, 8), dtype=np.float32)
                 
                 piece_mapping = {
                     'WK': 0, 'WQ': 1, 'WR': 2, 'WB': 3, 'WN': 4, 'WP': 5,
@@ -1314,7 +1230,10 @@ class ModernChessTrainer:
                             
                             piece_key = f"{color}{piece_type}"
                             if piece_key in piece_mapping and 0 <= row < 8 and 0 <= col < 8:
-                                features[piece_mapping[piece_key], row, col] = 1.0
+                                # 映射到前12个通道
+                                channel = piece_mapping[piece_key]
+                                if 0 <= channel < 12:
+                                    features[channel, row, col] = 1.0
                         except:
                             continue
                 
@@ -1361,9 +1280,14 @@ class ModernChessTrainer:
             # 验证特征形状
             if isinstance(feature, np.ndarray) and feature.size > 0:
                 if self.use_modern_architecture:
-                    # 现代架构期望 (12, 8, 8)
-                    if feature.shape == (12, 8, 8):
+                    # 现代架构期望 (20, 8, 8)；若为12通道则补齐
+                    if feature.shape == (20, 8, 8):
                         features.append(feature)
+                        targets.append(sample['target'])
+                    elif feature.shape == (12, 8, 8):
+                        padded = np.zeros((20, 8, 8), dtype=np.float32)
+                        padded[:12] = feature
+                        features.append(padded)
                         targets.append(sample['target'])
                 else:
                     # 传统架构期望 (773,)
@@ -1664,9 +1588,14 @@ class ModernChessTrainer:
             # 验证特征形状
             if isinstance(feature, np.ndarray) and feature.size > 0:
                 if self.use_modern_architecture:
-                    # 现代架构期望 (12, 8, 8) 或 (20, 8, 8)
-                    if feature.shape == (12, 8, 8) or feature.shape == (20, 8, 8):
+                    # 现代架构期望 (20, 8, 8)，若为12通道则补齐
+                    if feature.shape == (20, 8, 8):
                         features.append(feature)
+                        targets.append(sample['target'])
+                    elif feature.shape == (12, 8, 8):
+                        padded = np.zeros((20, 8, 8), dtype=np.float32)
+                        padded[:12] = feature
+                        features.append(padded)
                         targets.append(sample['target'])
                 else:
                     # 传统架构期望 (773,)
