@@ -113,7 +113,7 @@ class ModernChessTrainer:
         self.config = {
             'batch_size': 32,  # 降低批次大小以增加训练频率
             'min_training_samples': 8,  # 最小训练样本数量
-            'max_moves_per_game': 300,  # 增加游戏长度以产生更多训练数据
+            'max_moves_per_game': 200,  # 增加游戏长度以产生更多训练数据
             'save_frequency': 25,  # 更频繁保存
             'evaluation_frequency': 20,  # 更频繁评估
             'learning_rate': 0.002,  # 增加学习率
@@ -881,10 +881,11 @@ class ModernChessTrainer:
             
             # 记录移动数据（仅ML AI）
             if ai_type == "ml_ai":
-                if self.use_modern_architecture:
-                    board_state = self.board_encoder.encode(board)
-                else:
-                    board_state = self.ml_ai.encoder.encode_position(board)
+                # 简化的棋盘状态编码，使用FEN格式字符串
+                try:
+                    board_state = self._encode_board_to_fen(board)
+                except:
+                    board_state = f"error_{move_count}"
                 
                 game_moves.append({
                     'board_state': board_state,
@@ -1280,7 +1281,10 @@ class ModernChessTrainer:
                     print(f"✅ 并行训练批次: {len(features)}样本 -> 缓冲区: {len(self.experience_buffer)}")
         
         except Exception as e:
-            print(f"⚠️ 并行训练失败: {e}")
+            print(f"⚠️ 批量训练失败: {e}")
+            import traceback
+            print("📍 详细错误信息:")
+            traceback.print_exc()
     
     def _fen_to_features(self, board_fen):
         """将简化的FEN编码转换为特征向量"""
@@ -1353,16 +1357,35 @@ class ModernChessTrainer:
         targets = []
         
         for sample in training_samples:
-            features.append(sample['features'])
-            targets.append(sample['target'])
+            feature = sample['features']
+            # 验证特征形状
+            if isinstance(feature, np.ndarray) and feature.size > 0:
+                if self.use_modern_architecture:
+                    # 现代架构期望 (12, 8, 8)
+                    if feature.shape == (12, 8, 8):
+                        features.append(feature)
+                        targets.append(sample['target'])
+                else:
+                    # 传统架构期望 (773,)
+                    if len(feature.shape) == 1 and feature.shape[0] == 773:
+                        features.append(feature)
+                        targets.append(sample['target'])
+        
+        # 确保有足够的有效样本
+        if len(features) < 8:
+            return
         
         # 转换为张量
-        if self.use_modern_architecture:
-            features_tensor = torch.FloatTensor(np.array(features)).to(self.device)
-        else:
-            features_tensor = torch.FloatTensor(np.array(features)).to(self.device)
-        
-        targets_tensor = torch.FloatTensor(targets).to(self.device)
+        try:
+            if self.use_modern_architecture:
+                features_tensor = torch.FloatTensor(np.array(features)).to(self.device)
+            else:
+                features_tensor = torch.FloatTensor(np.array(features)).to(self.device)
+            
+            targets_tensor = torch.FloatTensor(targets).to(self.device)
+        except Exception as e:
+            print(f"⚠️ 张量转换失败: {e}, features shapes: {[f.shape for f in features[:3]]}")
+            return
         
         # 执行训练
         self.neural_network.train()
@@ -1421,6 +1444,20 @@ class ModernChessTrainer:
         
         return total_loss
     
+    def _encode_board_to_fen(self, board):
+        """将棋盘编码为简化的FEN字符串格式"""
+        pieces_list = []
+        
+        for row in range(8):
+            for col in range(8):
+                piece = board.get_piece_at((row, col))
+                if piece:
+                    color = 'W' if piece.color.name == 'WHITE' else 'B'
+                    piece_type = piece.piece_type.name[0]  # K, Q, R, B, N, P
+                    pieces_list.append(f"{row}{col}{color}{piece_type}")
+        
+        return ';'.join(pieces_list)
+    
     def _determine_game_result(self, board: ChessBoard, ml_ai_color: PieceColor, move_count: int) -> Dict:
         """确定游戏结果"""
         result = {
@@ -1466,12 +1503,18 @@ class ModernChessTrainer:
             game_result_value = self._get_result_value(game['result'], game['ml_ai_color'])
             
             for i, move_data in enumerate(game['moves']):
-                if 'board_state' in move_data and move_data['board_state']:
+                board_state = move_data.get('board_state')
+                
+                # 修复数组布尔值判断错误
+                if board_state is not None and (
+                    (isinstance(board_state, str) and board_state.strip()) or
+                    (isinstance(board_state, np.ndarray) and board_state.size > 0)
+                ):
                     # 编码棋盘状态
                     if self.use_modern_architecture:
-                        features = self._encode_board_modern(move_data['board_state'])
+                        features = self._encode_board_modern(board_state)
                     else:
-                        features = self._encode_board_traditional(move_data['board_state'])
+                        features = self._encode_board_traditional(board_state)
                     
                     if features is not None and features.size > 0:
                         target = self._calculate_training_target(game_result_value, i, len(game['moves']))
@@ -1484,8 +1527,14 @@ class ModernChessTrainer:
                         })
                         
                         # 添加到经验回放缓冲区
+                        experience = {
+                            'features': features,
+                            'target': target,
+                            'board_fen': board_state,
+                            'move_index': i
+                        }
                         priority = abs(target) + 0.1
-                        self.experience_buffer.add(features, target, priority)
+                        self.experience_buffer.add(experience, priority)
         
         print(f"📊 收集到 {len(training_samples)} 个训练样本")
         
@@ -1499,10 +1548,10 @@ class ModernChessTrainer:
             print(f"🔄 进行经验回放训练 (缓冲区大小: {len(self.experience_buffer)})")
             replay_samples = self.experience_buffer.sample(self.config['batch_size'] // 2)
             replay_training_samples = []
-            for state, reward, _ in replay_samples:
+            for experience in replay_samples:
                 replay_training_samples.append({
-                    'features': state,
-                    'target': reward
+                    'features': experience['features'],
+                    'target': experience['target']
                 })
             if replay_training_samples:
                 self._train_neural_network_batch_immediate(replay_training_samples)
@@ -1611,8 +1660,24 @@ class ModernChessTrainer:
         targets = []
         
         for sample in training_samples:
-            features.append(sample['features'])
-            targets.append(sample['target'])
+            feature = sample['features']
+            # 验证特征形状
+            if isinstance(feature, np.ndarray) and feature.size > 0:
+                if self.use_modern_architecture:
+                    # 现代架构期望 (12, 8, 8) 或 (20, 8, 8)
+                    if feature.shape == (12, 8, 8) or feature.shape == (20, 8, 8):
+                        features.append(feature)
+                        targets.append(sample['target'])
+                else:
+                    # 传统架构期望 (773,)
+                    if len(feature.shape) == 1 and feature.shape[0] == 773:
+                        features.append(feature)
+                        targets.append(sample['target'])
+        
+        # 确保有足够的有效样本
+        if len(features) < 4:
+            print(f"⚠️ 验证后样本数不足 ({len(features)} < 4)，跳过训练")
+            return
         
         # 转换为张量
         try:
