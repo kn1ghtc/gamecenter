@@ -82,6 +82,35 @@ class ChessBoard:
         
         return legal_moves
     
+    def get_legal_moves_for_player(self, player: PieceColor) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
+        """获取指定玩家的所有合法移动
+        
+        Args:
+            player: 玩家颜色 (PieceColor.WHITE 或 PieceColor.BLACK)
+            
+        Returns:
+            List[Tuple[Tuple[int, int], Tuple[int, int]]]: (起始位置, 目标位置) 的列表
+        """
+        legal_moves = []
+        
+        # 确保轮到该玩家
+        if player != self.current_player:
+            return legal_moves
+        
+        # 遍历该玩家的所有棋子
+        for position, piece in self.pieces.items():
+            if piece.color == player:
+                # 获取该棋子的所有合法移动
+                piece_moves = self.get_legal_moves(position)
+                for to_pos in piece_moves:
+                    legal_moves.append((position, to_pos))
+        
+        return legal_moves
+    
+    def get_all_legal_moves(self, player: PieceColor) -> List[Tuple[Tuple[int, int], Tuple[int, int]]]:
+        """获取指定玩家的所有合法移动 (get_legal_moves_for_player的别名，用于兼容性)"""
+        return self.get_legal_moves_for_player(player)
+    
     def make_move(self, from_pos: Tuple[int, int], to_pos: Tuple[int, int], promotion_piece: str = None) -> bool:
         """执行棋子移动
         
@@ -233,6 +262,57 @@ class ChessBoard:
             'winner': self.winner,
             'fen': self.board.fen()
         }
+    
+    def set_fen(self, fen_string: str) -> bool:
+        """从FEN字符串设置棋盘状态"""
+        try:
+            # 使用python-chess设置FEN
+            self.board.set_fen(fen_string)
+            
+            # 同步我们的pieces字典
+            self._sync_pieces_from_python_chess()
+            
+            # 更新当前玩家
+            self.current_player = PieceColor.WHITE if self.board.turn else PieceColor.BLACK
+            
+            # 重置游戏状态
+            self.game_over = self.board.is_game_over()
+            self.winner = None
+            
+            return True
+        except Exception as e:
+            print(f"⚠️ 设置FEN失败: {e}")
+            return False
+    
+    def _sync_pieces_from_python_chess(self):
+        """从python-chess board同步pieces字典"""
+        self.pieces.clear()
+        
+        for square in chess.SQUARES:
+            piece = self.board.piece_at(square)
+            if piece is not None:
+                # 转换坐标：chess库使用0-63，我们使用(x,y)
+                x = chess.square_file(square)  # 列 0-7
+                y = 7 - chess.square_rank(square)  # 行，翻转因为我们的坐标系不同
+                position = (x, y)
+                
+                # 转换颜色
+                color = PieceColor.WHITE if piece.color else PieceColor.BLACK
+                
+                # 转换棋子类型
+                piece_type_map = {
+                    chess.PAWN: PieceType.PAWN,
+                    chess.ROOK: PieceType.ROOK,
+                    chess.KNIGHT: PieceType.KNIGHT,
+                    chess.BISHOP: PieceType.BISHOP,
+                    chess.QUEEN: PieceType.QUEEN,
+                    chess.KING: PieceType.KING
+                }
+                piece_type = piece_type_map.get(piece.piece_type, PieceType.PAWN)
+                
+                # 创建棋子对象
+                chess_piece = ChessPiece(piece_type, color, position)
+                self.pieces[position] = chess_piece
     
     def get_all_pieces_of_color(self, color: PieceColor) -> List[Tuple[Tuple[int, int], ChessPiece]]:
         """获取指定颜色的所有棋子"""

@@ -1,13 +1,20 @@
 {
-  "best_model_path": "training\\models\\best_model_20250912_101624.pth",
-  "best_win_rate": 33.33333333333333,
-  "best_model_games": 3,
+  "best_model_path": "D:\\pyproject\\gamecenter\\chess\\training\\models\\ml_ai_model.pth",
+  "best_win_rate": 0.0,
+  "best_model_games": 1089,
   "current_model_performance": 0.0,
-  "training_history": [],
-  "path": "training\\models\\ml_ai_model.pth",
-  "filename": "ml_ai_model.pth",
-  "win_rate": 0.0,
-  "games": 0,
-  "stats_file": null,
-  "model_updates": 0
+  "training_history": [
+    {
+      "game_num": 50,
+      "win_rate": 0.0,
+      "model_updates": 105,
+      "timestamp": "2025-09-12T17:42:57.376587"
+    },
+    {
+      "game_num": 100,
+      "win_rate": 0.0,
+      "model_updates": 135,
+      "timestamp": "2025-09-12T17:57:00.456461"
+    }
+  ]
 }

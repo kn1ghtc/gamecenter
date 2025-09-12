@@ -333,22 +333,45 @@ class AdvancedMCTS:
         return torch.FloatTensor(encoding).unsqueeze(0).to(self.device)
     
     def get_action_probabilities(self, root_node, temperature=1.0):
-        """获取动作概率分布"""
+        """获取动作概率分布 - 修复数值稳定性问题"""
         if not root_node.children:
             return {}
         
-        visits = np.array([child.visits for child in root_node.children.values()])
+        # 获取访问次数，确保最小值为1（避免0值）
+        visits = np.array([max(child.visits, 1) for child in root_node.children.values()], dtype=np.float64)
         
-        if temperature == 0:
+        if temperature == 0 or len(visits) == 1:
             # 贪婪选择
-            action_probs = np.zeros_like(visits)
+            action_probs = np.zeros_like(visits, dtype=np.float64)
             action_probs[np.argmax(visits)] = 1.0
         else:
-            # 温度采样
-            visits_temp = visits ** (1.0 / temperature)
-            action_probs = visits_temp / visits_temp.sum()
+            # 温度采样 - 增强数值稳定性
+            temperature = max(temperature, 1e-8)  # 避免极小temperature值
+            
+            # 对visits进行log变换避免数值溢出
+            log_visits = np.log(visits + 1e-8)  # 避免log(0)
+            scaled_log_visits = log_visits / temperature
+            
+            # 使用log-sum-exp技巧提高数值稳定性
+            max_val = np.max(scaled_log_visits)
+            exp_vals = np.exp(scaled_log_visits - max_val)
+            action_probs = exp_vals / (np.sum(exp_vals) + 1e-8)
         
-        return {move: prob for move, prob in zip(root_node.children.keys(), action_probs)}
+        # 最终数值检查和修复
+        if np.any(np.isnan(action_probs)) or np.any(np.isinf(action_probs)):
+            # 回退到均匀分布
+            action_probs = np.ones(len(visits), dtype=np.float64) / len(visits)
+        
+        # 强制归一化确保概率和为1
+        prob_sum = np.sum(action_probs)
+        if abs(prob_sum - 1.0) > 1e-6:
+            action_probs = action_probs / (prob_sum + 1e-8)
+        
+        # 再次验证概率有效性
+        assert np.allclose(np.sum(action_probs), 1.0, rtol=1e-5), f"概率和异常: {np.sum(action_probs)}"
+        assert np.all(action_probs >= 0), "存在负概率值"
+        
+        return {move: float(prob) for move, prob in zip(root_node.children.keys(), action_probs)}
 
 # ============================================================================
 # 棋盘编码器
