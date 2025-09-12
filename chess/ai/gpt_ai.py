@@ -59,48 +59,27 @@ class GPTChessAI:
     
     def _create_system_prompt(self) -> str:
         """创建系统提示词"""
-        return """你是一个世界级的国际象棋专家AI，具有以下特点：
+        return """你是专家级国际象棋AI，具备深度战术分析和战略规划能力。
 
-🎯 **核心能力**：
-- 深度战术分析和战略规划
-- 精确的位置评估和计算
-- 开局理论和残局技巧精通
-- 对手模式识别和反制策略
-
-🧠 **思考模式**：
-1. **位置分析**：评估棋子协调、王的安全、兵形结构
-2. **战术搜索**：寻找战术组合、将杀模式、材质获取
-3. **战略规划**：制定中长期计划、控制关键格子
-4. **风险评估**：平衡进攻与防守、计算变化深度
-
-🎲 **响应格式**：
-请严格按照以下JSON格式回复：
+响应格式：
 ```json
 {
-    "analysis": "位置分析和思考过程",
+    "analysis": "位置分析",
     "best_move": {
         "from": [x, y],
         "to": [x, y],
-        "reasoning": "选择此移动的理由"
+        "reasoning": "移动理由"
     },
-    "evaluation": "位置评估（数值和解释）",
-    "strategy": "当前战略和计划",
-    "alternatives": [
-        {
-            "from": [x, y],
-            "to": [x, y],
-            "note": "备选移动说明"
-        }
-    ],
+    "evaluation": "位置评估",
     "confidence": "高/中/低"
 }
 ```
 
-🔧 **重要规则**：
-- 坐标使用[x, y]格式，x和y都是0-7的整数
-- 只考虑当前合法的移动
-- 提供深度分析但保持决策性
-- 如果位置复杂，优先选择安全稳健的移动"""
+重要：
+- 坐标为[x, y]格式，x和y都是0-7的整数
+- 只选择提供的合法移动
+- 响应必须是有效JSON格式，不要添加markdown标记
+- 优先考虑战术机会和位置改善"""
     
     def get_best_move(self, board: ChessBoard, color: PieceColor) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
         """获取最佳移动"""
@@ -130,17 +109,20 @@ class GPTChessAI:
             move = self._parse_gpt_response(response, legal_moves)
             
             if move:
-                print(f"🤖 GPT选择移动: {move[0]} -> {move[1]}")
                 return move
             else:
                 # 尝试备用解析方法
                 backup_move = self._parse_fallback_formats(response, legal_moves)
                 if backup_move:
-                    print(f"🔧 GPT备用解析成功: {backup_move[0]} -> {backup_move[1]}")
                     return backup_move
                 else:
-                    print("⚠️ GPT响应解析失败，使用备用移动")
-                    return self._get_fallback_move(board, color, legal_moves)
+                    # 尝试智能解析
+                    smart_move = self._parse_smart_fallback(response, legal_moves)
+                    if smart_move:
+                        return smart_move
+                    else:
+                        # 使用备用移动
+                        return self._get_fallback_move(board, color, legal_moves)
                 
         except Exception as e:
             print(f"❌ GPT AI出错: {e}")
@@ -187,39 +169,25 @@ class GPTChessAI:
         """创建移动选择提示词"""
         color_str = 'white' if color == PieceColor.WHITE else 'black'
         
-        prompt = f"""
-当前轮到{color_str}行棋。
+        prompt = f"""当前轮到{color_str}行棋。
 
-**棋盘分析**：
-- 位置评估: {board_state['position_evaluation']}
-- 材质平衡: {board_state['material_balance']}
-- 王的安全: {board_state['king_safety']}
-- 棋子活跃度: {board_state['piece_activity']}
-- 兵形结构: {board_state['pawn_structure']}
-- 战术威胁: {board_state['tactical_threats']}
+棋盘状态：
+- 材质平衡: {board_state['material_balance']['status']}
 - 游戏阶段: {board_state['game_phase']}
-- 易位权利: {board_state['castling_rights']}
 - 特殊情况: {board_state['special_situations']}
 
-**合法移动** ({len(legal_moves)}个选择):
+合法移动 (共{len(legal_moves)}个):
 """
         
-        # 添加前20个合法移动（避免提示词过长）
+        # 显示合法移动
         for i, move in enumerate(legal_moves[:20]):
-            capture_str = " (吃子)" if move['capture'] else ""
-            prompt += f"{i+1}. {move['piece']} {move['notation']}{capture_str}\n"
+            capture = " (吃子)" if move['capture'] else ""
+            prompt += f"{i+1}. [{move['from'][0]}, {move['from'][1]}] -> [{move['to'][0]}, {move['to'][1]}] {move['piece']}{capture}\n"
         
         if len(legal_moves) > 20:
-            prompt += f"... 还有 {len(legal_moves) - 20} 个移动\n"
+            prompt += f"... 还有{len(legal_moves) - 20}个移动\n"
         
-        prompt += """
-请作为专家级象棋AI，分析当前位置并选择最佳移动。考虑：
-1. 战术机会（将杀、战术组合、材质获取）
-2. 位置改善（棋子协调、控制中心、王的安全）
-3. 战略目标（长期规划、弱点攻击、结构优化）
-4. 风险管理（避免战术失误、保持平衡）
-
-请按照指定的JSON格式回复。"""
+        prompt += "\n请分析并选择最佳移动。只返回JSON格式响应。"
         
         return prompt
     
@@ -239,7 +207,7 @@ class GPTChessAI:
         response = openai.chat.completions.create(
             model=self.model,
             messages=messages,
-            max_tokens=1500,
+            max_tokens=500,
             temperature=0.3,  # 低温度保证一致性
             top_p=0.9,
             frequency_penalty=0.1
@@ -259,116 +227,195 @@ class GPTChessAI:
         
         return response_text
     
-    def _parse_gpt_response(self, response: str, legal_moves: List[Dict]) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
-        """解析GPT响应（改进版）"""
+    def _clean_json_response(self, response: str) -> str:
+        """清理GPT响应，提取JSON部分"""
         try:
-            # 1. 寻找所有JSON块（支持多个JSON块）
-            json_candidates = []
-            brace_count = 0
-            start_pos = -1
+            # 移除markdown代码块标记
+            response = response.replace('```json', '').replace('```', '').strip()
             
-            for i, char in enumerate(response):
-                if char == '{':
-                    if brace_count == 0:
-                        start_pos = i
-                    brace_count += 1
-                elif char == '}':
-                    brace_count -= 1
-                    if brace_count == 0 and start_pos != -1:
-                        json_str = response[start_pos:i+1]
-                        json_candidates.append(json_str)
-                        start_pos = -1
+            # 提取JSON部分
+            if not response.startswith('{'):
+                first_brace = response.find('{')
+                if first_brace != -1:
+                    response = response[first_brace:]
             
-            # 2. 尝试解析每个JSON候选
+            if not response.endswith('}'):
+                last_brace = response.rfind('}')
+                if last_brace != -1:
+                    response = response[:last_brace+1]
+            
+            return response
+        except Exception:
+            return response
+    
+    def _parse_gpt_response(self, response: str, legal_moves: List[Dict]) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
+        """解析GPT响应"""
+        try:
+            # 清理响应
+            clean_response = self._clean_json_response(response)
+            
+            # 尝试直接解析清理后的JSON
+            try:
+                data = json.loads(clean_response)
+                return self._extract_move_from_json(data, legal_moves)
+            except json.JSONDecodeError:
+                pass
+            
+            # 如果直接解析失败，尝试分块解析
+            json_candidates = self._extract_json_blocks(response)
+            
             for json_str in json_candidates:
                 try:
                     data = json.loads(json_str)
-                    
-                    # 3. 验证必需字段
-                    if 'best_move' in data:
-                        best_move = data['best_move']
-                        
-                        # 4. 灵活的字段提取
-                        if isinstance(best_move, dict):
-                            from_pos = best_move.get('from')
-                            to_pos = best_move.get('to')
-                        else:
-                            continue
-                        
-                        # 5. 坐标验证
-                        if (isinstance(from_pos, list) and len(from_pos) == 2 and
-                            isinstance(to_pos, list) and len(to_pos) == 2):
-                            
-                            # 确保坐标在合理范围内
-                            if (0 <= from_pos[0] <= 7 and 0 <= from_pos[1] <= 7 and
-                                0 <= to_pos[0] <= 7 and 0 <= to_pos[1] <= 7):
-                                
-                                from_pos_tuple = tuple(from_pos)
-                                to_pos_tuple = tuple(to_pos)
-                                
-                                # 6. 验证移动合法性
-                                for move in legal_moves:
-                                    if (tuple(move['from']) == from_pos_tuple and 
-                                        tuple(move['to']) == to_pos_tuple):
-                                        
-                                        # 打印GPT的分析
-                                        if 'analysis' in data:
-                                            print(f"🧠 GPT分析: {data['analysis'][:100]}...")
-                                        if 'evaluation' in data:
-                                            print(f"📊 评估: {data['evaluation']}")
-                                        if 'reasoning' in best_move:
-                                            print(f"💭 推理: {best_move['reasoning']}")
-                                        
-                                        return (from_pos_tuple, to_pos_tuple)
-                
-                except json.JSONDecodeError as je:
-                    print(f"🔍 跳过无效JSON块: {str(je)[:50]}...")
+                    move = self._extract_move_from_json(data, legal_moves)
+                    if move:
+                        return move
+                except json.JSONDecodeError:
                     continue
             
-            print("❌ 未找到有效的best_move或移动不合法")
             return None
             
         except Exception as e:
             print(f"❌ GPT响应解析异常: {e}")
             return None
 
-    def _parse_fallback_formats(self, response: str, legal_moves: List[Dict]) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
-        """解析备用格式（如chess notation等）"""
+    def _extract_json_blocks(self, response: str) -> List[str]:
+        """提取响应中的JSON块"""
+        json_candidates = []
+        brace_count = 0
+        start_pos = -1
+        
+        for i, char in enumerate(response):
+            if char == '{':
+                if brace_count == 0:
+                    start_pos = i
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0 and start_pos != -1:
+                    json_str = response[start_pos:i+1]
+                    json_candidates.append(json_str)
+                    start_pos = -1
+        
+        return json_candidates
+    
+    def _extract_move_from_json(self, data: Dict, legal_moves: List[Dict]) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
+        """从解析的JSON中提取移动"""
+        if not isinstance(data, dict) or 'best_move' not in data:
+            return None
+        
+        best_move = data['best_move']
+        if not isinstance(best_move, dict):
+            return None
+        
+        from_pos = best_move.get('from')
+        to_pos = best_move.get('to')
+        
+        # 验证坐标格式
+        if (not isinstance(from_pos, list) or len(from_pos) != 2 or
+            not isinstance(to_pos, list) or len(to_pos) != 2 or
+            not all(isinstance(x, int) for x in from_pos + to_pos) or
+            not (0 <= from_pos[0] <= 7 and 0 <= from_pos[1] <= 7) or
+            not (0 <= to_pos[0] <= 7 and 0 <= to_pos[1] <= 7)):
+            return None
+        
+        from_pos_tuple = tuple(from_pos)
+        to_pos_tuple = tuple(to_pos)
+        
+        # 验证移动合法性
+        for move in legal_moves:
+            if (tuple(move['from']) == from_pos_tuple and 
+                tuple(move['to']) == to_pos_tuple):
+                return (from_pos_tuple, to_pos_tuple)
+        
+        return None
+
+    def _parse_smart_fallback(self, response: str, legal_moves: List[Dict]) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
+        """智能备用解析（从响应中提取坐标）"""
         try:
             import re
             
-            # 1. 尝试解析 "e2-e4" 或 "e2 to e4" 格式
-            patterns = [
-                r'([a-h][1-8])\s*[-→]\s*([a-h][1-8])',  # e2-e4 或 e2→e4
-                r'([a-h][1-8])\s+to\s+([a-h][1-8])',    # e2 to e4
-                r'move:?\s*([a-h][1-8])\s*[-→]\s*([a-h][1-8])',  # move: e2-e4
-                r'建议:?\s*([a-h][1-8])\s*[-→]\s*([a-h][1-8])',   # 建议: e2-e4
+            # 寻找坐标对
+            coord_patterns = [
+                r'(\d)\s*[,，]\s*(\d)',      # 数字,数字
+                r'\[(\d)\s*[,，]\s*(\d)\]',  # [数字,数字]
+                r'\((\d)\s*[,，]\s*(\d)\)',  # (数字,数字)
             ]
             
-            for pattern in patterns:
+            all_coords = []
+            for pattern in coord_patterns:
+                matches = re.finditer(pattern, response)
+                for match in matches:
+                    try:
+                        x, y = int(match.group(1)), int(match.group(2))
+                        if 0 <= x <= 7 and 0 <= y <= 7:
+                            all_coords.append((x, y))
+                    except ValueError:
+                        continue
+            
+            # 尝试坐标对组合
+            if len(all_coords) >= 2:
+                for i in range(len(all_coords)):
+                    for j in range(i+1, len(all_coords)):
+                        # 正向和反向都试试
+                        for from_pos, to_pos in [(all_coords[i], all_coords[j]), 
+                                                 (all_coords[j], all_coords[i])]:
+                            for move in legal_moves:
+                                if (tuple(move['from']) == from_pos and 
+                                    tuple(move['to']) == to_pos):
+                                    return (from_pos, to_pos)
+            
+            # 尝试棋谱记号
+            notation_matches = re.findall(r'\b([a-h][1-8])\b', response.lower())
+            if len(notation_matches) >= 2:
+                for i in range(len(notation_matches)):
+                    for j in range(i+1, len(notation_matches)):
+                        from_notation = notation_matches[i]
+                        to_notation = notation_matches[j]
+                        
+                        from_pos = self._notation_to_pos(from_notation)
+                        to_pos = self._notation_to_pos(to_notation)
+                        
+                        if from_pos and to_pos:
+                            for move in legal_moves:
+                                if (tuple(move['from']) == from_pos and 
+                                    tuple(move['to']) == to_pos):
+                                    return (from_pos, to_pos)
+            
+            return None
+            
+        except Exception:
+            return None
+    
+    def _parse_fallback_formats(self, response: str, legal_moves: List[Dict]) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
+        """解析备用格式（棋谱记号和坐标格式）"""
+        try:
+            import re
+            
+            # 棋谱记号格式
+            notation_patterns = [
+                r'([a-h][1-8])\s*[-→]\s*([a-h][1-8])',
+                r'([a-h][1-8])\s+to\s+([a-h][1-8])',
+                r'move:?\s*([a-h][1-8])\s*[-→]\s*([a-h][1-8])',
+            ]
+            
+            for pattern in notation_patterns:
                 matches = re.finditer(pattern, response, re.IGNORECASE)
                 for match in matches:
-                    from_notation = match.group(1).lower()
-                    to_notation = match.group(2).lower()
-                    
-                    # 转换为坐标
-                    from_pos = self._notation_to_pos(from_notation)
-                    to_pos = self._notation_to_pos(to_notation)
+                    from_pos = self._notation_to_pos(match.group(1).lower())
+                    to_pos = self._notation_to_pos(match.group(2).lower())
                     
                     if from_pos and to_pos:
-                        # 验证移动合法性
                         for move in legal_moves:
                             if (tuple(move['from']) == from_pos and 
                                 tuple(move['to']) == to_pos):
-                                print(f"🎯 解析棋谱记号: {from_notation}-{to_notation} -> {from_pos} -> {to_pos}")
                                 return (from_pos, to_pos)
             
-            # 2. 尝试解析坐标格式 "(0,1) to (0,3)" 或 "[0,1] -> [0,3]"
+            # 坐标格式
             coord_patterns = [
-                r'\((\d),\s*(\d)\)\s*[-→到至]\s*\((\d),\s*(\d)\)',       # (0,1) -> (0,3)
-                r'\[(\d),\s*(\d)\]\s*[-→到至]\s*\[(\d),\s*(\d)\]',       # [0,1] -> [0,3]
-                r'(\d),\s*(\d)\s+(?:to|到|至)\s+(\d),\s*(\d)',         # 0,1 to 0,3
-                r'位置\s*\[(\d),\s*(\d)\]\s*到\s*\[(\d),\s*(\d)\]',     # 位置 [0,1] 到 [0,2]
+                r'\((\d),\s*(\d)\)\s*[-→到至]\s*\((\d),\s*(\d)\)',
+                r'\[(\d),\s*(\d)\]\s*[-→到至]\s*\[(\d),\s*(\d)\]',
+                r'(\d),\s*(\d)\s+(?:to|到|至)\s+(\d),\s*(\d)',
             ]
             
             for pattern in coord_patterns:
@@ -384,19 +431,15 @@ class GPTChessAI:
                             from_pos = (from_x, from_y)
                             to_pos = (to_x, to_y)
                             
-                            # 验证移动合法性
                             for move in legal_moves:
                                 if (tuple(move['from']) == from_pos and 
                                     tuple(move['to']) == to_pos):
-                                    print(f"🎯 解析坐标格式: {from_pos} -> {to_pos}")
                                     return (from_pos, to_pos)
                     except ValueError:
                         continue
             
             return None
-            
-        except Exception as e:
-            print(f"❌ 备用解析失败: {e}")
+        except Exception:
             return None
 
     def _notation_to_pos(self, notation: str) -> Optional[Tuple[int, int]]:
@@ -466,8 +509,6 @@ class GPTChessAI:
         
         # 选择得分最高的移动
         best_move = max(scored_moves, key=lambda x: x[1])[0]
-        
-        print(f"🎭 模拟GPT选择移动: {best_move[0]} -> {best_move[1]}")
         return best_move
     
     def _get_fallback_move(self, board: ChessBoard, color: PieceColor, legal_moves: List[Dict]) -> Optional[Tuple[Tuple[int, int], Tuple[int, int]]]:
@@ -645,35 +686,29 @@ class GPTChessAI:
     def reset_conversation(self):
         """重置对话历史"""
         self.conversation_history = []
-        print("🔄 对话历史已重置")
 
 def main():
     """测试GPT AI"""
-    print("🤖 GPT-4o-mini Chess AI 测试")
-    
-    # 检查API密钥
-    api_key = os.getenv('OPENAI_API_KEY')
-    if not api_key:
-        print("⚠️ 未设置OPENAI_API_KEY环境变量，将使用模拟模式")
-        print("设置方法: set OPENAI_API_KEY=your_api_key")
+    print("🤖 GPT Chess AI 测试")
     
     # 创建AI实例
+    api_key = os.getenv('OPENAI_API_KEY')
     gpt_ai = GPTChessAI(api_key)
     
     # 创建测试棋盘
     board = ChessBoard()
     
     # 测试移动
-    print("\n测试GPT AI移动选择...")
     move = gpt_ai.get_best_move(board, PieceColor.WHITE)
     
     if move:
-        print(f"GPT选择的移动: {move}")
+        print(f"✅ GPT选择移动: {move[0]} -> {move[1]}")
     else:
-        print("GPT未能选择移动")
+        print("❌ GPT未能选择移动")
     
     # 显示统计信息
-    print(f"\nGPT AI统计信息: {gpt_ai.get_stats()}")
+    stats = gpt_ai.get_stats()
+    print(f"📊 成功率: {stats['success_rate']}, 平均响应时间: {stats.get('average_response_time', 0):.2f}s")
 
 if __name__ == "__main__":
     main()
