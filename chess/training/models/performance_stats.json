@@ -1,8 +1,8 @@
 {
-  "games_per_second": 0.0828730504391819,
-  "training_loss": 2.381256341934204,
+  "games_per_second": 2.5141456899972545,
+  "training_loss": 0.4583357274532318,
   "gpu_utilization": 0.0,
   "total_parameters": 3401474,
   "model_size_mb": 12.975593566894531,
-  "batch_processing_time": 0.0
+  "batch_processing_time": 0.041007041931152344
 }

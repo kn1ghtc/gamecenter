@@ -31,6 +31,11 @@ class ChessUI:
     """国际象棋用户界面"""
     
     def __init__(self):
+        # 优先初始化音频以提高兼容性与降低延迟
+        try:
+            pygame.mixer.pre_init(frequency=44100, size=-16, channels=2, buffer=512)
+        except Exception:
+            pass
         pygame.init()
         pygame.font.init()
 
@@ -126,33 +131,70 @@ class ChessUI:
         self.buttons['pause'] = pygame.Rect(right_x, row2_y, col_width, button_height)
     
     def _load_sounds(self) -> Dict:
-        """加载音效（优先加载本地 OGG 文件）"""
-        sounds = {}
-        sound_dir = os.path.join(PATHS['assets'], "sounds")
-        move_path = os.path.join(sound_dir, "move.ogg")
-        capture_path = os.path.join(sound_dir, "capture.ogg")
-        check_path = os.path.join(sound_dir, "check.ogg")
+        """加载音效（优先加载本地 OGG 文件），带回退与日志"""
+        sounds: Dict[str, pygame.mixer.Sound] = {}
+        # 主路径
+        primary_dir = os.path.join(PATHS['assets'], "sounds")
+        # 备用：以当前文件定位到仓库根的 assets/sounds
+        repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
+        fallback_dir = os.path.join(repo_root, 'assets', 'sounds')
+        sound_dir = primary_dir if os.path.isdir(primary_dir) else fallback_dir
+
+        # 目标文件
+        files = {
+            'move': os.path.join(sound_dir, 'move.ogg'),
+            'capture': os.path.join(sound_dir, 'capture.ogg'),
+            'check': os.path.join(sound_dir, 'check.ogg')
+        }
 
         try:
-            pygame.mixer.init()
-            if os.path.exists(move_path):
-                sounds['move'] = pygame.mixer.Sound(move_path)
-            if os.path.exists(capture_path):
-                sounds['capture'] = pygame.mixer.Sound(capture_path)
-            if os.path.exists(check_path):
-                sounds['check'] = pygame.mixer.Sound(check_path)
+            if not pygame.mixer.get_init():
+                try:
+                    pygame.mixer.init(frequency=44100, size=-16, channels=2, buffer=512)
+                except Exception as e:
+                    print(f"⚠️ 音频初始化失败（首次）：{e}")
+                    # 尝试使用默认参数再次初始化
+                    try:
+                        pygame.mixer.init()
+                    except Exception as e2:
+                        print(f"⚠️ 音频初始化失败（默认）：{e2}")
+                        return sounds
+
+            for key, path in files.items():
+                if os.path.exists(path):
+                    try:
+                        snd = pygame.mixer.Sound(path)
+                        snd.set_volume(0.6)
+                        sounds[key] = snd
+                    except Exception as e:
+                        print(f"⚠️ 加载音效失败 {key} -> {path}: {e}")
+                else:
+                    # 路径不存在时记录一次
+                    print(f"ℹ️ 音效文件未找到: {path}")
+
+            if sounds:
+                print(f"🔊 音效加载完成: {', '.join(sounds.keys())}")
+            else:
+                print(f"⚠️ 未能加载任何音效，目录: {sound_dir}")
         except Exception as e:
-            # 声音不是关键路径，失败时静默
-            pass
+            print(f"⚠️ 音效系统初始化异常: {e}")
 
         return sounds
     
     def _on_game_event(self, event: str, data: Dict):
         """处理游戏事件"""
         if event == 'move_made':
-            # 播放移动音效
-            if 'move' in self.sounds:
-                self.sounds['move'].play()
+            # 播放音效（若能识别吃子则播放 capture，否则播放 move）
+            try:
+                is_capture = bool(data.get('captured_piece') or data.get('was_capture'))
+            except Exception:
+                is_capture = False
+            key = 'capture' if is_capture and 'capture' in self.sounds else 'move'
+            if key in self.sounds:
+                try:
+                    self.sounds[key].play()
+                except Exception as e:
+                    print(f"⚠️ 播放音效失败: {e}")
                 
             # 添加移动动画
             from_pos = data['from']

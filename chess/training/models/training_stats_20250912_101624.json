@@ -1,0 +1,39 @@
+{
+  "games_played": 3,
+  "white_wins": 0,
+  "black_wins": 1,
+  "draws": 2,
+  "total_moves": 338,
+  "ml_ai_wins": 1,
+  "ml_ai_losses": 0,
+  "ml_ai_draws": 2,
+  "average_game_length": 112.66666666666667,
+  "win_rate_progression": [],
+  "loss_progression": [
+    0.6200845837593079,
+    0.673230767250061,
+    0.779474675655365,
+    0.4342934489250183,
+    0.44949495792388916,
+    0.4257332980632782,
+    0.35954806208610535,
+    0.4520258605480194,
+    0.29269543290138245,
+    0.22403877973556519,
+    0.5967651009559631,
+    0.4583357274532318
+  ],
+  "epsilon_progression": [],
+  "training_epochs": 0,
+  "total_training_time": 1.1932482719421387,
+  "start_time": "2025-09-12T10:16:21.234317",
+  "model_updates": 12,
+  "historical_games_loaded": 15,
+  "total_training_samples": 271,
+  "convergence_metrics": {
+    "loss_variance": 0.0,
+    "win_rate_stability": 0.0,
+    "learning_curve_slope": 0.0
+  },
+  "end_time": "2025-09-12T10:16:24.938750"
+}

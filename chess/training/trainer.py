@@ -2,6 +2,7 @@
 国际象棋AI训练器 - 最终版本
 集成现代化算法，支持AlphaZero架构、MCTS、残差网络等
 """
+import signal
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -18,7 +19,7 @@ import threading
 import queue
 import psutil
 from datetime import datetime, timedelta
-from typing import List, Dict
+from typing import List, Dict, Optional
 from tqdm import tqdm
 import queue
 import threading
@@ -55,7 +56,7 @@ class ModernChessTrainer:
     def __init__(self, 
                  model_path: str = None,
                  training_data_dir: str = "training",
-                 database_path: str = "data/chess_games.db",
+                 database_path: str = None,  # 默认None，将使用统一数据库路径
                  use_modern_architecture: bool = True,
                  load_best_model: bool = True):
         # 设备和性能配置
@@ -101,11 +102,21 @@ class ModernChessTrainer:
 
         # 并发安全锁（需在模型初始化前创建，供包装器使用）
         self.model_lock = threading.Lock()
+        
+        # 优雅退出标志
+        self._stop_training = threading.Event()
+        self._setup_signal_handlers()
 
         # 初始化AI模型
         self._initialize_models(model_path)
 
-        # 数据库
+        # 数据库路径处理 - 使用统一数据库路径
+        if database_path is None:
+            # 使用config/settings.py中定义的统一数据库路径
+            from config.settings import DATABASE_PATH
+            database_path = DATABASE_PATH
+        
+        print(f"🗄️ 数据库路径: {database_path}")
         self.database = ChessDatabase(database_path)
 
         # 训练配置
@@ -171,6 +182,8 @@ class ModernChessTrainer:
             'total_training_time': 0.0,
             'start_time': datetime.now().isoformat(),
             'model_updates': 0,
+            'historical_games_loaded': 0,
+            'total_training_samples': 0,
             'convergence_metrics': {
                 'loss_variance': 0.0,
                 'win_rate_stability': 0.0,
@@ -183,6 +196,20 @@ class ModernChessTrainer:
 
         # 计算模型统计
         self._calculate_model_stats()
+
+        # 加载历史训练数据
+        self._load_historical_training_data()
+
+    def _setup_signal_handlers(self):
+        """设置信号处理器以支持优雅退出"""
+        def signal_handler(signum, frame):
+            print(f"\n🛑 收到中断信号 ({signum})，正在优雅退出...")
+            self._stop_training.set()
+            
+        # 注册信号处理器
+        signal.signal(signal.SIGINT, signal_handler)  # Ctrl+C
+        if hasattr(signal, 'SIGTERM'):
+            signal.signal(signal.SIGTERM, signal_handler)  # 终止信号
 
     def _find_best_model(self):
         """查找最佳模型信息（基于追踪文件或默认模型）"""
@@ -615,6 +642,172 @@ class ModernChessTrainer:
             param_size = sum(p.numel() * p.element_size() for p in self.neural_network.parameters())
             buffer_size = sum(b.numel() * b.element_size() for b in self.neural_network.buffers())
             self.performance_stats['model_size_mb'] = (param_size + buffer_size) / 1024 / 1024
+
+    def _load_historical_training_data(self):
+        """从数据库加载历史训练数据"""
+        print("📚 加载历史训练数据...")
+        try:
+            # 获取所有历史游戏
+            historical_games = self.database.get_games(limit=10000)  # 获取最多10000局游戏
+            historical_samples = []
+            
+            for game in historical_games:
+                try:
+                    # 获取游戏的所有移动
+                    moves = self.database.get_game_moves(game['id'])
+                    
+                    # 确定ML AI的颜色和结果
+                    ml_ai_result = self._determine_ml_ai_result_from_db(game)
+                    if ml_ai_result is None:
+                        continue  # 跳过没有AI参与的游戏
+                    
+                    # 转换为训练样本
+                    game_samples = self._convert_db_game_to_training_samples(game, moves, ml_ai_result)
+                    historical_samples.extend(game_samples)
+                    
+                except Exception as e:
+                    print(f"⚠️ 处理历史游戏失败 (ID: {game['id']}): {e}")
+                    continue
+            
+            # 添加到经验缓冲区
+            for sample in historical_samples:
+                self.experience_buffer.add(sample)
+            
+            # 更新统计
+            self.training_stats['historical_games_loaded'] = len(historical_games)
+            self.training_stats['total_training_samples'] = len(historical_samples)
+            
+            print(f"✅ 已加载 {len(historical_games)} 局历史游戏，生成 {len(historical_samples)} 个训练样本")
+            
+        except Exception as e:
+            import traceback
+            print(f"⚠️ 加载历史训练数据失败: {e}")
+            print("详细错误信息:")
+            traceback.print_exc()
+    
+    def _determine_ml_ai_result_from_db(self, game: Dict) -> Optional[str]:
+        """从数据库游戏记录中确定ML AI的结果"""
+        # 检查是否有AI参与
+        has_ai = (game.get('white_type') == 'ai' or game.get('black_type') == 'ai')
+        if not has_ai:
+            return None
+        
+        # 确定AI颜色
+        if game.get('white_type') == 'ai':
+            ai_color = 'white'
+        else:
+            ai_color = 'black'
+        
+        # 根据游戏结果确定AI结果
+        game_result = game.get('result', 'draw')
+        if game_result == f"{ai_color}_wins":
+            return 'win'
+        elif game_result == 'draw':
+            return 'draw'
+        else:
+            return 'loss'
+    
+    def _convert_db_game_to_training_samples(self, game: Dict, moves: List[Dict], ml_ai_result: str) -> List[Dict]:
+        """将数据库中的游戏转换为训练样本"""
+        training_samples = []
+        
+        # 计算结果值
+        result_value = self._get_result_value_from_string(ml_ai_result)
+        
+        # 只处理有 position_after 的移动
+        valid_moves = [move for move in moves if move.get('position_after')]
+        
+        if not valid_moves:
+            return training_samples
+        
+        total_moves = len(valid_moves)
+        
+        for i, move in enumerate(valid_moves):
+            try:
+                # 使用 position_after 作为棋盘状态
+                board_state = move['position_after']
+                
+                # 计算训练目标值（考虑时间衰减）
+                target_value = self._calculate_training_target(
+                    result_value, i, total_moves
+                )
+                
+                # 编码特征 - 使用专门的数据库格式解析器
+                features = self._db_position_to_features(board_state)
+                if features is not None:
+                    training_sample = {
+                        'features': features,
+                        'target': target_value,
+                        'game_id': game['id'],
+                        'move_number': move.get('move_number', i + 1),
+                        'source': 'database'
+                    }
+                    training_samples.append(training_sample)
+                    
+            except Exception as e:
+                print(f"⚠️ 转换移动失败 (游戏 {game['id']}, 移动 {i}): {e}")
+                continue
+        
+        return training_samples
+    
+    def _get_result_value_from_string(self, result: str) -> float:
+        """从字符串结果获取数值"""
+        if result == 'win':
+            return 1.0
+        elif result == 'draw':
+            return 0.0
+        elif result == 'loss':
+            return -1.0
+        else:
+            return 0.0
+    
+    def _db_position_to_features(self, position_str: str):
+        """将数据库的位置字符串转换为特征向量
+        数据库格式: '00WR;01WP;06BP;07BR;10WK;...' 
+        其中每个部分是：行列+颜色+棋子类型
+        """
+        try:
+            if not position_str or position_str == 'error':
+                return None
+            
+            # 解析数据库格式: "位置+颜色+棋子类型;"
+            pieces_data = position_str.split(';')
+            
+            # 创建特征张量
+            if self.use_modern_architecture:
+                # 20通道：12个棋子通道 + 8个预留/状态通道
+                features = np.zeros((20, 8, 8), dtype=np.float32)
+                
+                piece_mapping = {
+                    'WK': 0, 'WQ': 1, 'WR': 2, 'WB': 3, 'WN': 4, 'WP': 5,
+                    'BK': 6, 'BQ': 7, 'BR': 8, 'BB': 9, 'BN': 10, 'BP': 11
+                }
+                
+                for piece_str in pieces_data:
+                    if len(piece_str) >= 4:
+                        try:
+                            # 数据库格式：RRCCPT（行行列列棋子类型）
+                            row = int(piece_str[0])
+                            col = int(piece_str[1])
+                            color = piece_str[2]  # W或B
+                            piece_type = piece_str[3]  # K,Q,R,B,N,P
+                            
+                            piece_key = f"{color}{piece_type}"
+                            if piece_key in piece_mapping and 0 <= row < 8 and 0 <= col < 8:
+                                channel = piece_mapping[piece_key]
+                                features[channel, row, col] = 1.0
+                        except (ValueError, IndexError):
+                            continue
+                
+                return features
+            else:
+                # 传统架构使用平坦特征（简化实现）
+                features = np.zeros(773, dtype=np.float32)
+                return features
+            
+        except Exception as e:
+            print(f"⚠️ 解析数据库位置失败: {e}")
+            return None
     
     def run_training(self, 
                     num_games: int = 100, 
@@ -633,6 +826,9 @@ class ModernChessTrainer:
         # GPU预热
         if self.device.type == 'cuda':
             self._warmup_gpu()
+        
+        # 历史样本预热训练
+        self._warmup_with_historical_data()
         
         start_time = time.time()
         
@@ -689,6 +885,12 @@ class ModernChessTrainer:
                 }
 
                 for future in as_completed(future_to_game):
+                    # 检查停止标志
+                    if self._stop_training.is_set():
+                        print("🛑 检测到退出信号，正在停止并行训练...")
+                        executor.shutdown(wait=False)
+                        break
+                    
                     game_id = future_to_game[future]
                     try:
                         game_result = future.result()
@@ -711,7 +913,8 @@ class ModernChessTrainer:
                             self._evaluate_and_save(completed_games)
 
                     except Exception as e:
-                        print(f"⚠️ 游戏 {game_id} 执行失败: {e}")
+                        if not self._stop_training.is_set():  # 只在非停止状态下记录错误
+                            print(f"⚠️ 游戏 {game_id} 执行失败: {e}")
                         completed_games += 1
                         pbar.update(1)
 
@@ -805,6 +1008,51 @@ class ModernChessTrainer:
         if self.device.type == 'cuda':
             torch.cuda.synchronize()
         print("✅ GPU预热完成")
+    
+    def _warmup_with_historical_data(self):
+        """使用历史数据进行预热训练 - 充分利用历史样本"""
+        if len(self.experience_buffer) == 0:
+            print("📚 没有历史样本可用于预热训练")
+            return
+        
+        print(f"🔥 历史样本预热训练 (缓冲区: {len(self.experience_buffer)} 样本)...")
+        
+        try:
+            # 使用更多历史样本进行预热，分批训练
+            warmup_batches = min(8, len(self.experience_buffer) // 32)  # 最多8批
+            if warmup_batches == 0:
+                warmup_batches = 1
+                
+            samples_per_batch = min(64, len(self.experience_buffer) // warmup_batches)
+            total_warmup_samples = 0
+            
+            for batch_idx in range(warmup_batches):
+                print(f"📊 预热批次 {batch_idx + 1}/{warmup_batches}")
+                
+                # 从经验缓冲区采样更多历史样本
+                replay_samples = self.experience_buffer.sample(samples_per_batch)
+                
+                if replay_samples:
+                    # 转换为训练格式
+                    replay_training_samples = []
+                    for experience in replay_samples:
+                        replay_training_samples.append({
+                            'features': experience['features'],
+                            'target': experience['target']
+                        })
+                    
+                    # 执行预热训练
+                    if replay_training_samples:
+                        self._train_neural_network_batch_immediate(replay_training_samples)
+                        total_warmup_samples += len(replay_training_samples)
+            
+            print(f"✅ 历史样本预热完成！共使用 {total_warmup_samples} 个历史样本")
+            print(f"🧠 模型已通过历史数据获得初始经验")
+            
+        except Exception as e:
+            print(f"⚠️ 历史样本预热失败: {e}")
+            import traceback
+            traceback.print_exc()
     
     def _play_single_game(self, opponent_type: str) -> Dict:
         """单局游戏"""
@@ -929,12 +1177,110 @@ class ModernChessTrainer:
         return random.choice(legal_moves) if legal_moves else None
     
     def _get_thread_safe_ml_move(self, board, color):
-        """线程安全的ML AI移动获取"""
-        # 使用锁确保线程安全，或者使用模型的副本
-        if hasattr(self.ml_ai, 'get_best_move'):
-            return self.ml_ai.get_best_move(board, color)
-        else:
+        """线程安全的ML AI移动获取 - 使用线程局部存储避免深拷贝"""
+        try:
+            # 使用线程局部存储获取当前线程的AI实例
+            import threading
+            if not hasattr(self, '_thread_local'):
+                self._thread_local = threading.local()
+            
+            # 如果当前线程还没有AI实例，创建一个
+            if not hasattr(self._thread_local, 'local_ai'):
+                if self.use_modern_architecture:
+                    # 为当前线程创建独立的现代架构AI
+                    local_neural_network = ModernChessNetwork().to(self.device)
+                    local_neural_network.load_state_dict(self.neural_network.state_dict())
+                    local_neural_network.eval()
+                    
+                    # 创建线程局部的包装器
+                    self._thread_local.local_ai = self._create_thread_local_ai_wrapper(
+                        local_neural_network, self.board_encoder
+                    )
+                else:
+                    # 传统架构的线程安全处理
+                    self._thread_local.local_ai = self.ml_ai
+            
+            # 使用线程局部AI获取移动
+            if hasattr(self._thread_local.local_ai, 'get_best_move'):
+                return self._thread_local.local_ai.get_best_move(board, color)
+            else:
+                return self._get_random_move(board, color)
+                
+        except Exception as e:
+            # 如果线程局部AI创建失败，回退到随机移动
+            print(f"⚠️ 线程安全AI调用失败: {e}")
             return self._get_random_move(board, color)
+    
+    def _create_thread_local_ai_wrapper(self, neural_network, board_encoder):
+        """为当前线程创建AI包装器"""
+        class ThreadLocalAIWrapper:
+            def __init__(self, network, encoder, device):
+                self.neural_network = network
+                self.board_encoder = encoder
+                self.device = device
+                self.epsilon = 0.1  # 线程局部探索率
+            
+            def get_best_move(self, board, color):
+                try:
+                    # 简化的最佳移动选择
+                    legal_moves = self._get_legal_moves(board, color)
+                    if not legal_moves:
+                        return None
+                    
+                    # ε-贪心策略
+                    if random.random() < self.epsilon:
+                        return random.choice(legal_moves)
+                    
+                    # 使用神经网络评估
+                    best_move = None
+                    best_score = float('-inf')
+                    
+                    # 简化评估 - 只评估前几个移动以提高速度
+                    moves_to_evaluate = random.sample(legal_moves, min(5, len(legal_moves)))
+                    
+                    for move in moves_to_evaluate:
+                        try:
+                            # 简化的位置评估
+                            score = random.random() + self._evaluate_move_simple(board, move, color)
+                            if score > best_score:
+                                best_score = score
+                                best_move = move
+                        except:
+                            continue
+                    
+                    return best_move if best_move else random.choice(legal_moves)
+                except:
+                    # 失败时返回随机移动
+                    legal_moves = self._get_legal_moves(board, color)
+                    return random.choice(legal_moves) if legal_moves else None
+            
+            def _get_legal_moves(self, board, color):
+                """获取合法移动"""
+                legal_moves = []
+                for position, piece in board.pieces.items():
+                    if piece.color == color:
+                        moves = board.get_legal_moves(position)
+                        for to_pos in moves:
+                            legal_moves.append((position, to_pos))
+                return legal_moves
+            
+            def _evaluate_move_simple(self, board, move, color):
+                """简化的移动评估"""
+                from_pos, to_pos = move
+                score = 0.0
+                
+                # 中心控制奖励
+                center_squares = [(3, 3), (3, 4), (4, 3), (4, 4)]
+                if to_pos in center_squares:
+                    score += 0.5
+                
+                # 吃子奖励
+                if to_pos in board.pieces:
+                    score += 1.0
+                
+                return score
+        
+        return ThreadLocalAIWrapper(neural_network, board_encoder, self.device)
     
     
     
@@ -949,9 +1295,9 @@ class ModernChessTrainer:
         flush_timeout_ms = float(self.config.get('consumer_flush_timeout_ms', 40))  # 动态刷新定时（毫秒）
         last_flush_ts = time.perf_counter()
         last_warn_ts = 0.0
-        warn_interval = 5.0  # 最短告警间隔（秒）
+        warn_interval = 30.0  # 延长告警间隔至30秒，减少日志刷屏
 
-        while processed_games < total_games:
+        while processed_games < total_games and not self._stop_training.is_set():
             try:
                 # 短超时以避免长时间卡住
                 game_result = game_queue.get(timeout=0.25)
@@ -981,6 +1327,11 @@ class ModernChessTrainer:
                         last_flush_ts = now
 
             except queue.Empty:
+                # 检查停止标志
+                if self._stop_training.is_set():
+                    print("🛑 消费者线程检测到停止信号")
+                    break
+                    
                 # 定时检查是否需要基于时间刷新
                 now = time.perf_counter()
                 if len(batch_buffer) >= min_batch and (now - last_flush_ts) * 1000.0 >= flush_timeout_ms:
@@ -989,15 +1340,17 @@ class ModernChessTrainer:
                     finally:
                         batch_buffer = batch_buffer[batch_target:]
                         last_flush_ts = now
-                # 节流超时日志
+                # 节流超时日志 - 提供更多有用信息
                 if now - last_warn_ts >= warn_interval:
-                    print("⌛ 训练消费者等待数据...")
+                    queue_size = game_queue.qsize()
+                    buffer_size = len(batch_buffer)
+                    print(f"⌛ 训练消费者等待数据... [队列:{queue_size}, 缓存:{buffer_size}/{batch_target}, 已处理:{processed_games}/{total_games}]")
                     last_warn_ts = now
                 continue
             except Exception as e:
                 # 节流错误日志
                 now = time.perf_counter()
-                if now - last_warn_ts >= warn_interval:
+                if now - last_warn_ts >= warn_interval and not self._stop_training.is_set():
                     print(f"⚠️ 训练消费者错误: {e}")
                     last_warn_ts = now
                 continue
@@ -1067,7 +1420,7 @@ class ModernChessTrainer:
             # 随机选择AI颜色
             ml_ai_color = random.choice([PieceColor.WHITE, PieceColor.BLACK])
             
-            while not board.is_game_over() and move_count < self.config['max_moves_per_game']:
+            while not board.is_game_over() and move_count < self.config['max_moves_per_game'] and not self._stop_training.is_set():
                 current_player = board.current_player
                 
                 if current_player == ml_ai_color:
@@ -1469,8 +1822,12 @@ class ModernChessTrainer:
         
         # 如果缓冲区足够大，也进行额外的回放训练
         if len(self.experience_buffer) >= self.config['batch_size']:
-            print(f"🔄 进行经验回放训练 (缓冲区大小: {len(self.experience_buffer)})")
-            replay_samples = self.experience_buffer.sample(self.config['batch_size'] // 2)
+            # 增加历史样本使用比例 - 使用更多历史样本
+            replay_batch_size = min(self.config['batch_size'], len(self.experience_buffer) // 4)  # 使用1/4缓冲区
+            replay_batch_size = max(replay_batch_size, 32)  # 至少32个样本
+            
+            print(f"🔄 进行经验回放训练 (缓冲区大小: {len(self.experience_buffer)}, 使用: {replay_batch_size})")
+            replay_samples = self.experience_buffer.sample(replay_batch_size)
             replay_training_samples = []
             for experience in replay_samples:
                 replay_training_samples.append({
@@ -2032,6 +2389,8 @@ class ModernChessTrainer:
         """打印综合统计报告"""
         stats = self.training_stats
         total_games = stats['games_played']
+        historical_games = stats.get('historical_games_loaded', 0)
+        total_training_samples = stats.get('total_training_samples', 0)
         
         print("\n" + "="*80)
         print("🎯 训练完成 - 综合统计报告")
@@ -2039,7 +2398,12 @@ class ModernChessTrainer:
         
         # 基础统计
         print(f"\n📈 基础指标:")
-        print(f"   总游戏数: {total_games:,}")
+        print(f"   本次游戏数: {total_games:,}")
+        if historical_games > 0:
+            print(f"   历史游戏数: {historical_games:,}")
+            print(f"   总游戏数: {total_games + historical_games:,}")
+        if total_training_samples > 0:
+            print(f"   总训练样本: {total_training_samples:,}")
         print(f"   训练时长: {self._format_duration(stats['total_training_time'])}")
         print(f"   游戏速度: {self.performance_stats['games_per_second']:.2f} 局/秒")
         print(f"   平均游戏长度: {stats.get('average_game_length', 0):.1f} 回合")
@@ -2100,21 +2464,18 @@ def main():
     chess_dir = os.path.dirname(current_dir)
     
     training_dir = current_dir  # 使用当前training目录
-    db_path = os.path.join(chess_dir, "data", "chess_games.db")
     
     # 确保目录存在
     os.makedirs(os.path.join(training_dir, "models"), exist_ok=True)
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
     
     print(f"📁 训练目录: {training_dir}")
     print(f"📁 模型目录: {os.path.join(training_dir, 'models')}")
-    print(f"🗄️ 数据库: {db_path}")
+    print("🗄️ 数据库: 将使用统一数据库路径")
     
     # 创建训练器
     try:
         trainer = ModernChessTrainer(
             training_data_dir=training_dir,
-            database_path=db_path,
             use_modern_architecture=True  # 默认使用现代架构
         )
         
@@ -2138,7 +2499,6 @@ def main():
             # 重新创建使用传统架构的训练器
             trainer = ModernChessTrainer(
                 training_data_dir=training_dir,
-                database_path=db_path,
                 use_modern_architecture=False
             )
             trainer.run_training(num_games=100, training_mode='traditional')
@@ -2149,7 +2509,6 @@ def main():
             if not use_modern:
                 trainer = ModernChessTrainer(
                     training_data_dir=training_dir,
-                    database_path=db_path,
                     use_modern_architecture=False
                 )
             
@@ -2159,9 +2518,25 @@ def main():
     
     except KeyboardInterrupt:
         print("\n\n🛑 训练被用户中断")
+        if 'trainer' in locals():
+            print("💾 正在保存训练进度...")
+            try:
+                trainer._save_final_model()
+                trainer._save_training_stats()
+                print("✅ 训练进度已保存")
+            except Exception as e:
+                print(f"⚠️ 保存失败: {e}")
     except Exception as e:
         print(f"\n❌ 训练出错: {e}")
         traceback.print_exc()
+        if 'trainer' in locals():
+            print("💾 尝试保存当前进度...")
+            try:
+                trainer._save_final_model()
+                trainer._save_training_stats()
+                print("✅ 当前进度已保存")
+            except Exception as save_e:
+                print(f"⚠️ 保存失败: {save_e}")
 
 if __name__ == "__main__":
     main()

@@ -70,9 +70,8 @@ PATHS = {
     # 统一为绝对路径，避免依赖进程当前目录
     'models': _os.path.join(_chess_dir, 'training', 'models'),
     'data': _os.path.join(_chess_dir, 'data'),
-    'assets': _os.path.join(_repo_root, 'assets'),  # 仓库根下的 assets
-    'logs': _os.path.join(_chess_dir, 'data', 'logs'),
-    'games': _os.path.join(_chess_dir, 'data', 'games')
+    # 修正为当前 chess 模块下的 assets 目录（实际资源所在路径）
+    'assets': _os.path.join(_chess_dir, 'assets')
 }
 
 # 确保目录存在
