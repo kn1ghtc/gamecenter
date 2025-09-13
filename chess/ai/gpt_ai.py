@@ -207,7 +207,7 @@ class GPTChessAI:
         response = openai.chat.completions.create(
             model=self.model,
             messages=messages,
-            max_tokens=500,
+            max_tokens=400,
             temperature=0.3,  # 低温度保证一致性
             top_p=0.9,
             frequency_penalty=0.1
