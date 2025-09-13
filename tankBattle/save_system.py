@@ -246,11 +246,14 @@ class SaveMenu:
     """存档菜单"""
     def __init__(self, save_system):
         self.save_system = save_system
-        # 使用支持中文的字体，调整为更小的尺寸
+        # 使用改进的中文字体配置
         try:
-            self.font = pygame.font.SysFont(['arialunicode', 'pingfang', 'hiraginosansgb', 'stheitimedium'], 20)
-            self.big_font = pygame.font.SysFont(['arialunicode', 'pingfang', 'hiraginosansgb', 'stheitimedium'], 28)
-        except:
+            self.font = get_chinese_font(20)
+            self.big_font = get_chinese_font(28)
+            print("✓ 存档菜单字体初始化成功")
+        except Exception as e:
+            print(f"⚠ 存档菜单字体初始化失败: {e}")
+            # 最终降级方案
             self.font = pygame.font.Font(None, 20)
             self.big_font = pygame.font.Font(None, 28)
 

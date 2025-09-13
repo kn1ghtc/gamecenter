@@ -87,7 +87,7 @@ AI_CONFIG = {
     'DEFAULT_LEVEL': 'auto',  # 默认AI级别: 'basic', 'smart', 'enhanced', 'auto'
     'AUTO_SWITCH': True,  # 是否根据性能自动切换AI级别
     'PERFORMANCE_MONITOR': True,  # 是否启用性能监控
-    
+
     # AI决策配置 - 新增更激进的参数
     'DECISION_CONFIG': {
         'decision_timeout': 5,  # 极大减少决策超时时间，更快响应
@@ -111,7 +111,7 @@ AI_CONFIG = {
         'pursuit_tenacity': 0.9,  # 追击坚持度
         'evasion_sensitivity': 0.5,  # 闪避敏感度
     },
-    
+
     # AI调试配置 - 新增调试开关
     'DEBUG_CONFIG': {
         'enable_ai_debug': False,  # 主调试开关
@@ -124,7 +124,7 @@ AI_CONFIG = {
         'log_to_file': False,  # 是否将调试信息输出到文件
         'debug_log_path': 'ai_debug.log',  # 调试日志文件路径
     },
-    
+
     # 强化学习配置
     'RL_CONFIG': {
         'LEARNING_RATE': 0.001,
@@ -137,7 +137,7 @@ AI_CONFIG = {
         'TRAINING_ENABLED': True,  # 游戏中是否启用训练
         'MODEL_SAVE_FREQUENCY': 1000  # 每N步保存一次模型
     },
-    
+
     # 路径规划配置
     'PATHFINDING_CONFIG': {
         'ALGORITHM': 'A_STAR',  # 'A_STAR', 'DIJKSTRA'
@@ -147,7 +147,7 @@ AI_CONFIG = {
         'MAX_SEARCH_NODES': 5000,
         'TIMEOUT_MS': 30
     },
-    
+
     # 战术AI配置
     'TACTICAL_CONFIG': {
         'DECISION_LAYERS': ['strategic', 'tactical', 'operational', 'reactive'],
@@ -157,7 +157,7 @@ AI_CONFIG = {
         'MULTI_TARGET_TRACKING': True,
         'ADAPTIVE_DIFFICULTY': True
     },
-    
+
     # 性能优化配置
     'PERFORMANCE_CONFIG': {
         'MAX_AI_INSTANCES': 40,  # 最大AI实例数
@@ -314,58 +314,152 @@ LEVEL_CONFIG = {
 }
 
 # 中文字体路径配置
-CHINESE_FONT_PATHS = [
-    "C:/Windows/Fonts/msyh.ttc",      # 微软雅黑
-    "C:/Windows/Fonts/simhei.ttf",    # 黑体
-    "C:/Windows/Fonts/simsun.ttc",    # 宋体
-    "C:/Windows/Fonts/simkai.ttf",    # 楷体
-    "C:/Windows/Fonts/calibri.ttf",   # Calibri（备用）
-    "C:/Windows/Fonts/arial.ttf",     # Arial（备用）
-]
+import platform
+
+def get_system_font_paths():
+    """根据操作系统获取字体路径"""
+    system = platform.system()
+
+    if system == "Windows":
+        return [
+            "C:/Windows/Fonts/msyh.ttc",      # 微软雅黑
+            "C:/Windows/Fonts/simhei.ttf",    # 黑体
+            "C:/Windows/Fonts/simsun.ttc",    # 宋体
+            "C:/Windows/Fonts/simkai.ttf",    # 楷体
+            "C:/Windows/Fonts/calibri.ttf",   # Calibri（备用）
+            "C:/Windows/Fonts/arial.ttf",     # Arial（备用）
+        ]
+    elif system == "Darwin":  # macOS
+        return [
+            "/System/Library/Fonts/PingFang.ttc",           # 苹方字体
+            "/System/Library/Fonts/Hiragino Sans GB.ttc",   # 冬青黑体简体中文
+            "/System/Library/Fonts/STHeiti Light.ttc",      # 华文黑体
+            "/System/Library/Fonts/STHeiti Medium.ttc",     # 华文黑体中等
+            "/System/Library/Fonts/Arial Unicode.ttf",      # Arial Unicode MS
+            "/Library/Fonts/Arial Unicode.ttf",             # 系统Arial Unicode MS
+            "/System/Library/Fonts/Helvetica.ttc",          # Helvetica（备用）
+            "/System/Library/Fonts/Times.ttc",              # Times（备用）
+        ]
+    elif system == "Linux":
+        return [
+            "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",        # 文泉驿正黑
+            "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",      # 文泉驿微米黑
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",  # Noto Sans CJK
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",      # DejaVu Sans
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",  # Liberation Sans
+        ]
+    else:
+        # 未知系统，返回通用路径
+        return []
+
+CHINESE_FONT_PATHS = get_system_font_paths()
 
 def get_chinese_font(size):
     """获取可用的中文字体"""
     import pygame
-    
+    import platform
+
     # 确保pygame字体系统已初始化
     if not pygame.font.get_init():
         pygame.font.init()
-    
+
+    system = platform.system()
+    print(f"正在为 {system} 系统查找中文字体...")
+
     # 首先尝试直接使用字体文件路径（最可靠）
-    for font_path in CHINESE_FONT_PATHS:
+    for i, font_path in enumerate(CHINESE_FONT_PATHS):
         try:
             if os.path.exists(font_path):
                 font = pygame.font.Font(font_path, size)
                 # 测试字体是否支持中文
-                test_surface = font.render('测试', True, (255, 255, 255))
+                test_surface = font.render('测试中文', True, (255, 255, 255))
                 if test_surface.get_width() > 0:
+                    print(f"✓ 成功加载字体: {font_path}")
                     return font
         except Exception as e:
+            print(f"× 字体路径 {font_path} 加载失败: {e}")
             continue
-    
-    # 如果文件路径失败，尝试系统字体名称
-    chinese_font_names = [
-        'Microsoft YaHei',  # 微软雅黑
-        'SimHei',          # 黑体
-        'Microsoft YaHei UI',
-        'Arial Unicode MS',
-        'DejaVu Sans',
-        'Liberation Sans'
-    ]
-    
+
+    # 如果文件路径失败，尝试系统字体名称（跨平台）
+    def get_system_font_names():
+        if system == "Windows":
+            return [
+                'Microsoft YaHei',     # 微软雅黑
+                'SimHei',             # 黑体
+                'Microsoft YaHei UI', # 微软雅黑UI
+                'SimSun',             # 宋体
+                'Arial Unicode MS',   # Arial Unicode MS
+            ]
+        elif system == "Darwin":  # macOS
+            return [
+                'PingFang SC',        # 苹方-简
+                'PingFang TC',        # 苹方-繁
+                'Hiragino Sans GB',   # 冬青黑体简体中文
+                'STHeiti',            # 华文黑体
+                'Arial Unicode MS',   # Arial Unicode MS
+                'Helvetica Neue',     # Helvetica Neue
+            ]
+        elif system == "Linux":
+            return [
+                'WenQuanYi Zen Hei',  # 文泉驿正黑
+                'WenQuanYi Micro Hei', # 文泉驿微米黑
+                'Noto Sans CJK SC',   # Noto Sans CJK 简体中文
+                'DejaVu Sans',        # DejaVu Sans
+                'Liberation Sans',    # Liberation Sans
+            ]
+        else:
+            return []
+
+    chinese_font_names = get_system_font_names()
+
     for font_name in chinese_font_names:
         try:
             font = pygame.font.SysFont(font_name, size)
-            # 测试字体是否支持中文
-            test_surface = font.render('测试', True, (255, 255, 255))
-            if test_surface.get_width() > 0:
-                return font
-        except:
+            if font:
+                # 测试字体是否支持中文
+                test_surface = font.render('测试中文', True, (255, 255, 255))
+                if test_surface.get_width() > 0:
+                    print(f"✓ 成功加载系统字体: {font_name}")
+                    return font
+        except Exception as e:
+            print(f"× 系统字体 {font_name} 加载失败: {e}")
             continue
-    
+
+    # 尝试pygame内置字体
+    try:
+        available_fonts = pygame.font.get_fonts()
+        # 查找可能支持中文的字体
+        chinese_candidate_fonts = []
+        for font_name in available_fonts:
+            if any(keyword in font_name.lower() for keyword in
+                   ['cjk', 'chinese', 'zh', 'han', 'ping', 'fang', 'hei', 'unicode']):
+                chinese_candidate_fonts.append(font_name)
+
+        for font_name in chinese_candidate_fonts[:5]:  # 只测试前5个候选
+            try:
+                font = pygame.font.SysFont(font_name, size)
+                test_surface = font.render('测试', True, (255, 255, 255))
+                if test_surface.get_width() > 0:
+                    print(f"✓ 找到候选字体: {font_name}")
+                    return font
+            except:
+                continue
+
+    except Exception as e:
+        print(f"× 获取系统字体列表失败: {e}")
+
     # 最终回退：使用默认字体
-    print("⚠ 警告：未找到可用的中文字体，使用默认字体")
-    return pygame.font.Font(None, size)
+    print("⚠ 警告：未找到可用的中文字体，使用默认字体（中文可能显示为方框）")
+    try:
+        return pygame.font.Font(None, size)
+    except:
+        # 如果连默认字体都失败，尝试pygame的get_default_font
+        try:
+            default_font_name = pygame.font.get_default_font()
+            return pygame.font.Font(default_font_name, size)
+        except:
+            # 最后的尝试
+            return pygame.font.SysFont('arial', size)
 
 # UI显示配置
 UI_CONFIG = {
