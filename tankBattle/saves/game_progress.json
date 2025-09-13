@@ -1,36 +1,9 @@
 {
-  "last_level": 18,
-  "max_level_reached": 18,
+  "last_level": 20,
+  "max_level_reached": 20,
   "total_score": 1490,
   "play_time": 0,
   "saves": [
-    {
-      "id": 11,
-      "level": 12,
-      "score": 1070,
-      "player_health": 100,
-      "bullet_type": "HEAVY",
-      "timestamp": "2025-09-07T13:44:43.107579",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 13,
-      "score": 1170,
-      "player_health": 100,
-      "bullet_type": "HEAVY",
-      "timestamp": "2025-09-07T13:45:09.733857",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 14,
-      "score": 1270,
-      "player_health": 100,
-      "bullet_type": "RAPID",
-      "timestamp": "2025-09-07T13:45:31.248431",
-      "play_time": 0
-    },
     {
       "id": 11,
       "level": 15,
@@ -92,6 +65,33 @@
       "player_health": 5,
       "bullet_type": "PIERCING",
       "timestamp": "2025-09-07T22:49:19.351713",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 18,
+      "score": 130,
+      "player_health": 58,
+      "bullet_type": "NORMAL",
+      "timestamp": "2025-09-13T10:04:09.992159",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 19,
+      "score": 260,
+      "player_health": 70,
+      "bullet_type": "PIERCING",
+      "timestamp": "2025-09-13T10:08:04.307954",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 20,
+      "score": 400,
+      "player_health": 77,
+      "bullet_type": "PIERCING",
+      "timestamp": "2025-09-13T10:11:12.509873",
       "play_time": 0
     }
   ],
