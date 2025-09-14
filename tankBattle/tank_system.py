@@ -202,21 +202,32 @@ class BaseTank(pygame.sprite.Sprite):
 
     def fire(self):
         """发射子弹"""
-        if self.reload == 0:
-            # 计算子弹发射位置
-            bx = self.x + self.size[0] // 2 + 18 * math.cos(self.angle)
-            by = self.y + self.size[1] // 2 + 18 * math.sin(self.angle)
+        # 检查冷却时间（子类可重写此行为）
+        if not self._can_fire_now():
+            return None
+            
+        # 设置冷却时间
+        self._set_fire_cooldown()
+        
+        bx = self.x + self.size[0] // 2 + 18 * math.cos(self.angle)
+        by = self.y + self.size[1] // 2 + 18 * math.sin(self.angle)
+        return Bullet(bx, by, self.angle, self.get_owner(), self.bullet_type, self)
 
-            self.reload = self.reload_time
-            return Bullet(bx, by, self.angle, self.get_owner(), self.bullet_type, self)
-        return None
+    def _can_fire_now(self):
+        """检查当前是否可以射击（可被子类重写）"""
+        return self.reload <= 0
+
+    def _set_fire_cooldown(self):
+        """设置射击冷却（可被子类重写）"""
+        self.reload = self.reload_time
 
     def can_fire(self):
         """检查是否可以射击"""
-        return self.reload == 0
+        return self._can_fire_now()
 
     def update(self):
         """更新坦克状态"""
+        # 更新冷却时间
         if self.reload > 0:
             self.reload -= 1
 
@@ -282,8 +293,15 @@ class PlayerTank(BaseTank):
         self.unlimited_ammo = PLAYER_BULLET_CONFIG.get('UNLIMITED_AMMO', False)
         self.free_switching = PLAYER_BULLET_CONFIG.get('FREE_SWITCHING', False)
         
-        self.current_bullet_index = 0
-        self.bullet_type = self.available_bullet_types[self.current_bullet_index]
+        # 设置默认子弹类型（优先使用配置的DEFAULT_TYPE）
+        default_type = PLAYER_BULLET_CONFIG.get('DEFAULT_TYPE', 'NORMAL')
+        if default_type in self.available_bullet_types:
+            self.bullet_type = default_type
+            self.current_bullet_index = self.available_bullet_types.index(default_type)
+        else:
+            # 如果默认类型不在可用列表中，使用第一个可用类型
+            self.current_bullet_index = 0
+            self.bullet_type = self.available_bullet_types[self.current_bullet_index]
 
         # 特殊效果属性
         self.original_speed = self.speed
@@ -317,39 +335,7 @@ class PlayerTank(BaseTank):
     def fire(self):
         """发射子弹"""
         bullets = []
-
-        # 如果是自由切换模式，跳过大部分冷却检查
-        if self.free_switching:
-            # 只检查基础射击冷却
-            if self.reload == 0:
-                can_fire = True
-                self.reload = self.reload_time
-            else:
-                can_fire = False
-        else:
-            # 原有的冷却检查逻辑
-            # 检查掩体弹的特殊冷却
-            if self.bullet_type == 'BARRICADE':
-                if self.barricade_cooldown > 0:
-                    return bullets  # 掩体弹还在冷却中
-                else:
-                    # 设置掩体弹冷却
-                    from config import BULLET_TYPES
-                    self.barricade_cooldown = BULLET_TYPES['BARRICADE']['COOLDOWN']
-
-            # 检查射击冷却
-            can_fire = False
-            if self.bullet_type == 'RAPID' or self.rapid_fire_mode:
-                if self.rapid_fire_timer <= 0:
-                    can_fire = True
-                    self.rapid_fire_timer = self.rapid_fire_cooldown
-            else:
-                if self.reload == 0:
-                    can_fire = True
-                self.reload = self.reload_time
-
-        if not can_fire and self.bullet_type != 'BARRICADE':
-            return bullets
+        # 移除所有冷却限制，允许持续射击（包括掩体弹）
 
         # 计算子弹发射位置
         bx = self.x + self.size[0] // 2 + 18 * math.cos(self.angle)
@@ -372,16 +358,8 @@ class PlayerTank(BaseTank):
 
     def update(self):
         """更新坦克状态"""
-        super().update()
-
-        # 更新快速射击计时器
-        if self.rapid_fire_timer > 0:
-            self.rapid_fire_timer -= 1
-
-        # 更新掩体弹冷却计时器
-        if self.barricade_cooldown > 0:
-            self.barricade_cooldown -= 1
-            self.rapid_fire_timer -= 1
+        # 无冷却模式，无需计时器
+        pass
 
     def take_damage(self, damage):
         """受到伤害（考虑护盾效果）"""
@@ -479,6 +457,14 @@ class PlayerTank(BaseTank):
 
     def _draw_bullet_type_indicator(self, surface):
         """绘制子弹类型指示器（已禁用）"""
+        pass
+        
+    def _can_fire_now(self):
+        """玩家坦克无射击冷却限制"""
+        return True
+        
+    def _set_fire_cooldown(self):
+        """玩家坦克无射击冷却"""
         pass
 
 class EnemyTank(BaseTank):
@@ -614,29 +600,13 @@ class EnemyTank(BaseTank):
         return self.bullet_type
     
     def fire(self):
-        """AI坦克射击"""
-        if self.reload > 0:
+        """AI坦克射击 - 恢复冷却机制"""
+        # 检查冷却时间
+        if not self._can_fire_now():
             return None
-        
-        # 如果使用特殊子弹，减少剩余次数
-        if self.bullet_type in self.special_bullet_effects:
-            if self.special_bullet_effects[self.bullet_type] > 0:
-                self.special_bullet_effects[self.bullet_type] -= 1
-                if self.special_bullet_effects[self.bullet_type] == 0:
-                    # 特殊子弹用完，从可用列表中移除
-                    if self.bullet_type in self.available_bullet_types:
-                        self.available_bullet_types.remove(self.bullet_type)
-                    del self.special_bullet_effects[self.bullet_type]
-                    # 切换回默认子弹
-                    self.bullet_type = self.base_bullet_types[0]
-                    print(f"AI坦克特殊子弹用完，切换回: {self.bullet_type}")
-            else:
-                # 不应该发生，但为了安全起见
-                self.bullet_type = self.base_bullet_types[0]
-                return None
-        
-        # 设置射击冷却
-        self.reload = self.reload_time
+            
+        # 设置冷却时间
+        self._set_fire_cooldown()
         
         # 计算子弹发射位置
         bx = self.x + self.size[0] // 2 + self.turret_length * math.cos(self.angle)

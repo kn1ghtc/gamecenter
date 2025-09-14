@@ -100,7 +100,8 @@ class TankBattleTrainingEnvironment:
         # 游戏对象状态
         self.bullets = []
         self.last_shot_time = 0
-        self.shot_cooldown = 20  # 帧数
+        # 取消射击冷却，支持持续开火
+        self.shot_cooldown = 0
 
         # 课程难度参数（可爬坡）
         self.player_attack_prob = 0.02  # 玩家攻击概率（每步）
@@ -121,7 +122,15 @@ class TankBattleTrainingEnvironment:
             'miss_shot': -0.1,           # 降低未命中惩罚
             'efficient_movement': 0.1,   # 提高移动效率奖励
             'defensive_bonus': 0.5,      # 提高防守奖励
-            'angle_align': 0.05          # 提高瞄准奖励
+            'angle_align': 0.05,         # 提高瞄准奖励
+            # 新增维度
+            'base_damage': 30.0,         # 对基地造成伤害（模拟）
+            'pickup_special': 5.0,       # 捡到特殊墙奖励
+            'use_special': 3.0,          # 使用特殊效果奖励
+            'zone_control': 0.02,        # 占领中线或优势区域奖励
+            'cover_bonus': 0.02,         # 接近墙体并利用掩体奖励
+            'avoid_friendly': 0.05,      # 避免友伤奖励（模拟近似）
+            'path_efficiency': 0.03      # 路径效率奖励（直线接近）
         }
 
     def set_curriculum(self, level: float):
@@ -234,6 +243,7 @@ class TankBattleTrainingEnvironment:
     def _execute_action(self, action: int) -> float:
         """执行动作并返回奖励"""
         reward = self.reward_config['survival']  # 基础存活奖励
+        prev_distance = self._get_distance_to_player()
         
         old_position = self.tank_position
         
@@ -267,11 +277,16 @@ class TankBattleTrainingEnvironment:
                 self.tank_angle -= 2 * np.pi
         
         elif action in [4, 5, 6]:  # 射击 (普通/穿甲/爆炸)
-            if self.current_step - self.last_shot_time >= self.shot_cooldown:
-                bullet_type = ['normal', 'piercing', 'explosive'][action - 4]
-                hit_reward = self._simulate_shot(bullet_type)
-                reward += hit_reward
-                self.last_shot_time = self.current_step
+            bullet_type = ['normal', 'piercing', 'explosive'][action - 4]
+            hit_reward = self._simulate_shot(bullet_type)
+            # 使用特殊弹药给予微小正向
+            if bullet_type != 'normal':
+                hit_reward += self.reward_config.get('use_special', 0.0)
+            reward += hit_reward
+            # 逼近敌方基地（顶部）时的压制奖励
+            if self.tank_position[1] < 150:
+                reward += self.reward_config.get('base_damage', 0.0) * (150 - self.tank_position[1]) / 150
+            self.last_shot_time = self.current_step
         
         # 检查是否卡住
         distance_moved = np.sqrt(
@@ -296,6 +311,32 @@ class TankBattleTrainingEnvironment:
             # angle in [0, pi] -> normalized alignment in [0,1]
             align_reward = (1 - angle_diff / np.pi) * self.reward_config['angle_align']
             reward += align_reward
+
+        # 路径效率：靠近玩家的效率奖励
+        if distance_to_player < prev_distance:
+            reward += self.reward_config.get('path_efficiency', 0.0) * ((prev_distance - distance_to_player) / max(1.0, prev_distance))
+
+        # 区域控制：鼓励向上推进到地图上半部
+        midline = self.map_height / 2
+        if self.tank_position[1] < midline:
+            reward += self.reward_config.get('zone_control', 0.0) * (midline - self.tank_position[1]) / midline
+
+        # 掩体奖励：靠近墙体可获得微弱奖励
+        nearest = None
+        for w in self.walls:
+            cx = w['x'] + w['width'] / 2
+            cy = w['y'] + w['height'] / 2
+            d = np.hypot(cx - self.tank_position[0], cy - self.tank_position[1])
+            nearest = d if nearest is None or d < nearest else nearest
+        if nearest is not None and nearest < 60:
+            reward += self.reward_config.get('cover_bonus', 0.0) * (60 - nearest) / 60
+
+        # 捡取特殊墙：靠近特殊墙体中心
+        for sw in self.special_walls:
+            d = np.hypot(sw['x'] - self.tank_position[0], sw['y'] - self.tank_position[1])
+            if d < 40:
+                reward += self.reward_config.get('pickup_special', 0.0)
+                break
         
         return reward
     
@@ -416,7 +457,10 @@ class TankBattleTrainingEnvironment:
         state[2] = np.cos(self.tank_angle)  # 角度的cos和sin
         state[3] = np.sin(self.tank_angle)
         state[4] = self.tank_health / 100  # 归一化生命值
-        state[5] = (self.current_step - self.last_shot_time) / self.shot_cooldown  # 射击冷却
+        # 射击冷却（无冷却时归一化为0，避免除零）
+        state[5] = 0.0 if self.shot_cooldown <= 0 else (
+            (self.current_step - self.last_shot_time) / max(1, self.shot_cooldown)
+        )
         state[6] = self.current_step / self.max_episode_steps  # 时间进度
         state[7] = len(self.bullets) / 10  # 当前子弹数量
         
@@ -871,36 +915,45 @@ class OfflineTrainer:
         print(f"="*60)
     
     def _run_episode(self) -> Tuple[float, int, bool]:
-        """运行一个训练episode"""
-        state = self.environment.reset()
-        total_reward = 0.0
+        """运行一个训练episode（向量化多环境以加速采样）"""
+        num_envs = int(self.config.get('training', {}).get('num_envs', 4))
+        num_envs = max(1, min(16, num_envs))
+        envs = [self.environment if i == 0 else TankBattleTrainingEnvironment(self.config['environment']) for i in range(num_envs)]
+        states = [env.reset() for env in envs]
+        dones = [False] * num_envs
+        episode_rewards = [0.0] * num_envs
         steps = 0
-        won = False
+        won_any = False
         replay_frequency = max(1, int(self.config.get('training', {}).get('replay_frequency', 2)))
 
         while True:
-            # 选择动作
-            action = self.agent.act(state, training=True)
+            # 批量选择动作
+            actions = [self.agent.act(s, training=True) for s in states]
 
             # 执行动作
-            next_state, reward, done, info = self.environment.step(action)
+            results = [envs[i].step(actions[i]) if not dones[i] else (states[i], 0.0, True, {}) for i in range(num_envs)]
+            next_states, rewards, step_dones, infos = zip(*results)
 
-            # 存储经验
-            self.agent.remember(state, action, reward, next_state, done)
-
-            # 训练 - 优化频率控制
+            # 经验与训练
+            for i in range(num_envs):
+                if not dones[i]:
+                    self.agent.remember(states[i], actions[i], rewards[i], next_states[i], step_dones[i])
+                    episode_rewards[i] += rewards[i]
             if (len(self.agent.memory) > self.agent.batch_size and steps % replay_frequency == 0):
                 self.agent.replay()
 
-            state = next_state
-            total_reward += reward
+            states = list(next_states)
+            dones = [dones[i] or step_dones[i] for i in range(num_envs)]
             steps += 1
 
-            if done:
-                won = info.get('player_health', 100) <= 0  # 击败玩家算胜利
+            if all(dones):
+                # 将第一个环境作为主度量
+                info0 = infos[0] if len(infos) > 0 else {}
+                won_any = any((info.get('player_health', 100) <= 0) for info in infos if isinstance(info, dict))
                 break
 
-        return total_reward, steps, won
+        total_reward = float(np.mean(episode_rewards))
+        return total_reward, steps, won_any
     
     def _save_model(self, filename: str):
         """保存模型和训练状态"""

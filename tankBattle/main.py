@@ -69,9 +69,7 @@ class GameManager:
         try:
             self.font = get_chinese_font(24)
             self.big_font = get_chinese_font(32)
-            print(f"✓ 主游戏字体初始化成功")
         except Exception as e:
-            print(f"⚠ 主游戏字体初始化失败: {e}")
             # 最终降级方案
             self.font = pygame.font.Font(None, 24)
             self.big_font = pygame.font.Font(None, 32)
@@ -104,6 +102,9 @@ class GameManager:
         self.ai_manager = None
         self.performance_optimizer = None
         self._initialize_ai_system()
+
+        # AI 难度：easy/medium/hard（hard 使用强化学习）
+        self.ai_difficulty = self._default_ai_difficulty()
 
         # 菜单系统
         self.level_selector = LevelSelector(self.save_system)
@@ -149,18 +150,46 @@ class GameManager:
                 self.ai_manager = get_ai_manager()
                 self.performance_optimizer = get_performance_optimizer()
                 if self.ai_manager:
-                    print("✓ AI系统初始化成功")
-                    # 获取系统状态
-                    status = self.ai_manager.get_system_status()
-                    print(f"  {status['summary']}")
+                    print("[AI] 系统初始化成功")
                 else:
-                    print("○ AI管理器创建失败，使用基础AI")
+                    print("[AI] 管理器不可用，使用基础AI")
             except Exception as e:
-                print(f"⚠ AI系统初始化失败: {e}")
+                print(f"[AI] 初始化失败: {e}")
                 self.ai_manager = None
                 self.performance_optimizer = None
         else:
-            print("○ AI系统被禁用或不可用")
+            self.ai_manager = None
+            self.performance_optimizer = None
+
+    def _default_ai_difficulty(self):
+        """根据可用能力选择默认难度"""
+        try:
+            if self.ai_manager and self.ai_manager.capabilities.reinforcement_learning:
+                return 'hard'
+            # 战术AI可用则默认中等
+            if self.ai_manager and self.ai_manager.capabilities.tactical_ai:
+                return 'medium'
+        except Exception:
+            pass
+        return 'easy'
+
+    def _apply_ai_difficulty(self, level_str: str):
+        """将AI难度应用到当前敌人并更新默认配置供后续关卡使用"""
+        valid = {'easy', 'medium', 'hard'}
+        if level_str not in valid:
+            return
+        self.ai_difficulty = level_str
+        # 更新全局默认，便于下一关生效
+        try:
+            AI_CONFIG['DEFAULT_LEVEL'] = level_str
+        except Exception:
+            pass
+        # 立即切换现有敌人AI级别
+        for e in self.enemies:
+            try:
+                e.switch_ai_level(level_str)
+            except Exception:
+                pass
 
     def load_sounds(self):
         """加载音效"""
@@ -216,6 +245,12 @@ class GameManager:
 
         # 设置敌人
         self.enemies = level_objects['enemies']
+        # 按当前难度切换AI
+        for e in self.enemies:
+            try:
+                e.switch_ai_level(self.ai_difficulty)
+            except Exception:
+                pass
         # 统计生成质量（是否靠边）
         self.stats['total_enemies_loaded'] = len(self.enemies)
         edge_margin_px = 24
@@ -304,6 +339,13 @@ class GameManager:
             self.quick_save()
         elif event.key == pygame.K_ESCAPE:
             self.game_state = 'menu'
+        # 快捷切换AI难度：1=简单 2=中等 3=困难
+        elif event.key == pygame.K_1:
+            self._apply_ai_difficulty('easy')
+        elif event.key == pygame.K_2:
+            self._apply_ai_difficulty('medium')
+        elif event.key == pygame.K_3:
+            self._apply_ai_difficulty('hard')
 
     def handle_end_game_events(self, event):
         """处理游戏结束事件"""
@@ -786,7 +828,8 @@ class GameManager:
             'player': self.player,
             'player_base': self.environment_manager.player_base,
             'enemies': self.enemies,
-            'special_effects': self.special_effect_manager.get_active_effects_info()
+            'special_effects': self.special_effect_manager.get_active_effects_info(),
+            'ai_difficulty': self.ai_difficulty
         }
         self.ui_manager.draw_game_ui(self.screen, game_data)
 

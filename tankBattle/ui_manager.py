@@ -126,6 +126,15 @@ class UIManager:
             'color': COLORS['RED']
         })
 
+        # AI 难度显示
+        ai_diff = game_data.get('ai_difficulty')
+        if ai_diff:
+            mapping = {'easy': '简单', 'medium': '中等', 'hard': '困难'}
+            elements.append({
+                'text': f'AI难度: {mapping.get(ai_diff, ai_diff)} (1/2/3切换)',
+                'color': COLORS['YELLOW']
+            })
+
         return elements
 
     def _get_bullet_type_color(self, bullet_type):

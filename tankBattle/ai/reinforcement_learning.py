@@ -18,6 +18,11 @@ import numpy as np
 from collections import deque, namedtuple
 from typing import Tuple, List, Dict, Optional, Any
 
+# GPU信息输出标记，避免重复显示
+_gpu_info_printed = False
+# 模型加载信息输出标记，避免重复显示
+_model_load_info_printed = False
+
 # 条件导入 - 支持无PyTorch环境
 try:
     import torch
@@ -126,14 +131,18 @@ class TankRLAgent:
             raise ImportError("PyTorch未安装，无法创建强化学习智能体")
         
         # 设备配置 - 优先使用GPU
+        global _gpu_info_printed
         if device is None:
             if torch.cuda.is_available():
                 self.device = torch.device("cuda")
-                print(f"✅ 使用GPU训练: {torch.cuda.get_device_name(0)}")
-                print(f"📊 GPU内存: {torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f}GB")
+                if not _gpu_info_printed:
+                    print(f"[GPU] {torch.cuda.get_device_name(0)} ({torch.cuda.get_device_properties(0).total_memory / 1024**3:.1f}GB)")
+                    _gpu_info_printed = True
             else:
                 self.device = torch.device("cpu")
-                print("⚠️ 使用CPU训练 (建议安装CUDA以获得更好性能)")
+                if not _gpu_info_printed:
+                    print("[GPU] 使用CPU (未检测到CUDA)")
+                    _gpu_info_printed = True
         else:
             self.device = torch.device(device)
         
@@ -226,15 +235,22 @@ class TankRLAgent:
             if best_model:
                 model_path = os.path.join(models_dir, best_model)
                 try:
+                    global _model_load_info_printed
                     checkpoint = torch.load(model_path, map_location=self.device, weights_only=False)
                     self._load_model_state_dict(self.q_network, checkpoint['q_network_state_dict'], strict=False)
                     if 'target_network_state_dict' in checkpoint:
                         self._load_model_state_dict(self.target_network, checkpoint['target_network_state_dict'], strict=False)
-                    print(f"✅ 自动加载模型: {best_model} (部分兼容)")
+                    if not _model_load_info_printed:
+                        print(f"[模型] 加载: {best_model}")
+                        _model_load_info_printed = True
                 except Exception as load_error:
-                    print(f"⚠️ 模型 {best_model} 结构不兼容或损坏，使用随机初始化: {str(load_error)[:100]}...")
+                    if not _model_load_info_printed:
+                        print(f"[模型] 加载失败，使用随机初始化")
+                        _model_load_info_printed = True
             else:
-                print("ℹ️ 未找到合适的模型文件，将使用随机初始化的模型")
+                if not _model_load_info_printed:
+                    print("[模型] 未找到预训练模型，使用随机初始化")
+                    _model_load_info_printed = True
 
         except Exception as e:
             print(f"⚠️ 自动加载模型失败: {str(e)[:100]}...")

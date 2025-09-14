@@ -18,7 +18,7 @@ from typing import Optional, Dict, Any, Type
 from dataclasses import dataclass
 
 # 设置日志
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.WARNING)  # 减少冗余输出
 logger = logging.getLogger(__name__)
 
 @dataclass
@@ -105,10 +105,13 @@ class AISystemManager:
             
             logger.info(f"创建AI级别: {ai_level}")
             
-            if ai_level == 'enhanced' and self.capabilities.reinforcement_learning:
+            # 兼容新难度语义：hard→强化学习；medium/easy→规则AI；smart/enhanced维持原逻辑
+            if ai_level in ('hard', 'enhanced') and self.capabilities.reinforcement_learning:
                 return self._create_enhanced_ai(tank_instance)
-            elif ai_level == 'smart' and self.capabilities.tactical_ai:
+            elif ai_level in ('smart',) and self.capabilities.tactical_ai:
                 return self._create_smart_ai(tank_instance)
+            elif ai_level in ('easy', 'medium'):
+                return self._create_rule_based_ai(tank_instance, mode=ai_level)
             else:
                 return self._create_basic_ai(tank_instance)
                 
@@ -148,6 +151,17 @@ class AISystemManager:
             
         except Exception as e:
             logger.error(f"智能AI创建失败: {e}")
+            return self._create_basic_ai(tank_instance)
+
+    def _create_rule_based_ai(self, tank_instance, mode: str = 'easy'):
+        """创建规则AI（易/中等）"""
+        try:
+            from .rule_based import RuleBasedAI
+            ai_instance = RuleBasedAI(tank_instance, mode=mode)
+            logger.info(f"✓ 规则AI创建成功（{mode}）")
+            return ai_instance
+        except Exception as e:
+            logger.error(f"规则AI创建失败: {e}")
             return self._create_basic_ai(tank_instance)
     
     def _create_basic_ai(self, tank_instance):

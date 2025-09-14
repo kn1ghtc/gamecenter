@@ -35,7 +35,8 @@ def create_training_config():
             "target_win_rate": 0.8,  # 更高的目标胜率
             "early_stopping_patience": 1000,  # 更大的耐心值
             "warmup_episodes": 200,  # 更长的预热期
-            "replay_frequency": 1   # 每步都学习
+            "replay_frequency": 1,   # 每步都学习
+            "num_envs": 4            # 向量化环境数量（1-16）
         },
         "agent": {
             "use_gpu": True,          # 启用GPU（如果可用）

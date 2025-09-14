@@ -42,9 +42,9 @@ PLAYER_CONFIG = {
     'SIZE': (40, 40),
     'HEALTH': 100,
     'MAX_HEALTH': 100,
-    'SPEED': 3,
-    'ROTATION_SPEED': 0.0025,  # 弧度
-    'RELOAD_TIME': 8,  # 帧数 - 显著减少冷却时间，更快响应
+    'SPEED': 4,
+    'ROTATION_SPEED': 0.005,  # 弧度
+    'RELOAD_TIME': 30,  # 帧数 - 显著减少冷却时间，更快响应
     'TURRET_LENGTH': 28,
     'TURRET_WIDTH': 7,
     'COLOR': COLORS['PLAYER'],
@@ -58,7 +58,7 @@ ENEMY_CONFIG = {
     'MAX_HEALTH': 3,
     'SPEED': 2,  # 提高AI移动速度，增强机动性
     'ROTATION_SPEED': 0.025,  # 提高旋转速度，更快响应
-    'RELOAD_TIME': 15,  # 减少冷却时间，增加射击频率
+    'RELOAD_TIME': 30,  # 减少冷却时间，增加射击频率
     'TURRET_LENGTH': 28,
     'TURRET_WIDTH': 7,
     'COLOR': COLORS['ENEMY'],
@@ -134,7 +134,7 @@ AI_CONFIG = {
         'MEMORY_SIZE': 10000,
         'BATCH_SIZE': 32,
         'TARGET_UPDATE_FREQUENCY': 100,
-        'TRAINING_ENABLED': True,  # 游戏中是否启用训练
+        'TRAINING_ENABLED': False,  # 游戏中禁用实时训练，只进行离线训练
         'MODEL_SAVE_FREQUENCY': 1000  # 每N步保存一次模型
     },
 
@@ -173,7 +173,7 @@ AI_CONFIG = {
 BULLET_TYPES = {
     'NORMAL': {
         'RADIUS': 5,
-        'SPEED': 7,
+        'SPEED': 3,
         'DAMAGE': 1,
         'CAN_PIERCE_WALL': False,
         'COLOR': None,  # 根据所有者决定
@@ -188,8 +188,8 @@ BULLET_TYPES = {
         'CAN_PIERCE_WALL': True,
         'COLOR': (255, 255, 0),  # 黄色
         'WALL_DAMAGE': 2,
-        'MAX_RANGE': 500,  # 较远射程
-        'LIFETIME': 62  # 500 / 8 ≈ 62
+        'MAX_RANGE': 1600,  # 全屏射程
+        'LIFETIME': 100  # 1600 / 8 = 200
     },
     'EXPLOSIVE': {
         'RADIUS': 8,
@@ -241,7 +241,7 @@ BULLET_TYPES = {
 
 # 玩家和敌方子弹配置
 PLAYER_BULLET_CONFIG = {
-    'DEFAULT_TYPE': 'NORMAL',  # 默认子弹类型
+    'DEFAULT_TYPE': 'PIERCING',  # 默认子弹类型
     'AVAILABLE_TYPES': ['NORMAL', 'PIERCING', 'EXPLOSIVE', 'RAPID', 'HEAVY', 'BARRICADE'],  # 玩家可用的所有子弹类型
     'UNLIMITED_AMMO': True,  # 玩家弹药无限制
     'FREE_SWITCHING': True,  # 可以自由切换子弹类型，无冷却
@@ -305,10 +305,10 @@ WIN_CONDITION = {
 
 # 关卡生成配置
 LEVEL_CONFIG = {
-    'ENEMIES_BASE': 8,  # 基础敌人数量
+    'ENEMIES_BASE': 4,  # 基础敌人数量
     'ENEMIES_INCREMENT': 3,  # 每1关增加的敌人数量
-    'ENEMIES_INCREMENT_INTERVAL': 1,  # 每几关增加敌人
-    'MAX_ENEMIES': 40,  # 最大敌人数量
+    'ENEMIES_INCREMENT_INTERVAL': 2,  # 每几关增加敌人
+    'MAX_ENEMIES': 20,  # 最大敌人数量
     'MAZE_COMPLEXITY_INCREMENT': 2,  # 每几关增加迷宫复杂度
     'PLAYER_SAFE_ZONE_RADIUS': 80  # 玩家初始位置安全区域半径
 }
@@ -354,17 +354,23 @@ def get_system_font_paths():
 
 CHINESE_FONT_PATHS = get_system_font_paths()
 
+# 字体缓存，避免重复打印
+_font_loading_logged = False
+
 def get_chinese_font(size):
     """获取可用的中文字体"""
     import pygame
     import platform
+    global _font_loading_logged
 
     # 确保pygame字体系统已初始化
     if not pygame.font.get_init():
         pygame.font.init()
 
     system = platform.system()
-    print(f"正在为 {system} 系统查找中文字体...")
+    if not _font_loading_logged:
+        print(f"[字体] 加载{system}中文字体...")
+        _font_loading_logged = True
 
     # 首先尝试直接使用字体文件路径（最可靠）
     for i, font_path in enumerate(CHINESE_FONT_PATHS):
@@ -374,10 +380,10 @@ def get_chinese_font(size):
                 # 测试字体是否支持中文
                 test_surface = font.render('测试中文', True, (255, 255, 255))
                 if test_surface.get_width() > 0:
-                    print(f"✓ 成功加载字体: {font_path}")
+                    if not _font_loading_logged:  # 只在第一次输出成功信息
+                        print(f"[字体] 成功: {os.path.basename(font_path)}")
                     return font
-        except Exception as e:
-            print(f"× 字体路径 {font_path} 加载失败: {e}")
+        except:
             continue
 
     # 如果文件路径失败，尝试系统字体名称（跨平台）
@@ -419,10 +425,8 @@ def get_chinese_font(size):
                 # 测试字体是否支持中文
                 test_surface = font.render('测试中文', True, (255, 255, 255))
                 if test_surface.get_width() > 0:
-                    print(f"✓ 成功加载系统字体: {font_name}")
                     return font
-        except Exception as e:
-            print(f"× 系统字体 {font_name} 加载失败: {e}")
+        except:
             continue
 
     # 尝试pygame内置字体

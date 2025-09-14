@@ -14,7 +14,8 @@
     "target_win_rate": 0.8,
     "early_stopping_patience": 1000,
     "warmup_episodes": 200,
-    "replay_frequency": 1
+    "replay_frequency": 1,
+    "num_envs": 4
   },
   "agent": {
     "use_gpu": true,
