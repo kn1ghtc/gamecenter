@@ -1,97 +1,97 @@
 {
-  "last_level": 20,
-  "max_level_reached": 20,
-  "total_score": 1490,
+  "last_level": 29,
+  "max_level_reached": 29,
+  "total_score": 1620,
   "play_time": 0,
   "saves": [
-    {
-      "id": 11,
-      "level": 16,
-      "score": 1490,
-      "player_health": 100,
-      "bullet_type": "RAPID",
-      "timestamp": "2025-09-07T13:46:32.760762",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 16,
-      "score": 100,
-      "player_health": 97,
-      "bullet_type": "HEAVY",
-      "timestamp": "2025-09-07T14:26:44.274160",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 17,
-      "score": 180,
-      "player_health": 96,
-      "bullet_type": "RAPID",
-      "timestamp": "2025-09-07T14:29:07.643522",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 18,
-      "score": 270,
-      "player_health": 100,
-      "bullet_type": "EXPLOSIVE",
-      "timestamp": "2025-09-07T14:30:51.436944",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 18,
-      "score": 90,
-      "player_health": 99,
-      "bullet_type": "EXPLOSIVE",
-      "timestamp": "2025-09-07T15:12:56.073829",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 18,
-      "score": 150,
-      "player_health": 5,
-      "bullet_type": "PIERCING",
-      "timestamp": "2025-09-07T22:49:19.351713",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 18,
-      "score": 130,
-      "player_health": 58,
-      "bullet_type": "NORMAL",
-      "timestamp": "2025-09-13T10:04:09.992159",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 19,
-      "score": 260,
-      "player_health": 70,
-      "bullet_type": "PIERCING",
-      "timestamp": "2025-09-13T10:08:04.307954",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 20,
-      "score": 400,
-      "player_health": 77,
-      "bullet_type": "PIERCING",
-      "timestamp": "2025-09-13T10:11:12.509873",
-      "play_time": 0
-    },
     {
       "id": 11,
       "level": 20,
       "score": 160,
       "player_health": 100,
+      "bullet_type": "PIERCING",
+      "timestamp": "2025-09-14T13:11:11.316883",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 21,
+      "score": 320,
+      "player_health": 100,
+      "bullet_type": "PIERCING",
+      "timestamp": "2025-09-14T13:12:40.823071",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 22,
+      "score": 470,
+      "player_health": 100,
+      "bullet_type": "PIERCING",
+      "timestamp": "2025-09-14T13:13:03.413085",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 23,
+      "score": 600,
+      "player_health": 76,
+      "bullet_type": "PIERCING",
+      "timestamp": "2025-09-14T13:14:18.177418",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 24,
+      "score": 760,
+      "player_health": 75,
+      "bullet_type": "NORMAL",
+      "timestamp": "2025-09-14T13:15:15.936338",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 25,
+      "score": 940,
+      "player_health": 48,
+      "bullet_type": "PIERCING",
+      "timestamp": "2025-09-14T13:17:09.157244",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 26,
+      "score": 1130,
+      "player_health": 96,
       "bullet_type": "EXPLOSIVE",
-      "timestamp": "2025-09-14T12:36:37.584809",
+      "timestamp": "2025-09-14T13:18:07.983834",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 27,
+      "score": 1310,
+      "player_health": 81,
+      "bullet_type": "EXPLOSIVE",
+      "timestamp": "2025-09-14T13:19:28.402714",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 28,
+      "score": 1490,
+      "player_health": 88,
+      "bullet_type": "HEAVY",
+      "timestamp": "2025-09-14T13:20:06.707565",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 29,
+      "score": 1620,
+      "player_health": 100,
+      "bullet_type": "RAPID",
+      "timestamp": "2025-09-14T13:20:41.904446",
       "play_time": 0
     }
   ],

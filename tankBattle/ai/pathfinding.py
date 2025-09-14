@@ -78,20 +78,20 @@ class AdvancedPathfinding:
                 continue
                 
             bullet_pos = self._get_bullet_position(bullet)
-            grid_x = bullet_pos[0] // self.grid_size
-            grid_y = bullet_pos[1] // self.grid_size
+            grid_x = int(bullet_pos[0] // self.grid_size)
+            grid_y = int(bullet_pos[1] // self.grid_size)
             
             if 0 <= grid_x < self.grid_width and 0 <= grid_y < self.grid_height:
                 # 预测子弹轨迹
                 trajectory = self._predict_bullet_trajectory(bullet)
                 for pos in trajectory:
-                    gx, gy = pos[0] // self.grid_size, pos[1] // self.grid_size
+                    gx, gy = int(pos[0] // self.grid_size), int(pos[1] // self.grid_size)
                     if 0 <= gx < self.grid_width and 0 <= gy < self.grid_height:
                         self.threat_map[gy, gx] += 0.8
         
         # 玩家威胁区域
         if player_position:
-            px, py = player_position[0] // self.grid_size, player_position[1] // self.grid_size
+            px, py = int(player_position[0] // self.grid_size), int(player_position[1] // self.grid_size)
             if 0 <= px < self.grid_width and 0 <= py < self.grid_height:
                 # 玩家周围的威胁区域
                 for dy in range(-3, 4):
@@ -116,8 +116,8 @@ class AdvancedPathfinding:
             }
         
         # 转换为网格坐标
-        start_grid = (start[0] // self.grid_size, start[1] // self.grid_size)
-        goal_grid = (goal[0] // self.grid_size, goal[1] // self.grid_size)
+        start_grid = (int(start[0] // self.grid_size), int(start[1] // self.grid_size))
+        goal_grid = (int(goal[0] // self.grid_size), int(goal[1] // self.grid_size))
         
         # 检查缓存
         cache_key = (start_grid, goal_grid, tuple(sorted(preferences.items())))
@@ -194,14 +194,14 @@ class AdvancedPathfinding:
     def find_ambush_positions(self, target_position: Tuple[int, int], 
                              walls, max_distance: int = 200) -> List[Tuple[int, int]]:
         """寻找埋伏位置"""
-        target_grid = (target_position[0] // self.grid_size, target_position[1] // self.grid_size)
+        target_grid = (int(target_position[0] // self.grid_size), int(target_position[1] // self.grid_size))
         ambush_positions = []
         
-        search_radius = max_distance // self.grid_size
+        search_radius = int(max_distance // self.grid_size)
         
         for dy in range(-search_radius, search_radius + 1):
             for dx in range(-search_radius, search_radius + 1):
-                x, y = target_grid[0] + dx, target_grid[1] + dy
+                x, y = int(target_grid[0] + dx), int(target_grid[1] + dy)
                 
                 if not self._is_valid_position(x, y, walls, (40, 40)):
                     continue
@@ -404,8 +404,8 @@ class AdvancedPathfinding:
         
         for dx, dy in directions:
             for distance in range(1, 4):  # 检查3个网格的距离
-                check_x = grid_x + dx * distance
-                check_y = grid_y + dy * distance
+                check_x = int(grid_x + dx * distance)
+                check_y = int(grid_y + dy * distance)
                 
                 if (check_x < 0 or check_x >= self.grid_width or
                     check_y < 0 or check_y >= self.grid_height):

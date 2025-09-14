@@ -242,13 +242,13 @@ class BattlefieldAnalyzer:
     
     def _mark_control_zone(self, tank):
         """标记坦克控制区域"""
-        grid_x = getattr(tank, 'x', 0) // 20
-        grid_y = getattr(tank, 'y', 0) // 20
+        grid_x = int(getattr(tank, 'x', 0) // 20)
+        grid_y = int(getattr(tank, 'y', 0) // 20)
         
         # 坦克周围的控制区域
         for dy in range(-3, 4):
             for dx in range(-3, 4):
-                nx, ny = grid_x + dx, grid_y + dy
+                nx, ny = int(grid_x + dx), int(grid_y + dy)
                 if 0 <= nx < 40 and 0 <= ny < 30:
                     distance = math.sqrt(dx*dx + dy*dy)
                     influence = max(0, 1.0 - distance / 3.0)
@@ -262,8 +262,8 @@ class BattlefieldAnalyzer:
     
     def _mark_activity(self, tank):
         """标记活动密度"""
-        grid_x = getattr(tank, 'x', 0) // 20
-        grid_y = getattr(tank, 'y', 0) // 20
+        grid_x = int(getattr(tank, 'x', 0) // 20)
+        grid_y = int(getattr(tank, 'y', 0) // 20)
         
         if 0 <= grid_x < 40 and 0 <= grid_y < 30:
             self.activity_map[grid_y, grid_x] += 0.1
@@ -273,8 +273,8 @@ class BattlefieldAnalyzer:
         bullet_x = getattr(bullet, 'x', 0) if hasattr(bullet, 'x') else getattr(bullet, 'rect', type('obj', (object,), {'centerx': 0})).centerx
         bullet_y = getattr(bullet, 'y', 0) if hasattr(bullet, 'y') else getattr(bullet, 'rect', type('obj', (object,), {'centery': 0})).centery
         
-        grid_x = bullet_x // 20
-        grid_y = bullet_y // 20
+        grid_x = int(bullet_x // 20)
+        grid_y = int(bullet_y // 20)
         
         if 0 <= grid_x < 40 and 0 <= grid_y < 30:
             owner = getattr(bullet, 'owner', 'unknown')
@@ -322,17 +322,17 @@ class BattlefieldAnalyzer:
     def get_safest_position(self, current_pos: Tuple[int, int], 
                           search_radius: int = 100) -> Tuple[int, int]:
         """获取最安全的位置"""
-        grid_x = current_pos[0] // 20
-        grid_y = current_pos[1] // 20
+        grid_x = int(current_pos[0] // 20)
+        grid_y = int(current_pos[1] // 20)
         
         min_threat = float('inf')
         safest_pos = current_pos
         
-        search_range = search_radius // 20
+        search_range = int(search_radius // 20)
         
         for dy in range(-search_range, search_range + 1):
             for dx in range(-search_range, search_range + 1):
-                nx, ny = grid_x + dx, grid_y + dy
+                nx, ny = int(grid_x + dx), int(grid_y + dy)
                 if 0 <= nx < 40 and 0 <= ny < 30:
                     threat_level = self.heat_map[ny, nx]
                     if threat_level < min_threat:
@@ -347,7 +347,7 @@ class BattlefieldAnalyzer:
         
         for enemy_pos in enemy_positions:
             # 分析敌人周围的地形
-            grid_x, grid_y = enemy_pos[0] // 20, enemy_pos[1] // 20
+            grid_x, grid_y = int(enemy_pos[0] // 20), int(enemy_pos[1] // 20)
             
             # 检查周围的威胁等级
             if 0 <= grid_x < 40 and 0 <= grid_y < 30:
@@ -369,7 +369,7 @@ class BattlefieldAnalyzer:
     
     def evaluate_position_control(self, position: Tuple[int, int]) -> float:
         """评估位置控制价值"""
-        grid_x, grid_y = position[0] // 20, position[1] // 20
+        grid_x, grid_y = int(position[0] // 20), int(position[1] // 20)
         
         if not (0 <= grid_x < 40 and 0 <= grid_y < 30):
             return 0.0
