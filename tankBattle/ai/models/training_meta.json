@@ -1,0 +1,48 @@
+{
+  "timestamp": 1757902329.487708,
+  "config": {
+    "environment": {
+      "map_width": 1500,
+      "map_height": 900,
+      "max_episode_steps": 3000,
+      "training_mode": true,
+      "render": false
+    },
+    "training": {
+      "total_episodes": 5000,
+      "save_frequency": 100,
+      "eval_frequency": 200,
+      "target_win_rate": 0.8,
+      "early_stopping_patience": 1000,
+      "use_gpu": true,
+      "warmup_episodes": 200,
+      "replay_frequency": 1,
+      "num_envs": 4
+    },
+    "agent": {
+      "learning_rate": 0.0002,
+      "epsilon_start": 1.0,
+      "epsilon_end": 0.05,
+      "epsilon_decay": 0.9998,
+      "batch_size": 256,
+      "memory_size": 100000,
+      "target_update_frequency": 300,
+      "use_gpu": true,
+      "double_dqn": true,
+      "dueling_dqn": false,
+      "gradient_clipping": 1.0,
+      "weight_decay": 0.0001
+    },
+    "optimization": {
+      "use_gpu": true,
+      "mixed_precision": false,
+      "lr_scheduler": "cosine",
+      "min_lr": 1e-06
+    }
+  },
+  "device_info": {
+    "device": "cuda",
+    "cuda_available": true,
+    "gpu_name": "NVIDIA GeForce RTX 4060 Laptop GPU"
+  }
+}
