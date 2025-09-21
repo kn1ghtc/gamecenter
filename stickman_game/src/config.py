@@ -141,22 +141,103 @@ CONTROLS = {
     'fullscreen': pygame.K_F11  # F11切换全屏
 }
 
-# 中文字体路径
-CHINESE_FONT_PATHS = [
-    "C:/Windows/Fonts/msyh.ttc",      # 微软雅黑
-    "C:/Windows/Fonts/simhei.ttf",    # 黑体
-    "C:/Windows/Fonts/simsun.ttc",    # 宋体
-    "C:/Windows/Fonts/simkai.ttf",    # 楷体
-]
+# 导入系统检测模块
+import os
+import platform
+
+# 中文字体路径配置 - 跨平台支持
+CHINESE_FONT_PATHS = {
+    'Windows': [
+        "C:/Windows/Fonts/msyh.ttc",      # 微软雅黑
+        "C:/Windows/Fonts/simhei.ttf",    # 黑体
+        "C:/Windows/Fonts/simsun.ttc",    # 宋体
+        "C:/Windows/Fonts/simkai.ttf",    # 楷体
+        "C:/Windows/Fonts/SIMYOU.TTF",    # 幼圆
+        "C:/Windows/Fonts/STXIHEI.TTF",   # 华文细黑
+    ],
+    'Darwin': [  # macOS
+        "/Library/Fonts/Arial Unicode MS.ttf",        # Arial Unicode MS (支持中文)
+        "/System/Library/Fonts/PingFang.ttc",         # 苹方
+        "/System/Library/Fonts/STHeiti Light.ttc",    # 华文黑体
+        "/System/Library/Fonts/STHeiti Medium.ttc",   # 华文黑体中等
+        "/System/Library/Fonts/Hiragino Sans GB.ttc", # 冬青黑体简体中文
+        "/Library/Fonts/Songti.ttc",                  # 宋体
+        "/System/Library/Fonts/Apple LiGothic Medium.ttc", # 苹果丽中黑
+        "/Library/Fonts/Microsoft/SimHei.ttf",        # 微软黑体(如果安装了Office)
+        "/Library/Fonts/Microsoft/SimSun.ttf",        # 微软宋体(如果安装了Office)
+    ],
+    'Linux': [  # Linux
+        "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",  # Android字体
+        "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",               # 文泉驿正黑
+        "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",             # 文泉驿微米黑
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",     # Noto Sans CJK
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf", # Liberation
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",            # DejaVu Sans
+    ]
+}
 
 # 获取可用的中文字体
 def get_chinese_font(size):
-    """获取可用的中文字体"""
-    for font_path in CHINESE_FONT_PATHS:
+    """获取可用的中文字体 - 跨平台支持"""
+    # 检测当前操作系统
+    system = platform.system()
+
+    # 获取对应系统的字体路径列表
+    font_paths = CHINESE_FONT_PATHS.get(system, [])
+
+    # 尝试加载系统对应的字体
+    for font_path in font_paths:
         try:
-            if pygame.font.get_init():
-                return pygame.font.Font(font_path, size)
-        except:
+            if os.path.exists(font_path) and pygame.font.get_init():
+                font = pygame.font.Font(font_path, size)
+                # 验证字体是否能正确渲染中文
+                test_surface = font.render("测试", True, (255, 255, 255))
+                if test_surface.get_width() > 0:  # 如果能渲染出内容
+                    return font
+        except Exception as e:
+            # 静默忽略字体加载错误，继续尝试下一个
             continue
-    # 如果没有找到中文字体，使用系统默认字体
-    return pygame.font.Font(None, size)
+
+    # 尝试使用pygame的系统字体
+    try:
+        if pygame.font.get_init():
+            # 获取系统中的所有字体
+            system_fonts = pygame.font.get_fonts()
+
+            # 尝试常见的中文字体名称
+            chinese_font_names = [
+                'microsoftyahei',  # 微软雅黑
+                'simhei',          # 黑体
+                'simsun',          # 宋体
+                'pingfang',        # 苹方 (macOS)
+                'hiragino',        # 冬青黑体 (macOS)
+                'notosanscjk',     # Noto Sans CJK (Linux)
+                'wqyzenhei',       # 文泉驿正黑 (Linux)
+                'droidsansfallback' # Android字体 (Linux)
+            ]
+
+            # 尝试找到系统中可用的中文字体
+            for font_name in chinese_font_names:
+                if font_name in system_fonts:
+                    try:
+                        font = pygame.font.SysFont(font_name, size)
+                        # 验证字体是否能正确渲染中文
+                        test_surface = font.render("测试", True, (255, 255, 255))
+                        if test_surface.get_width() > 0:
+                            return font
+                    except:
+                        continue
+    except:
+        pass
+
+    # 最后的备用方案：使用默认字体，但尝试添加备用字符渲染
+    try:
+        if pygame.font.get_init():
+            # 使用系统默认字体
+            default_font = pygame.font.Font(None, size)
+            return default_font
+    except:
+        pass
+
+    # 如果所有方法都失败，返回None（调用代码需要处理这种情况）
+    return None
