@@ -1,0 +1,2122 @@
+{
+  "memories": {
+    "fd9ee22a-0e62-40": {
+      "id": "fd9ee22a-0e62-40",
+      "content": "用户说: 你好",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T16:47:45.172552",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T16:47:45.172552"
+      },
+      "access_count": 10,
+      "last_accessed": "2025-09-22T17:26:08.035103",
+      "embedding_id": null
+    },
+    "ef475b30-e8cc-49": {
+      "id": "ef475b30-e8cc-49",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T16:47:45.173553",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T16:47:45.173553"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "d08b8444-07e0-4f": {
+      "id": "d08b8444-07e0-4f",
+      "content": "move_request: 棋盘状态: 白方0子，黑方0子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T16:47:46.987127",
+      "context": {
+        "color": "white",
+        "event_type": "move_request",
+        "game_id": "game_1758530866",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 6,
+      "last_accessed": "2025-09-22T17:26:30.887404",
+      "embedding_id": null
+    },
+    "98b0d361-1d9f-48": {
+      "id": "98b0d361-1d9f-48",
+      "content": "移动决策: {\"move\": \"(1, 4) -> (3, 4)\", \"decision_time\": 0.003000497817993164, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T16:47:46.990128",
+      "context": {
+        "color": "white",
+        "game_id": "game_1758530866",
+        "decision_data": {
+          "move": "(1, 4) -> (3, 4)",
+          "decision_time": 0.003000497817993164,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "3326b899-adf5-47": {
+      "id": "3326b899-adf5-47",
+      "content": "用户说: 你好",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T16:50:18.879299",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T16:50:18.879299"
+      },
+      "access_count": 9,
+      "last_accessed": "2025-09-22T17:26:08.035103",
+      "embedding_id": null
+    },
+    "a5611239-e54f-45": {
+      "id": "a5611239-e54f-45",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T16:50:18.881299",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T16:50:18.881299"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "6f4adfb5-6e5f-41": {
+      "id": "6f4adfb5-6e5f-41",
+      "content": "move_request: 棋盘状态: 白方0子，黑方0子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T16:50:20.646702",
+      "context": {
+        "color": "white",
+        "event_type": "move_request",
+        "game_id": "game_1758531020",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 5,
+      "last_accessed": "2025-09-22T17:26:30.887404",
+      "embedding_id": null
+    },
+    "80ae7ab3-db4c-4f": {
+      "id": "80ae7ab3-db4c-4f",
+      "content": "移动决策: {\"move\": \"(1, 4) -> (3, 4)\", \"decision_time\": 0.0029990673065185547, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T16:50:20.649701",
+      "context": {
+        "color": "white",
+        "game_id": "game_1758531020",
+        "decision_data": {
+          "move": "(1, 4) -> (3, 4)",
+          "decision_time": 0.0029990673065185547,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "f155702f-0cd3-4a": {
+      "id": "f155702f-0cd3-4a",
+      "content": "用户说: 你好",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T16:54:51.064747",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T16:54:51.063746"
+      },
+      "access_count": 8,
+      "last_accessed": "2025-09-22T17:26:08.035103",
+      "embedding_id": null
+    },
+    "6a0b3f1f-b8b8-4c": {
+      "id": "6a0b3f1f-b8b8-4c",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T16:54:51.066751",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T16:54:51.066751"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "381f7d7b-02a2-49": {
+      "id": "381f7d7b-02a2-49",
+      "content": "用户说: 你好",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T16:58:29.652482",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T16:58:29.651480"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "2bb63ba5-cbd8-4a": {
+      "id": "2bb63ba5-cbd8-4a",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T16:58:29.654482",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T16:58:29.654482"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "fb5eb00d-41a1-46": {
+      "id": "fb5eb00d-41a1-46",
+      "content": "用户说: 你好",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T17:01:24.686259",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T17:01:24.686259"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "5444ec7b-59ba-43": {
+      "id": "5444ec7b-59ba-43",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T17:01:24.689258",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T17:01:24.689258"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "dfd03248-5b9b-47": {
+      "id": "dfd03248-5b9b-47",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 0.0020036697387695312, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:01:40.281102",
+      "context": {
+        "color": "white",
+        "game_id": "game_1758531700",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 0.0020036697387695312,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "6c6c991a-534a-49": {
+      "id": "6c6c991a-534a-49",
+      "content": "用户说: 你好",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T17:02:39.753739",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T17:02:39.753739"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "dd0cafd8-39a3-45": {
+      "id": "dd0cafd8-39a3-45",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T17:02:39.755738",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T17:02:39.755738"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "8cef5b2f-df4d-47": {
+      "id": "8cef5b2f-df4d-47",
+      "content": "用户说: 你好",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T17:03:38.322374",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T17:03:38.322374"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "21f2c931-fd2c-40": {
+      "id": "21f2c931-fd2c-40",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T17:03:38.324374",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T17:03:38.323374"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "98ff192a-b353-40": {
+      "id": "98ff192a-b353-40",
+      "content": "move_request: 棋盘状态: 白方0子，黑方0子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T17:03:54.320355",
+      "context": {
+        "color": "white",
+        "event_type": "move_request",
+        "game_id": "game_1758531834",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 4,
+      "last_accessed": "2025-09-22T17:26:30.887404",
+      "embedding_id": null
+    },
+    "2f335bf8-d843-46": {
+      "id": "2f335bf8-d843-46",
+      "content": "移动决策: {\"move\": \"(1, 4) -> (3, 4)\", \"decision_time\": 0.003998279571533203, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:03:54.324353",
+      "context": {
+        "color": "white",
+        "game_id": "game_1758531834",
+        "decision_data": {
+          "move": "(1, 4) -> (3, 4)",
+          "decision_time": 0.003998279571533203,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "864f8bac-2a23-4d": {
+      "id": "864f8bac-2a23-4d",
+      "content": "用户说: 你好",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T17:10:33.990208",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T17:10:33.990208"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "47622b32-aa34-4b": {
+      "id": "47622b32-aa34-4b",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T17:10:36.693705",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T17:10:36.693705"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "e386f2b7-9af5-45": {
+      "id": "e386f2b7-9af5-45",
+      "content": "move_request: 棋盘状态: 白方0子，黑方0子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T17:10:58.926027",
+      "context": {
+        "color": "white",
+        "event_type": "move_request",
+        "game_id": "game_1758532258",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "438e95c3-58d2-44": {
+      "id": "438e95c3-58d2-44",
+      "content": "移动决策: {\"move\": \"(1, 4) -> (3, 4)\", \"decision_time\": 2.641653060913086, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:11:01.566680",
+      "context": {
+        "color": "white",
+        "game_id": "game_1758532258",
+        "decision_data": {
+          "move": "(1, 4) -> (3, 4)",
+          "decision_time": 2.641653060913086,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "b22826c3-ab9a-47": {
+      "id": "b22826c3-ab9a-47",
+      "content": "用户说: 你好",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T17:20:09.922926",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T17:20:09.922926"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "215ce9dd-c608-4f": {
+      "id": "215ce9dd-c608-4f",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T17:20:12.509503",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T17:20:12.509503"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "e3f46686-fcdf-40": {
+      "id": "e3f46686-fcdf-40",
+      "content": "move_request: 棋盘状态: 白方0子，黑方0子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T17:20:29.792955",
+      "context": {
+        "color": "white",
+        "event_type": "move_request",
+        "game_id": "game_1758532829",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "999e1ccc-b06d-4a": {
+      "id": "999e1ccc-b06d-4a",
+      "content": "移动决策: {\"move\": \"(1, 4) -> (3, 4)\", \"decision_time\": 2.538640260696411, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:20:32.330595",
+      "context": {
+        "color": "white",
+        "game_id": "game_1758532829",
+        "decision_data": {
+          "move": "(1, 4) -> (3, 4)",
+          "decision_time": 2.538640260696411,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "4b792463-f805-4d": {
+      "id": "4b792463-f805-4d",
+      "content": "用户说: 你好",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T17:26:05.510838",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T17:26:05.510838"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "e0d1b070-02dd-47": {
+      "id": "e0d1b070-02dd-47",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T17:26:08.035103",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T17:26:08.035103"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "4ecb96ce-867f-46": {
+      "id": "4ecb96ce-867f-46",
+      "content": "move_request: 棋盘状态: 白方0子，黑方0子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T17:26:28.403125",
+      "context": {
+        "color": "white",
+        "event_type": "move_request",
+        "game_id": "game_1758533188",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "dbe05e0b-8dd3-41": {
+      "id": "dbe05e0b-8dd3-41",
+      "content": "移动决策: {\"move\": \"(1, 4) -> (3, 4)\", \"decision_time\": 2.4902801513671875, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:26:30.887404",
+      "context": {
+        "color": "white",
+        "game_id": "game_1758533188",
+        "decision_data": {
+          "move": "(1, 4) -> (3, 4)",
+          "decision_time": 2.4902801513671875,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "4bad76bc-381c-41": {
+      "id": "4bad76bc-381c-41",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 5.0909082889556885, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:34:57.596219",
+      "context": {
+        "color": "white",
+        "game_id": "game_1758533692",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 5.0909082889556885,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "88c6591e-d02e-49": {
+      "id": "88c6591e-d02e-49",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 4.602263689041138, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:57:10.380069",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 4.602263689041138,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "d487ed81-9992-45": {
+      "id": "d487ed81-9992-45",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.766733407974243, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:57:15.466305",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.766733407974243,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "d7039860-f4a2-4c": {
+      "id": "d7039860-f4a2-4c",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.4869048595428467, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:57:20.167633",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.4869048595428467,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "c36c7d60-80f6-43": {
+      "id": "c36c7d60-80f6-43",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.7560691833496094, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:57:25.202673",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.7560691833496094,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "cb510ba5-e180-43": {
+      "id": "cb510ba5-e180-43",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 2.835296869277954, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:57:29.267905",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 2.835296869277954,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "dd5f4604-c47d-4c": {
+      "id": "dd5f4604-c47d-4c",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.0114479064941406, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:57:33.532223",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.0114479064941406,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "6f8cef29-7423-41": {
+      "id": "6f8cef29-7423-41",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.725390672683716, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:57:38.511754",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.725390672683716,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "6414c162-66eb-40": {
+      "id": "6414c162-66eb-40",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 2.973949909210205, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:57:42.734525",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 2.973949909210205,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "ddf84507-c2f4-47": {
+      "id": "ddf84507-c2f4-47",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.176990509033203, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:57:47.176122",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.176990509033203,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "2390eaae-3232-4b": {
+      "id": "2390eaae-3232-4b",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.286362886428833, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:57:51.708002",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.286362886428833,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "2997c3f8-aa0c-41": {
+      "id": "2997c3f8-aa0c-41",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 4.5620996952056885, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:57:57.503813",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 4.5620996952056885,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "0943af92-69ca-42": {
+      "id": "0943af92-69ca-42",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.051985025405884, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:01.837963",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.051985025405884,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "3de47a02-0fc9-42": {
+      "id": "3de47a02-0fc9-42",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.024428367614746, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:06.131852",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.024428367614746,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "140c00e1-8931-4f": {
+      "id": "140c00e1-8931-4f",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.72308349609375, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:11.101741",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.72308349609375,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "8528b495-12ce-4d": {
+      "id": "8528b495-12ce-4d",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 2.6411290168762207, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:14.938763",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 2.6411290168762207,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "6e6b0a38-24aa-47": {
+      "id": "6e6b0a38-24aa-47",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 2.698916435241699, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:18.859238",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 2.698916435241699,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "2ed88b7a-3b1f-49": {
+      "id": "2ed88b7a-3b1f-49",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 2.721824884414673, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:22.988115",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 2.721824884414673,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "6320cb50-b9b5-4d": {
+      "id": "6320cb50-b9b5-4d",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 2.883770227432251, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:27.086528",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 2.883770227432251,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "a6506d20-9ab2-47": {
+      "id": "a6506d20-9ab2-47",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 2.545750141143799, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:30.982162",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 2.545750141143799,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "77e55fe7-d35c-48": {
+      "id": "77e55fe7-d35c-48",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 2.522616386413574, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:34.740917",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 2.522616386413574,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "11d9583c-c6f0-43": {
+      "id": "11d9583c-c6f0-43",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.467897415161133, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:39.436211",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.467897415161133,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "a3f745ce-62a2-44": {
+      "id": "a3f745ce-62a2-44",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 2.835378646850586, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:43.499375",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 2.835378646850586,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "3f221344-16d4-4a": {
+      "id": "3f221344-16d4-4a",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 2.8246731758117676, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:47.546210",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 2.8246731758117676,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "835a2959-0cc7-4b": {
+      "id": "835a2959-0cc7-4b",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 3.1991138458251953, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:51.963276",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 3.1991138458251953,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "ed5c667f-9fe0-48": {
+      "id": "ed5c667f-9fe0-48",
+      "content": "移动决策: {\"move\": \"无移动\", \"decision_time\": 2.6331236362457275, \"analysis_count\": 3, \"successful_analysis\": 0}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T17:58:55.813494",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535025",
+        "decision_data": {
+          "move": "无移动",
+          "decision_time": 2.6331236362457275,
+          "analysis_count": 3,
+          "successful_analysis": 0
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "3402c944-6805-4a": {
+      "id": "3402c944-6805-4a",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T18:07:06.148367",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758535626",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 7,
+      "last_accessed": "2025-09-22T19:08:59.363183",
+      "embedding_id": null
+    },
+    "2881d33f-b374-43": {
+      "id": "2881d33f-b374-43",
+      "content": "移动决策: {\"move\": \"(6, 7) -> (5, 5)\", \"decision_time\": 6.480808258056641, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T18:07:12.629175",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535626",
+        "decision_data": {
+          "move": "(6, 7) -> (5, 5)",
+          "decision_time": 6.480808258056641,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "bea527fa-ccfe-4f": {
+      "id": "bea527fa-ccfe-4f",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T18:11:22.786465",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758535882",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 6,
+      "last_accessed": "2025-09-22T19:08:59.363183",
+      "embedding_id": null
+    },
+    "f9718dd3-1ef2-4e": {
+      "id": "f9718dd3-1ef2-4e",
+      "content": "移动决策: {\"move\": \"(6, 7) -> (5, 5)\", \"decision_time\": 6.778558969497681, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T18:11:29.565024",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535882",
+        "decision_data": {
+          "move": "(6, 7) -> (5, 5)",
+          "decision_time": 6.778558969497681,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "be269cb5-3e4c-4f": {
+      "id": "be269cb5-3e4c-4f",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T18:11:44.052017",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758535882",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 5,
+      "last_accessed": "2025-09-22T19:08:59.363183",
+      "embedding_id": null
+    },
+    "d6c57daf-9908-47": {
+      "id": "d6c57daf-9908-47",
+      "content": "移动决策: {\"move\": \"(5, 5) -> (4, 3)\", \"decision_time\": 4.242973804473877, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T18:11:48.294990",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758535882",
+        "decision_data": {
+          "move": "(5, 5) -> (4, 3)",
+          "decision_time": 4.242973804473877,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "90f0a925-af81-4a": {
+      "id": "90f0a925-af81-4a",
+      "content": "用户说: 能分析一下当前局面吗？",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T18:11:50.476803",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T18:11:50.476803"
+      },
+      "access_count": 4,
+      "last_accessed": "2025-09-22T19:09:27.281365",
+      "embedding_id": null
+    },
+    "08fbb062-4bd3-4d": {
+      "id": "08fbb062-4bd3-4d",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T18:11:51.730477",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T18:11:51.730477"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "784e8195-dd58-4d": {
+      "id": "784e8195-dd58-4d",
+      "content": "用户说: 你好，我想和你聊聊象棋",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T18:11:53.647004",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T18:11:53.647004"
+      },
+      "access_count": 4,
+      "last_accessed": "2025-09-22T19:09:13.168990",
+      "embedding_id": null
+    },
+    "11a24c12-9f03-46": {
+      "id": "11a24c12-9f03-46",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T18:11:54.901785",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T18:11:54.901785"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "5d29992c-85b5-4e": {
+      "id": "5d29992c-85b5-4e",
+      "content": "用户说: 你好，我想和你聊聊象棋",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T18:12:03.107652",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T18:12:03.107652"
+      },
+      "access_count": 3,
+      "last_accessed": "2025-09-22T19:09:13.168990",
+      "embedding_id": null
+    },
+    "e8722eaf-9a07-4c": {
+      "id": "e8722eaf-9a07-4c",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T18:12:04.317367",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T18:12:04.317367"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "25ecd11f-7bcf-4a": {
+      "id": "25ecd11f-7bcf-4a",
+      "content": "用户说: 这个位置我应该怎么走？",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T18:12:11.439950",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T18:12:11.439950"
+      },
+      "access_count": 1,
+      "last_accessed": "2025-09-22T18:12:12.673569",
+      "embedding_id": null
+    },
+    "2cfa9577-c8ae-45": {
+      "id": "2cfa9577-c8ae-45",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T18:12:12.673569",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T18:12:12.673569"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "d1c7d916-dcf4-41": {
+      "id": "d1c7d916-dcf4-41",
+      "content": "用户说: 能分析一下当前局面吗？",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T18:12:26.431948",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T18:12:26.431948"
+      },
+      "access_count": 3,
+      "last_accessed": "2025-09-22T19:09:27.281365",
+      "embedding_id": null
+    },
+    "e94f6142-2baa-4b": {
+      "id": "e94f6142-2baa-4b",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T18:12:27.681188",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T18:12:27.681188"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "6e1830ef-f8c8-43": {
+      "id": "6e1830ef-f8c8-43",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:06:34.781466",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758539194",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "c58c448a-af64-43": {
+      "id": "c58c448a-af64-43",
+      "content": "移动决策: {\"move\": \"(6, 7) -> (5, 5)\", \"decision_time\": 6.594632387161255, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T19:06:41.376098",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758539194",
+        "decision_data": {
+          "move": "(6, 7) -> (5, 5)",
+          "decision_time": 6.594632387161255,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "69b44f36-ffaf-4d": {
+      "id": "69b44f36-ffaf-4d",
+      "content": "玩家移动: (6, 7) -> (5, 5)",
+      "memory_type": "game",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:06:43.821334",
+      "context": {
+        "event": "player_move"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "27bd37f4-04a5-4f": {
+      "id": "27bd37f4-04a5-4f",
+      "content": "用户说: 你好，我想和你聊聊象棋",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:06:48.288925",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:06:48.288925"
+      },
+      "access_count": 2,
+      "last_accessed": "2025-09-22T19:09:13.168990",
+      "embedding_id": null
+    },
+    "a9e5a767-350f-4f": {
+      "id": "a9e5a767-350f-4f",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:06:49.514059",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:06:49.514059"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "e46714e9-0a44-46": {
+      "id": "e46714e9-0a44-46",
+      "content": "用户说: 我刚才那步棋走得怎么样？",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:07:08.121208",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:07:08.121208"
+      },
+      "access_count": 1,
+      "last_accessed": "2025-09-22T19:07:09.354378",
+      "embedding_id": null
+    },
+    "e4d3c7e3-f84f-44": {
+      "id": "e4d3c7e3-f84f-44",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:07:09.354378",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:07:09.354378"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "5799036c-6283-44": {
+      "id": "5799036c-6283-44",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:08:29.680536",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758539309",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "89e990ac-358c-47": {
+      "id": "89e990ac-358c-47",
+      "content": "移动决策: {\"move\": \"(6, 7) -> (5, 5)\", \"decision_time\": 7.783906936645508, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T19:08:37.464443",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758539309",
+        "decision_data": {
+          "move": "(6, 7) -> (5, 5)",
+          "decision_time": 7.783906936645508,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "94d57817-39f8-42": {
+      "id": "94d57817-39f8-42",
+      "content": "玩家移动: (6, 7) -> (5, 5)",
+      "memory_type": "game",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:08:41.813139",
+      "context": {
+        "event": "player_move"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "256e63c4-fbcb-4f": {
+      "id": "256e63c4-fbcb-4f",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:08:46.358230",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758539309",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "66d49a8d-a7ac-4e": {
+      "id": "66d49a8d-a7ac-4e",
+      "content": "移动决策: {\"move\": \"(5, 5) -> (4, 3)\", \"decision_time\": 5.361022472381592, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T19:08:51.719252",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758539309",
+        "decision_data": {
+          "move": "(5, 5) -> (4, 3)",
+          "decision_time": 5.361022472381592,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "3ee81823-c9fb-46": {
+      "id": "3ee81823-c9fb-46",
+      "content": "玩家移动: (5, 5) -> (4, 3)",
+      "memory_type": "game",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:08:53.896174",
+      "context": {
+        "event": "player_move"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "88315af1-0500-4b": {
+      "id": "88315af1-0500-4b",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:08:59.361179",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758539309",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "c6322fab-8e76-41": {
+      "id": "c6322fab-8e76-41",
+      "content": "移动决策: {\"move\": \"(4, 3) -> (5, 1)\", \"decision_time\": 6.05894136428833, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T19:09:05.420120",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758539309",
+        "decision_data": {
+          "move": "(4, 3) -> (5, 1)",
+          "decision_time": 6.05894136428833,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "3fcf477f-4408-41": {
+      "id": "3fcf477f-4408-41",
+      "content": "玩家移动: (4, 3) -> (5, 1)",
+      "memory_type": "game",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:09:10.402660",
+      "context": {
+        "event": "player_move"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "e9012be6-82a4-4b": {
+      "id": "e9012be6-82a4-4b",
+      "content": "用户说: 你好，我想和你聊聊象棋",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:09:13.165990",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:09:13.165990"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "fc364ded-3654-40": {
+      "id": "fc364ded-3654-40",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:09:13.168990",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:09:13.168990"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "32ebbf86-5c08-42": {
+      "id": "32ebbf86-5c08-42",
+      "content": "用户说: 能分析一下当前局面吗？",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:09:21.016631",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:09:21.016631"
+      },
+      "access_count": 2,
+      "last_accessed": "2025-09-22T19:09:27.281365",
+      "embedding_id": null
+    },
+    "b1865fc5-0a89-4d": {
+      "id": "b1865fc5-0a89-4d",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:09:21.019634",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:09:21.019634"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "813c3a5c-e80d-42": {
+      "id": "813c3a5c-e80d-42",
+      "content": "用户说: 能分析一下当前局面吗？",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:09:27.278863",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:09:27.278863"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "7e8d3636-4500-4e": {
+      "id": "7e8d3636-4500-4e",
+      "content": "我回复: 我理解你的想法。让我们继续我们的象棋之旅吧！有什么我可以帮助你的吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:09:27.281365",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:09:27.281365"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": null
+    },
+    "6ae288b8-5f8d-40": {
+      "id": "6ae288b8-5f8d-40",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:18:32.162136",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758539912",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 7,
+      "last_accessed": "2025-09-22T19:32:56.057491",
+      "embedding_id": "9a05cc44-5891-4d91-94f5-342f43fbe4df"
+    },
+    "1046488a-97f8-49": {
+      "id": "1046488a-97f8-49",
+      "content": "移动决策: {\"move\": \"(6, 7) -> (5, 5)\", \"decision_time\": 6.118036270141602, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T19:18:38.280172",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758539912",
+        "decision_data": {
+          "move": "(6, 7) -> (5, 5)",
+          "decision_time": 6.118036270141602,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "0102c785-5746-45df-b9d2-959e7d6e8967"
+    },
+    "7965161e-0cc6-4c": {
+      "id": "7965161e-0cc6-4c",
+      "content": "玩家移动: (6, 7) -> (5, 5)",
+      "memory_type": "game",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:18:45.830476",
+      "context": {
+        "event": "player_move"
+      },
+      "access_count": 1,
+      "last_accessed": "2025-09-22T19:18:51.131409",
+      "embedding_id": "1f7e6567-529a-4f60-9da2-6d3482f90a34"
+    },
+    "b834d0f1-bfb6-40": {
+      "id": "b834d0f1-bfb6-40",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:18:49.757127",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758539912",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 5,
+      "last_accessed": "2025-09-22T19:32:56.057491",
+      "embedding_id": "67c61a8c-34f2-4d1e-9128-f22039f6ec2e"
+    },
+    "b3652dc7-703f-4a": {
+      "id": "b3652dc7-703f-4a",
+      "content": "移动决策: {\"move\": \"(5, 5) -> (4, 3)\", \"decision_time\": 5.598740577697754, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T19:18:55.355868",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758539912",
+        "decision_data": {
+          "move": "(5, 5) -> (4, 3)",
+          "decision_time": 5.598740577697754,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "af201de9-a2bf-4146-a767-9610fcae271e"
+    },
+    "d51fc130-8336-42": {
+      "id": "d51fc130-8336-42",
+      "content": "玩家移动: (5, 5) -> (4, 3)",
+      "memory_type": "game",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:19:04.539622",
+      "context": {
+        "event": "player_move"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "e0fdd8b7-ba7c-4730-9d24-4e4e46b0e77b"
+    },
+    "174624be-03a8-45": {
+      "id": "174624be-03a8-45",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:19:10.892881",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758539912",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 1,
+      "last_accessed": "2025-09-22T19:19:13.327016",
+      "embedding_id": "a72de737-c6f2-4796-9afc-16acf90487c0"
+    },
+    "3ef29d65-5152-4e": {
+      "id": "3ef29d65-5152-4e",
+      "content": "移动决策: {\"move\": \"(4, 3) -> (2, 2)\", \"decision_time\": 4.914128065109253, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T19:19:15.807009",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758539912",
+        "decision_data": {
+          "move": "(4, 3) -> (2, 2)",
+          "decision_time": 4.914128065109253,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "2f4f9439-d09e-4031-816f-f370dce3713f"
+    },
+    "db14ea14-6935-4e": {
+      "id": "db14ea14-6935-4e",
+      "content": "玩家移动: (4, 3) -> (2, 2)",
+      "memory_type": "game",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:19:24.255879",
+      "context": {
+        "event": "player_move"
+      },
+      "access_count": 1,
+      "last_accessed": "2025-09-22T19:20:12.891085",
+      "embedding_id": "e89f085c-afa0-4f37-8f48-a235c8c22870"
+    },
+    "6e0c67cd-41f1-4f": {
+      "id": "6e0c67cd-41f1-4f",
+      "content": "用户说: 你好，我想和你聊聊象棋",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:19:26.809493",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:19:26.809493"
+      },
+      "access_count": 4,
+      "last_accessed": "2025-09-22T19:34:22.346571",
+      "embedding_id": "3a660200-ad54-46b3-a8ff-5b5e3b9f0b71"
+    },
+    "c2003cde-ed92-41": {
+      "id": "c2003cde-ed92-41",
+      "content": "我回复: 你好！很高兴和你聊象棋。请问你想讨论什么方面呢？棋局、战术还是其他？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:19:29.576289",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:19:29.576289"
+      },
+      "access_count": 1,
+      "last_accessed": "2025-09-22T19:19:56.159497",
+      "embedding_id": "44632842-3854-4336-ac0f-6aba435db46c"
+    },
+    "1edd4ea1-6e9a-41": {
+      "id": "1edd4ea1-6e9a-41",
+      "content": "用户说: 你好，我想和你聊聊象棋",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:19:54.816064",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:19:54.816064"
+      },
+      "access_count": 2,
+      "last_accessed": "2025-09-22T19:33:25.031702",
+      "embedding_id": "bc22954b-d00b-45f7-8678-082a0c96dc29"
+    },
+    "961fd0f8-0718-4d": {
+      "id": "961fd0f8-0718-4d",
+      "content": "我回复: 你好！很高兴和你聊象棋。请问你想讨论什么？棋局、战术还是其他方面？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:19:57.928425",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:19:57.928425"
+      },
+      "access_count": 2,
+      "last_accessed": "2025-09-22T19:34:35.670019",
+      "embedding_id": "170dfcc2-b76a-4246-ae5c-e204105ac908"
+    },
+    "7d4020fa-b941-40": {
+      "id": "7d4020fa-b941-40",
+      "content": "用户说: 这个位置我应该怎么走？",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:20:08.058673",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:20:08.058673"
+      },
+      "access_count": 2,
+      "last_accessed": "2025-09-22T19:33:51.226003",
+      "embedding_id": "6c20a80d-5a32-4ae1-b65d-5e67d029fea0"
+    },
+    "f574cc58-7941-44": {
+      "id": "f574cc58-7941-44",
+      "content": "我回复: 你好！很高兴和你聊象棋。请提供当前棋局的具体位置，或者描述一下局势，我会尽力帮助你找到最佳走法。",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:20:14.605606",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:20:14.605606"
+      },
+      "access_count": 2,
+      "last_accessed": "2025-09-22T19:34:35.670019",
+      "embedding_id": "fe424161-d08c-4dfc-80fe-c8afe4dfca8f"
+    },
+    "5e272dc0-6627-4e": {
+      "id": "5e272dc0-6627-4e",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:31:50.185520",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758540710",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 2,
+      "last_accessed": "2025-09-22T19:32:22.224525",
+      "embedding_id": "0c18c479-ecd6-4568-8ebd-43a53107eae2"
+    },
+    "ac2841e8-6263-45": {
+      "id": "ac2841e8-6263-45",
+      "content": "移动决策: {\"move\": \"(6, 7) -> (5, 5)\", \"decision_time\": 10.456472873687744, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T19:32:00.641993",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758540710",
+        "decision_data": {
+          "move": "(6, 7) -> (5, 5)",
+          "decision_time": 10.456472873687744,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "1972691b-e76e-4672-acc5-966f64492b3c"
+    },
+    "ed9e83ea-337c-46": {
+      "id": "ed9e83ea-337c-46",
+      "content": "玩家移动: (6, 7) -> (5, 5)",
+      "memory_type": "game",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:32:11.886838",
+      "context": {
+        "event": "player_move"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "1971f934-26bc-4a6c-a89f-fea46faa54c9"
+    },
+    "b6c1868b-b76f-4c": {
+      "id": "b6c1868b-b76f-4c",
+      "content": "move_request: 棋盘状态: 白方16子，黑方16子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:32:20.253549",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758540710",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 1,
+      "last_accessed": "2025-09-22T19:32:22.224525",
+      "embedding_id": "96001496-6e8d-49d0-886e-ca4bc8eb5323"
+    },
+    "407110e0-efca-46": {
+      "id": "407110e0-efca-46",
+      "content": "移动决策: {\"move\": \"(5, 5) -> (4, 3)\", \"decision_time\": 5.014472723007202, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T19:32:25.268022",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758540710",
+        "decision_data": {
+          "move": "(5, 5) -> (4, 3)",
+          "decision_time": 5.014472723007202,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "367fcab5-0efb-4df7-bff9-a3e7cd42f943"
+    },
+    "bba1b621-75c2-44": {
+      "id": "bba1b621-75c2-44",
+      "content": "玩家移动: (5, 5) -> (4, 3)",
+      "memory_type": "game",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:32:38.053101",
+      "context": {
+        "event": "player_move"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "2a29c4c6-3af7-42fc-af26-c04ac3db9115"
+    },
+    "4967360b-9d3d-49": {
+      "id": "4967360b-9d3d-49",
+      "content": "move_request: 棋盘状态: 白方15子，黑方15子",
+      "memory_type": "game",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:32:54.416133",
+      "context": {
+        "color": "black",
+        "event_type": "move_request",
+        "game_id": "game_1758540710",
+        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+      },
+      "access_count": 1,
+      "last_accessed": "2025-09-22T19:32:56.057491",
+      "embedding_id": "8fa446b2-4a40-44fb-a1cd-787d64c62fcf"
+    },
+    "1603c07f-a4eb-4a": {
+      "id": "1603c07f-a4eb-4a",
+      "content": "移动决策: {\"move\": \"(5, 6) -> (5, 5)\", \"decision_time\": 5.465787410736084, \"analysis_count\": 3, \"successful_analysis\": 1}",
+      "memory_type": "strategy",
+      "importance": 0.7,
+      "timestamp": "2025-09-22T19:32:59.881921",
+      "context": {
+        "color": "black",
+        "game_id": "game_1758540710",
+        "decision_data": {
+          "move": "(5, 6) -> (5, 5)",
+          "decision_time": 5.465787410736084,
+          "analysis_count": 3,
+          "successful_analysis": 1
+        }
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "58040aa4-9f84-4f4b-b2c0-4a622f531db8"
+    },
+    "afe818ce-e338-4c": {
+      "id": "afe818ce-e338-4c",
+      "content": "玩家移动: (5, 6) -> (5, 5)",
+      "memory_type": "game",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:33:11.561829",
+      "context": {
+        "event": "player_move"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "b75d4861-a404-4d57-a68c-dc1e0ba7092d"
+    },
+    "96a16f9e-90cd-43": {
+      "id": "96a16f9e-90cd-43",
+      "content": "用户说: 这是模拟的OpenAI语音识别结果",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:33:23.546427",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:33:23.546427"
+      },
+      "access_count": 2,
+      "last_accessed": "2025-09-22T19:34:22.346571",
+      "embedding_id": "80e5290e-5360-43a8-84ac-a6c880011ad4"
+    },
+    "47ad96cf-d2bc-47": {
+      "id": "47ad96cf-d2bc-47",
+      "content": "我回复: 你好！很高兴和你聊聊象棋。请问你有什么具体的问题或想讨论的内容吗？",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:33:27.087112",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:33:27.087112"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "7974a899-fc91-414b-828f-ba8e10035914"
+    },
+    "e3d3a79a-2e7c-47": {
+      "id": "e3d3a79a-2e7c-47",
+      "content": "用户说: 这个位置我应该怎么走？",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:33:49.476046",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:33:49.476046"
+      },
+      "access_count": 1,
+      "last_accessed": "2025-09-22T19:33:51.226003",
+      "embedding_id": "c6c6cd61-f70b-470f-b082-327f46d23f40"
+    },
+    "01af2047-fdce-43": {
+      "id": "01af2047-fdce-43",
+      "content": "我回复: 当然可以！请告诉我当前棋局的具体位置，或者提供棋子的布局，我将为你分析最佳走法。",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:33:53.089304",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:33:53.089304"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "772484e0-a204-4fec-a0db-083d43461628"
+    },
+    "35e0fd57-36f1-40": {
+      "id": "35e0fd57-36f1-40",
+      "content": "用户说: 这是模拟的OpenAI语音识别结果",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:34:20.890171",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:34:20.890171"
+      },
+      "access_count": 1,
+      "last_accessed": "2025-09-22T19:34:22.346571",
+      "embedding_id": "e3679053-ea80-45de-8889-bd0d2613446e"
+    },
+    "78cd8db8-3c27-4f": {
+      "id": "78cd8db8-3c27-4f",
+      "content": "我回复: 你好！感谢你的反馈。如果你有任何关于象棋的问题或需要帮助，请随时告诉我！",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:34:23.788553",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:34:23.788553"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "e8bced7a-a4f8-469f-a3fe-83b3466efe7b"
+    },
+    "66273a79-335f-44": {
+      "id": "66273a79-335f-44",
+      "content": "用户说: 我刚才那步棋走得怎么样？",
+      "memory_type": "conversation",
+      "importance": 0.5,
+      "timestamp": "2025-09-22T19:34:34.210648",
+      "context": {
+        "speaker": "user",
+        "timestamp": "2025-09-22T19:34:34.210648"
+      },
+      "access_count": 1,
+      "last_accessed": "2025-09-22T19:34:35.670019",
+      "embedding_id": "8afc99b3-7d17-4941-85e9-cd0556f9ffd8"
+    },
+    "655ec67e-508f-42": {
+      "id": "655ec67e-508f-42",
+      "content": "我回复: 你好！很高兴继续和你讨论象棋。请告诉我你刚才的棋步和当前棋局的情况，我会尽力帮助你分析。",
+      "memory_type": "conversation",
+      "importance": 0.6,
+      "timestamp": "2025-09-22T19:34:37.410383",
+      "context": {
+        "speaker": "agent",
+        "timestamp": "2025-09-22T19:34:37.410383"
+      },
+      "access_count": 0,
+      "last_accessed": null,
+      "embedding_id": "34b057bc-ab50-40e1-a9e7-572c31922af6"
+    }
+  },
+  "stats": {
+    "memories_stored": 129,
+    "memories_retrieved": 117,
+    "searches_performed": 46,
+    "vector_searches": 32,
+    "cache_hits": 0
+  },
+  "version": "2.0"
+}

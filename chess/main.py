@@ -23,6 +23,12 @@ try:
         print("Loading game components...")
         print(f"📁 Models: {PATHS['models']}")
         print(f"🗄️ Database: {DATABASE_PATH}")
+        # 预配置tiktoken/SSL，避免首次运行下载阻塞
+        try:
+            from llm.ssl_config import setup_tiktoken_ssl
+            setup_tiktoken_ssl()
+        except Exception as e:
+            print(f"⚠️ 预配置tiktoken失败: {e}")
         
         try:
             chess_game = ChessUI()

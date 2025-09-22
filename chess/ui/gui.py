@@ -5,6 +5,7 @@
 import pygame
 import sys
 import os
+import time
 from typing import Optional, Dict, List
 from datetime import datetime, timedelta
 
@@ -38,9 +39,10 @@ class ChessUI:
             pass
         pygame.init()
         pygame.font.init()
-
-        self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-        pygame.display.set_caption("🏆 Professional Chess Game")
+        # 默认窗口 1024x768，并允许调整大小
+        self.window_width, self.window_height = 1024, 768
+        self.screen = pygame.display.set_mode((self.window_width, self.window_height), pygame.RESIZABLE)
+        pygame.display.set_caption("Professional Chess Game")
         self.clock = pygame.time.Clock()
 
         # 游戏组件
@@ -78,9 +80,8 @@ class ChessUI:
 
         # 运行标志
         self.running = True
-
-        # 主菜单与游戏按钮
-        # 菜单选择按钮保持原先的大致位置
+        # 轻量提示（Toast）：列表元素为 (text, expire_ts)
+        self._toasts = []
     
     def _init_fonts(self) -> Dict:
         """初始化字体"""
@@ -93,42 +94,82 @@ class ChessUI:
     
 
     def _init_ui_components(self):
-        # 初始化面板与按钮，确保先有 captured 面板再计算按钮位置
-        self.panels = {
-            'board': pygame.Rect(30, 30, BOARD_SIZE * SQUARE_SIZE, BOARD_SIZE * SQUARE_SIZE),
-            'info': pygame.Rect(BOARD_SIZE * SQUARE_SIZE + 60, 30, 320, 200),
-            'moves': pygame.Rect(BOARD_SIZE * SQUARE_SIZE + 60, 250, 320, 200),
-            'captured': pygame.Rect(BOARD_SIZE * SQUARE_SIZE + 60, 470, 320, 100)
-        }
-
-        # 先清空并设置菜单按钮（主菜单显示用）
+        """初始化面板与按钮，使用自适应布局"""
+        # 初始化结构
         self.buttons = {}
-        menu_button_width = 200
-        menu_button_x = WINDOW_WIDTH - menu_button_width - 20
-        self.buttons['vs_human'] = pygame.Rect(menu_button_x, 120, menu_button_width, 50)
-        self.buttons['vs_ai_easy'] = pygame.Rect(menu_button_x, 190, menu_button_width, 50)
-        self.buttons['vs_ai_medium'] = pygame.Rect(menu_button_x, 260, menu_button_width, 50)
-        self.buttons['vs_ai_hard'] = pygame.Rect(menu_button_x, 330, menu_button_width, 50)
+        self.panels = {}
+        # 首次或窗口变化时重算布局
+        self._recompute_layout()
 
-        # 游戏界面按钮：两排布局，放在 captured 面板下方
-        button_height = 36
-        base_y = self.panels['captured'].bottom + 20
-        gap_x = 16
-        gap_y = 10
+    def _recompute_layout(self):
+        """根据窗口大小重算棋盘和侧栏布局，避免遮挡并自适应"""
+        # 棋盘尽量为正方形，占高度约90%，预留顶部标题和底部空间
+        usable_height = max(self.window_height - 140, 480)
+        board_size = min(usable_height, int(self.window_width * 0.66))
+        self.square_size = max(board_size // 8, 48)
+        board_pixel = self.square_size * 8
+        self.board_area = pygame.Rect(40, 80, board_pixel, board_pixel)
+        # 右侧面板宽度自适应
+        right_panel_width = max(int(self.window_width * 0.28), 320)
+        self.right_panel = pygame.Rect(self.board_area.right + 20, 80, right_panel_width, board_pixel)
+        # 渲染器尺寸同步
+        self.board_renderer.square_size = self.square_size
+        self.board_renderer.board_size = board_pixel
+        self.board_renderer.board_surface = None  # 触发重建
+        # 面板区域（信息/历史/吃子）
+        info_h = max(int(self.right_panel.height * 0.26), 180)
+        moves_h = max(int(self.right_panel.height * 0.38), 220)
+        captured_h = max(self.right_panel.height - info_h - moves_h - 30, 80)
+        self.panels['board'] = pygame.Rect(self.board_area)
+        self.panels['info'] = pygame.Rect(self.right_panel.x, self.right_panel.y, right_panel_width, info_h)
+        self.panels['moves'] = pygame.Rect(self.right_panel.x, self.panels['info'].bottom + 10, right_panel_width, moves_h)
+        self.panels['captured'] = pygame.Rect(self.right_panel.x, self.panels['moves'].bottom + 10, right_panel_width, captured_h)
+        # 菜单与游戏按钮布局
+        self._layout_buttons(right_panel_width)
 
-        # 两列宽度计算：按钮不遮挡右侧边距
-        total_width = 320  # 与右侧面板统一宽度
-        col_width = (total_width - gap_x) // 2
+    def _layout_buttons(self, panel_width):
+        """布置按钮，防止遮挡并自适应宽度"""
+        # 主菜单按钮区（靠右上角）
+        menu_button_width = max(int(self.window_width * 0.18), 180)
+        menu_button_x = self.window_width - menu_button_width - 20
+        self.buttons['vs_human'] = pygame.Rect(menu_button_x, 100, menu_button_width, 40)
+        self.buttons['vs_ai_easy'] = pygame.Rect(menu_button_x, 150, menu_button_width, 40)
+        self.buttons['vs_ai_medium'] = pygame.Rect(menu_button_x, 200, menu_button_width, 40)
+        self.buttons['vs_ai_hard'] = pygame.Rect(menu_button_x, 250, menu_button_width, 40)
+        self.buttons['vs_ai_companion'] = pygame.Rect(menu_button_x, 300, menu_button_width, 50)
+
+        # 游戏界面按钮：两排 + 陪伴专用按钮，放在 captured 面板下方，整宽
+        gap_x = 12
+        gap_y = 12
+        button_height = max(int(panel_width * 0.11), 36)
+        col_width = (panel_width - gap_x) // 2
         left_x = self.panels['captured'].x
         right_x = left_x + col_width + gap_x
-
-        # 第一排：New Game | Menu
+        base_y = self.panels['captured'].bottom + 12
+        # 确保按钮不超出窗口底部，如果空间不足则自适应减小按钮高度
+        total_needed = 4 * button_height + 3 * gap_y
+        avail_h = (self.window_height - 10) - base_y
+        if avail_h < total_needed:
+            min_btn_h = 28
+            # 重新计算适配后的按钮高度（至少28）
+            button_height = max(min_btn_h, (avail_h - 3 * gap_y) // 4) if avail_h > (3 * gap_y + min_btn_h) else min_btn_h
+            # 如果仍然不足以容纳，则将起始Y上移以完全显示
+            total_needed = 4 * button_height + 3 * gap_y
+            if base_y + total_needed > self.window_height - 10:
+                base_y = max(80, self.window_height - 10 - total_needed)
+        # 行1
         self.buttons['new_game'] = pygame.Rect(left_x, base_y, col_width, button_height)
         self.buttons['menu'] = pygame.Rect(right_x, base_y, col_width, button_height)
-        # 第二排：Undo | Pause
+        # 行2
         row2_y = base_y + button_height + gap_y
         self.buttons['undo'] = pygame.Rect(left_x, row2_y, col_width, button_height)
         self.buttons['pause'] = pygame.Rect(right_x, row2_y, col_width, button_height)
+        # 行3（整宽）
+        row3_y = row2_y + button_height + gap_y
+        self.buttons['voice_chat'] = pygame.Rect(left_x, row3_y, panel_width, button_height)
+        # 行4（整宽）
+        row4_y = row3_y + button_height + gap_y
+        self.buttons['ask_question'] = pygame.Rect(left_x, row4_y, panel_width, button_height)
     
     def _load_sounds(self) -> Dict:
         """加载音效（优先加载本地 OGG 文件），带回退与日志"""
@@ -235,6 +276,12 @@ class ChessUI:
             
             elif event.type == pygame.KEYDOWN:
                 self._handle_key_press(event.key)
+
+            elif event.type == pygame.VIDEORESIZE:
+                # 窗口缩放时重建显示并重算布局
+                self.window_width, self.window_height = max(event.w, 800), max(event.h, 600)
+                self.screen = pygame.display.set_mode((self.window_width, self.window_height), pygame.RESIZABLE)
+                self._recompute_layout()
     
     def _handle_mouse_click(self, pos: tuple):
         """处理鼠标点击"""
@@ -271,6 +318,9 @@ class ChessUI:
         elif button_name == 'vs_ai_hard':
             self._start_ai_game('HARD')
         
+        elif button_name == 'vs_ai_companion':
+            self._start_ai_game('COMPANION')
+        
         elif button_name == 'undo':
             self.game_state.undo_move()
         
@@ -282,6 +332,14 @@ class ChessUI:
         
         elif button_name == 'menu':
             self.game_state.go_to_menu()
+        
+        elif button_name == 'voice_chat':
+            self._toast("将开始语音，请在提示音后说话（2-3秒）", 3.0)
+            self._handle_voice_chat()
+        
+        elif button_name == 'ask_question':
+            self._toast("已发送问题，AI正在思考...", 2.0)
+            self._handle_ask_question()
     
     def _handle_key_press(self, key):
         """处理键盘按键"""
@@ -322,6 +380,14 @@ class ChessUI:
             if ai:
                 self.ai_opponents[ai_level] = ai
                 print(f"✅ {ai_level}级AI加载成功")
+                
+                # 如果是陪伴模式，开始新游戏
+                if ai_level == 'COMPANION':
+                    try:
+                        ai.start_new_game()
+                        print("🎮 陪伴模式游戏开始")
+                    except Exception as e:
+                        print(f"⚠️ 陪伴模式初始化失败: {e}")
             else:
                 print(f"❌ {ai_level}级AI加载失败")
                 return
@@ -335,6 +401,13 @@ class ChessUI:
                 from_pos, to_pos = move
                 print(f"🎯 AI选择移动: {from_pos} -> {to_pos}")
                 self.game_state.attempt_move(from_pos, to_pos)
+                
+                # 如果是陪伴模式，处理移动后的交互
+                if ai_level == 'COMPANION':
+                    try:
+                        ai.handle_player_move(from_pos, to_pos)
+                    except Exception as e:
+                        print(f"⚠️ 陪伴模式移动处理失败: {e}")
             else:
                 print("⚠️ AI未能生成有效移动")
     
@@ -375,6 +448,51 @@ class ChessUI:
         
         # 开始游戏
         self.game_state.start_new_game(GameMode.HUMAN_VS_AI, difficulty)
+    
+    def _handle_voice_chat(self):
+        """处理语音聊天"""
+        try:
+            ai_level = self.game_state.ai_level
+            if ai_level == 'COMPANION' and ai_level in self.ai_opponents:
+                ai = self.ai_opponents[ai_level]
+                if ai and hasattr(ai, 'start_voice_chat_interaction'):
+                    print("🗣️ 提示：将开始语音输入。请在提示音后说话，短句清晰，2-3秒内结束。")
+                    response = ai.start_voice_chat_interaction()
+                    self._toast("AI正在播报回答...", 3.0)
+                    print(f"🎤 AI回应: {response}")
+                else:
+                    print("⚠️ 陪伴模式AI不支持语音聊天")
+            else:
+                print("⚠️ 语音聊天仅在陪伴模式下可用")
+        except Exception as e:
+            print(f"❌ 语音聊天失败: {e}")
+    
+    def _handle_ask_question(self):
+        """处理问答"""
+        try:
+            ai_level = self.game_state.ai_level
+            if ai_level == 'COMPANION' and ai_level in self.ai_opponents:
+                ai = self.ai_opponents[ai_level]
+                if ai and hasattr(ai, 'handle_player_question'):
+                    # 这里可以弹出输入框，现在先用预设问题
+                    questions = [
+                        "这个位置我应该怎么走？",
+                        "能分析一下当前局面吗？",
+                        "有什么好的开局建议？",
+                        "我刚才那步棋走得怎么样？"
+                    ]
+                    import random
+                    question = random.choice(questions)
+                    response = ai.handle_player_question(question)
+                    self._toast("AI正在播报回答...", 3.0)
+                    print(f"❓ 问题: {question}")
+                    print(f"💡 AI回答: {response}")
+                else:
+                    print("⚠️ 陪伴模式AI不支持问答")
+            else:
+                print("⚠️ 问答功能仅在陪伴模式下可用")
+        except Exception as e:
+            print(f"❌ 问答失败: {e}")
 
     # --- 数据与持久化 ---
     def _save_game_to_db(self, data: Dict):
@@ -523,29 +641,57 @@ class ChessUI:
             self._render_menu()
         else:
             self._render_game()
+        # 渲染提示气泡
+        self._render_toasts()
         
         pygame.display.flip()
+
+    def _toast(self, text: str, seconds: float = 2.0):
+        """添加一个将在指定秒数后消失的提示"""
+        expire = time.time() + max(0.5, float(seconds))
+        self._toasts.append((text, expire))
+
+    def _render_toasts(self):
+        """在右上角渲染最多三条提示气泡"""
+        now = time.time()
+        # 过滤过期项
+        self._toasts = [(t, e) for (t, e) in self._toasts if e > now]
+        if not self._toasts:
+            return
+        # 基础位置
+        x = self.window_width - 20
+        y = 20
+        # 仅显示最后三条
+        for text, _ in self._toasts[-3:]:
+            surf = self.fonts['medium'].render(text, True, (255, 255, 255))
+            padding = 8
+            rect = surf.get_rect()
+            rect.topleft = (x - rect.width - padding*2, y)
+            # 背景半透明黑
+            bg = pygame.Surface((rect.width + padding*2, rect.height + padding*2), pygame.SRCALPHA)
+            bg.fill((0, 0, 0, 160))
+            self.screen.blit(bg, rect.move(-padding, -padding))
+            self.screen.blit(surf, rect)
+            y += rect.height + padding*2 + 8
     
     def _render_menu(self):
         """渲染主菜单"""
         # 标题
         title = self.fonts['title'].render("🏆 Professional Chess", True, COLORS['TEXT'])
-        title_rect = title.get_rect(center=(WINDOW_WIDTH // 2, 100))
+        title_rect = title.get_rect(center=(self.window_width // 2, 100))
         self.screen.blit(title, title_rect)
-        
         # 副标题
         subtitle = self.fonts['medium'].render("Choose your game mode", True, COLORS['TEXT'])
-        subtitle_rect = subtitle.get_rect(center=(WINDOW_WIDTH // 2, 140))
+        subtitle_rect = subtitle.get_rect(center=(self.window_width // 2, 140))
         self.screen.blit(subtitle, subtitle_rect)
-        
-        # 菜单按钮（移除New Game，这应该只在游戏界面显示）
+        # 菜单按钮（仅菜单相关）
         menu_buttons = [
             ('vs_human', "Human vs Human"),
             ('vs_ai_easy', "vs AI (Easy)"),
             ('vs_ai_medium', "vs AI (Medium)"),
-            ('vs_ai_hard', "vs AI (Hard)")
+            ('vs_ai_hard', "vs AI (Hard)"),
+            ('vs_ai_companion', "🤖 AI Companion (陪伴模式)")
         ]
-        
         for button_name, text in menu_buttons:
             if button_name in self.buttons:
                 self._draw_button(self.buttons[button_name], text, self.fonts['medium'])
@@ -706,9 +852,23 @@ class ChessUI:
             ('menu', "Menu")
         ]
         
+        # 如果是陪伴模式，添加特殊按钮
+        if (self.game_state.mode == GameMode.HUMAN_VS_AI and 
+            self.game_state.ai_level == 'COMPANION'):
+            companion_buttons = [
+                ('voice_chat', "🎤 Voice Chat"),
+                ('ask_question', "❓ Ask Question")
+            ]
+            game_buttons.extend(companion_buttons)
+        
         for button_name, text in game_buttons:
             if button_name in self.buttons:
-                self._draw_button(self.buttons[button_name], text, self.fonts['small'])
+                # 陪伴模式按钮使用特殊颜色
+                is_companion_button = button_name in ['voice_chat', 'ask_question']
+                if is_companion_button:
+                    self._draw_companion_button(self.buttons[button_name], text, self.fonts['small'])
+                else:
+                    self._draw_button(self.buttons[button_name], text, self.fonts['small'])
     
     def _draw_button(self, rect: pygame.Rect, text: str, font: pygame.font.Font, 
                     hover: bool = False):
@@ -716,6 +876,23 @@ class ChessUI:
         color = COLORS['BUTTON_HOVER'] if hover else COLORS['BUTTON']
         pygame.draw.rect(self.screen, color, rect)
         pygame.draw.rect(self.screen, COLORS['TEXT'], rect, 2)
+        
+        text_surface = font.render(text, True, COLORS['TEXT'])
+        text_rect = text_surface.get_rect(center=rect.center)
+        self.screen.blit(text_surface, text_rect)
+    
+    def _draw_companion_button(self, rect: pygame.Rect, text: str, font: pygame.font.Font):
+        """绘制陪伴模式特殊按钮"""
+        # 使用渐变色背景表示这是特殊功能
+        companion_color = (100, 149, 237)  # 天蓝色
+        companion_hover_color = (135, 206, 250)  # 浅天蓝色
+        
+        pygame.draw.rect(self.screen, companion_color, rect)
+        pygame.draw.rect(self.screen, COLORS['TEXT'], rect, 2)
+        
+        # 添加发光效果
+        glow_rect = rect.inflate(4, 4)
+        pygame.draw.rect(self.screen, companion_hover_color, glow_rect, 1)
         
         text_surface = font.render(text, True, COLORS['TEXT'])
         text_rect = text_surface.get_rect(center=rect.center)

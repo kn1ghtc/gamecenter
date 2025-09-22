@@ -14,6 +14,7 @@ sys.path.insert(0, parent_dir)
 from ai.basic_ai import BasicAI
 from ai.ml_ai import ChessMLAI
 from ai.gpt_ai import GPTChessAI
+from ai.chess_ai_agent_adapter import ChessAIAgentAdapter
 from game.pieces import PieceColor
 
 class AIFactory:
@@ -36,6 +37,14 @@ class AIFactory:
                 'class': GPTChessAI,
                 'params': {'model': 'gpt-4o-mini'},
                 'description': '专家AI - GPT-4o-mini，顶级象棋水平'
+            },
+            'COMPANION': {
+                'class': ChessAIAgentAdapter,
+                'params': {
+                    'personality': 'friendly_mentor',
+                    'voice_enabled': True  # 移除不支持的enable_memory参数
+                },
+                'description': '智能陪伴助理 - 超级智能象棋伙伴，具备语音聊天、记忆学习能力'
             }
         }
     
@@ -88,7 +97,7 @@ class AIFactory:
             
             return None
     
-    def _create_fallback_ai(self, original_difficulty: str) -> Optional[BasicAI]:
+    def _create_fallback_ai(self, original_difficulty: str) -> Optional[Any]:
         """创建备用基础AI"""
         try:
             if original_difficulty == 'MEDIUM':

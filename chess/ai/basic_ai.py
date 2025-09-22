@@ -22,6 +22,7 @@ class BasicChessAI:
     
     def __init__(self, depth: int = 3, time_limit: float = 5.0):
         self.depth = depth
+        self.max_depth = depth  # 添加max_depth属性以保持兼容性
         self.time_limit = time_limit
         self.evaluator = ChessEvaluator()
         self.nodes_searched = 0
@@ -299,6 +300,12 @@ class ImprovedBasicAI(BasicChessAI):
         
         # 简化的开局逻辑
         return None
+    
+    def handle_player_move(self, move, board=None):
+        """处理玩家移动 - 为保持兼容性添加的方法"""
+        # 基础AI不需要特殊处理玩家移动
+        # 仅用于保持接口兼容性
+        pass
 
 # 为了兼容性，提供别名
 BasicAI = BasicChessAI
