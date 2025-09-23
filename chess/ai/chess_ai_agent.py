@@ -141,7 +141,8 @@ class ChessAIAgentV2:
             self.memory_system = create_chess_memory_system(
                 memory_dir=memory_dir,
                 embedding_model="openai" if self.api_key else "huggingface",
-                fast_start=True
+                fast_start=True,
+                strict_vector=True
             )
             self.logger.info("✅ ChromaDB记忆系统已初始化")
             
@@ -158,9 +159,22 @@ class ChessAIAgentV2:
                     emotion=EmotionType.FRIENDLY,
                     language="zh-CN"
                 )
+                
+                # 使用配置中的语音缓存目录，避免C盘临时目录权限问题
+                try:
+                    from config.settings import PATHS
+                    voice_cache_dir = PATHS['voice_cache']
+                except ImportError:
+                    # 回退到项目内部目录
+                    import os
+                    chess_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    voice_cache_dir = os.path.join(chess_dir, "test_data", "chess_voice_cache")
+                    os.makedirs(voice_cache_dir, exist_ok=True)
+                
                 self.voice_system = ChessVoiceSystem(
                     api_key=self.api_key,
-                    voice_settings=voice_settings
+                    voice_settings=voice_settings,
+                    audio_cache_dir=voice_cache_dir  # 显式传递缓存目录
                 )
                 self.logger.info("✅ 语音系统已初始化")
             else:
@@ -220,8 +234,10 @@ class ChessAIAgentV2:
             # 2. 记忆中寻找相似局面
             thinking_tasks.append(self._search_similar_positions(board))
             
-            # 3. 工具辅助分析
-            if self.tool_system:
+            # 3. 工具辅助分析（仅在分析/教学模式启用，陪伴模式默认关闭以减少开销）
+            if self.tool_system and self.state.interaction_mode in (
+                InteractionMode.ANALYSIS, InteractionMode.TEACHING
+            ):
                 thinking_tasks.append(self._analyze_with_tools(board, color))
             
             # 并行执行思考任务
@@ -482,17 +498,24 @@ class ChessAIAgentV2:
         except Exception as e:
             self.logger.error(f"语音反馈失败: {e}")
     
-    async def chat(self, message: str) -> str:
-        """与Agent聊天"""
+    async def chat(self, message: str, current_board: ChessBoard = None) -> str:
+        """与Agent聊天 - 自动上下文感知版本"""
         try:
             self.stats['conversations'] += 1
             
-            # 记录用户消息到记忆
+            # 自动获取当前游戏状态上下文
+            game_context = await self._gather_game_context(current_board)
+            
+            # 记录用户消息到记忆，包含游戏上下文
             self.memory_system.store_memory(
                 content=f"用户说: {message}",
                 memory_type="conversation",
                 importance=0.5,
-                context={'speaker': 'user', 'timestamp': datetime.now().isoformat()}
+                context={
+                    'speaker': 'user', 
+                    'timestamp': datetime.now().isoformat(),
+                    'game_context': game_context
+                }
             )
             
             # 搜索相关记忆
@@ -502,58 +525,182 @@ class ChessAIAgentV2:
                 min_importance=0.3
             )
             
-            # 生成回复（简化版）
+            # 生成回复，包含游戏上下文
             if self.gpt_ai:
-                response = await self._generate_ai_response(message, relevant_memories)
+                response = await self._generate_ai_response(message, relevant_memories, game_context)
             else:
-                response = self._generate_fallback_response(message, relevant_memories)
+                response = self._generate_fallback_response(message, relevant_memories, game_context)
             
             # 记录回复到记忆
             self.memory_system.store_memory(
                 content=f"我回复: {response}",
                 memory_type="conversation",
                 importance=0.6,
-                context={'speaker': 'agent', 'timestamp': datetime.now().isoformat()}
+                context={
+                    'speaker': 'agent', 
+                    'timestamp': datetime.now().isoformat(),
+                    'game_context': game_context
+                }
             )
             
             # 语音回复
             if self.voice_system:
                 await self.voice_system.speak_async(response, self.state.current_emotion)
             
-            self.logger.info(f"对话回复: {response[:50]}...")
+            self.logger.info(f"上下文感知对话回复: {response[:50]}... (游戏状态已自动获取)")
             return response
             
         except Exception as e:
             self.logger.error(f"聊天处理失败: {e}")
             return "抱歉，我现在无法正常回应。让我们继续下棋吧！"
     
-    async def _generate_ai_response(self, message: str, memories: List) -> str:
-        """使用AI生成回复"""
-        # 这里可以集成更复杂的对话AI
-        # 简化版本
+    def chat_sync(self, message: str, current_board: ChessBoard = None) -> str:
+        """同步chat方法，兼容旧代码"""
+        try:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # 如果已有事件循环在运行，创建新循环
+                import threading
+                result = None
+                exception = None
+                
+                def run_chat():
+                    nonlocal result, exception
+                    try:
+                        new_loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(new_loop)
+                        result = new_loop.run_until_complete(self.chat(message, current_board))
+                        new_loop.close()
+                    except Exception as e:
+                        exception = e
+                
+                thread = threading.Thread(target=run_chat)
+                thread.start()
+                thread.join(timeout=10)  # 最多等待10秒
+                
+                if exception:
+                    raise exception
+                return result or "对话超时，请重试。"
+            else:
+                # 直接在当前循环运行
+                return loop.run_until_complete(self.chat(message, current_board))
+        except Exception as e:
+            self.logger.error(f"同步聊天调用失败: {e}")
+            return "抱歉，我现在无法正常回应。让我们继续下棋吧！"
+    
+    async def _gather_game_context(self, current_board: ChessBoard = None) -> Dict[str, Any]:
+        """自动收集游戏上下文信息"""
+        try:
+            context = {
+                'timestamp': datetime.now().isoformat(),
+                'has_board': current_board is not None
+            }
+            
+            if current_board:
+                # 棋盘基本状态
+                context.update({
+                    'current_player': str(current_board.current_player),
+                    'move_count': len(current_board.move_history),
+                    'is_in_check': current_board.is_in_check(current_board.current_player),
+                    'pieces_count': len(current_board.pieces),
+                })
+                
+                # 最近的移动历史
+                if current_board.move_history:
+                    recent_moves = []
+                    for move in current_board.move_history[-3:]:  # 最近3步
+                        move_desc = f"{move['from']}->{move['to']}"
+                        if 'piece' in move:
+                            move_desc = f"{move['piece']} {move_desc}"
+                        if 'captured' in move and move['captured']:
+                            move_desc += f" (吃掉{move['captured']})"
+                        recent_moves.append(move_desc)
+                    context['recent_moves'] = recent_moves
+                    context['last_move'] = recent_moves[-1] if recent_moves else None
+                
+                # 棋局阶段判断
+                piece_count = len(current_board.pieces)
+                if piece_count > 20:
+                    context['game_phase'] = 'opening'  # 开局
+                elif piece_count > 10:
+                    context['game_phase'] = 'middlegame'  # 中局
+                else:
+                    context['game_phase'] = 'endgame'  # 残局
+                
+                # 棋盘位置描述
+                context['position_description'] = self._board_to_description(current_board)
+                
+            # 从记忆系统搜索相关的游戏状态
+            if current_board:
+                position_memories = self.memory_system.search_memories(
+                    query=context.get('position_description', ''),
+                    limit=2,
+                    memory_type='position'
+                )
+                if position_memories:
+                    context['similar_positions'] = [m.content for m in position_memories]
+            
+            # 获取对话历史
+            conversation_memories = self.memory_system.search_memories(
+                query="用户说",
+                limit=2,
+                memory_type='conversation'
+            )
+            if conversation_memories:
+                context['recent_conversations'] = [m.content for m in conversation_memories]
+                
+            self.logger.debug(f"收集到游戏上下文: {len(context)} 项信息")
+            return context
+            
+        except Exception as e:
+            self.logger.error(f"收集游戏上下文失败: {e}")
+            return {'error': str(e), 'timestamp': datetime.now().isoformat()}
+    
+    async def _generate_ai_response(self, message: str, memories: List, game_context: Dict = None) -> str:
+        """使用AI生成回复 - 增强上下文版本"""
+        # 构建更丰富的上下文提示
         memory_context = "\n".join([f"- {m.content}" for m in memories[:2]])
         
+        # 构建游戏状态描述
+        game_status = ""
+        if game_context and game_context.get('has_board'):
+            game_status = f"""
+            当前游戏状态:
+            - 当前轮到: {game_context.get('current_player', '未知')}
+            - 移动次数: {game_context.get('move_count', 0)}
+            - 游戏阶段: {game_context.get('game_phase', '未知')}
+            - 是否被将军: {'是' if game_context.get('is_in_check') else '否'}
+            """
+            
+            if game_context.get('recent_moves'):
+                recent_moves_str = " -> ".join(game_context['recent_moves'])
+                game_status += f"\n- 最近走法: {recent_moves_str}"
+                
+            if game_context.get('position_description'):
+                game_status += f"\n- 局面描述: {game_context['position_description'][:100]}..."
+        
         context_prompt = f"""
-        你是一个友好的象棋AI助理，名字是{self.name}。
+        你是一个友好的象棋AI助理，名字是{self.name}。你能看到当前的棋盘状态和游戏历史。
         用户说: {message}
+        {game_status}
         
         相关记忆:
         {memory_context}
         
-        请用友好、专业的语气回复用户，回复要简洁明了。
+        请基于当前游戏状态用友好、专业的语气回复用户。如果用户询问棋局，要结合实际棋盘状态回答。
+        回复要简洁明了，不超过100个字。
         """
         
         try:
             # 实际调用GPT API
             if not self.gpt_ai or not self.api_key:
-                # 没有可用的GPT组件或API Key，则使用备用生成
-                return self._generate_fallback_response(message, memories)
+                return self._generate_fallback_response(message, memories, game_context)
 
-            # 使用openai官方库以保持与GPTChessAI一致
+            # 使用openai官方库
             import openai
             openai.api_key = self.api_key
             messages = [
-                {"role": "system", "content": "你是一个友好的象棋AI陪伴助理，回答简洁且专业。"},
+                {"role": "system", "content": "你是一个智能的象棋AI陪伴助理，能够感知当前棋局状态，提供专业建议。"},
                 {"role": "user", "content": context_prompt.strip()}
             ]
 
@@ -564,22 +711,46 @@ class ChessAIAgentV2:
                 temperature=0.6
             )
             answer = resp.choices[0].message.content.strip()
-            return answer or self._generate_fallback_response(message, memories)
-        except:
-            return self._generate_fallback_response(message, memories)
+            return answer or self._generate_fallback_response(message, memories, game_context)
+        except Exception as e:
+            self.logger.warning(f"GPT API调用失败: {e}")
+            return self._generate_fallback_response(message, memories, game_context)
     
-    def _generate_fallback_response(self, message: str, memories: List) -> str:
-        """备用回复生成"""
+    def _generate_fallback_response(self, message: str, memories: List, game_context: Dict = None) -> str:
+        """备用回复生成 - 支持游戏上下文"""
         message_lower = message.lower()
         
+        # 如果有游戏上下文，优先回应游戏相关问题
+        if game_context and game_context.get('has_board'):
+            if any(word in message_lower for word in ['局面', '分析', '怎么走', '建议', '走法']):
+                phase = game_context.get('game_phase', '中局')
+                current_player = game_context.get('current_player', '未知')
+                
+                if game_context.get('is_in_check'):
+                    return f"注意！{current_player}方正被将军，需要优先应将！"
+                elif phase == 'opening':
+                    return "现在是开局阶段，建议先发展子力，控制中心。"
+                elif phase == 'endgame':
+                    return "已进入残局，要注意王的活跃性和兵的推进。"
+                else:
+                    return "中局阶段要注重子力协调和战术机会。"
+            
+            elif any(word in message_lower for word in ['上一步', '刚才', '最后']):
+                last_move = game_context.get('last_move')
+                if last_move:
+                    return f"刚才的走法是: {last_move}。这步棋{['不错', '很好', '有趣', '合理'][hash(last_move) % 4]}！"
+                else:
+                    return "这是游戏开始，还没有走过棋。"
+        
+        # 通用回复
         if any(word in message_lower for word in ['帮助', 'help', '怎么']):
-            return "我可以帮你分析棋局、教你象棋技巧，或者和你聊天。有什么特别想了解的吗？"
+            return "我可以分析当前棋局、给出走棋建议，或者和你聊天。有什么想了解的吗？"
         elif any(word in message_lower for word in ['谢谢', '感谢', 'thank']):
             return "不客气！我很高兴能帮助你。让我们继续下棋吧！"
         elif any(word in message_lower for word in ['再见', 'bye', '结束']):
             return "再见！期待下次和你一起下棋。记得多练习哦！"
         else:
-            return "我明白了。让我们专注于棋局吧！我会尽我所能帮助你提高棋艺。"
+            return "我明白了。我会根据当前棋局为你提供最好的建议！"
     
     # 工具方法
     def _board_to_description(self, board: ChessBoard) -> str:

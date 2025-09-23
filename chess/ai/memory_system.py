@@ -84,7 +84,8 @@ class ChessMemorySystem:
                  embedding_model: str = "openai",  # 'openai' 或 'huggingface'
                  collection_name: str = "chess_memories",
                  max_memories: int = 10000,
-                 fast_start: bool = False):
+                 fast_start: bool = False,
+                 strict_vector: bool = True):
         """
         初始化记忆系统
         
@@ -105,6 +106,7 @@ class ChessMemorySystem:
         self.max_memories = max_memories
         self.embedding_model_name = embedding_model
         self.fast_start = fast_start
+        self.strict_vector = strict_vector
         
         # 创建存储目录
         os.makedirs(memory_dir, exist_ok=True)
@@ -175,8 +177,7 @@ class ChessMemorySystem:
         try:
             if self.embedding_model_name == "openai":
                 # 使用OpenAI嵌入，参考langchain_rag的配置
-                api_key = os.getenv("OPENAI_API_KEY") or os.getenv("wildcard_api_key")
-                base_url = os.getenv("OPENAI_BASE_URL") or os.getenv("wildcard_base_url")
+                api_key = os.getenv("OPENAI_API_KEY")
                 
                 if not api_key:
                     self.logger.warning("OpenAI API密钥未设置，切换到轻量级嵌入")
@@ -185,7 +186,6 @@ class ChessMemorySystem:
                     # 使用正确的OpenAI嵌入配置，参考langchain_rag
                     self.embeddings = OpenAIEmbeddings(
                         api_key=api_key,
-                        base_url=base_url,
                         model="text-embedding-ada-002"  # 使用稳定的ada-002模型
                     )
                     self.logger.info(f"使用OpenAI嵌入模型: text-embedding-ada-002")
@@ -362,9 +362,13 @@ class ChessMemorySystem:
                 # 首次搜索时尝试延迟初始化
                 self._ensure_vector_store()
             if not self.vector_store:
+                if self.strict_vector:
+                    return []
                 return self._fallback_search(query, memory_type, limit, min_importance)
             # 如果已检测到外部证书问题，直接使用回退搜索，避免重复错误
             if getattr(self, '_suppress_ssl_errors', False):
+                if self.strict_vector:
+                    return []
                 return self._fallback_search(query, memory_type, limit, min_importance)
             
             # 构建过滤条件（Chroma新API使用filter语法；避免多个操作符直接并列）
@@ -392,6 +396,8 @@ class ChessMemorySystem:
                 self.logger.error(f"记忆搜索失败: {e}")
                 if 'tiktoken' in msg or 'CERTIFICATE_VERIFY_FAILED' in msg or 'openaipublic.blob.core.windows.net' in msg:
                     self._suppress_ssl_errors = True
+                    if self.strict_vector:
+                        return []
                     return self._fallback_search(query, memory_type, limit, min_importance)
             
             # 转换为记忆对象并更新访问统计
@@ -410,6 +416,8 @@ class ChessMemorySystem:
             
         except Exception as e:
             self.logger.error(f"记忆搜索失败: {e}")
+            if self.strict_vector:
+                return []
             return self._fallback_search(query, memory_type, limit, min_importance)
     
     def _fallback_search(self, query: str, memory_type: Optional[str], 
@@ -632,7 +640,8 @@ class ChessMemorySystem:
             'importance_distribution': dict(importance_distribution),
             'vector_store_available': self.vector_store is not None,
             'embedding_model': self.embedding_model_name,
-            'storage_path': self.memory_dir
+            'storage_path': self.memory_dir,
+            'strict_vector': self.strict_vector
         }
     
     def export_memories(self, export_file: str, format: str = 'json') -> bool:
@@ -669,13 +678,15 @@ class ChessMemorySystem:
 def create_chess_memory_system(
     memory_dir: str = None,
     embedding_model: str = "openai",
-    fast_start: bool = False
+    fast_start: bool = False,
+    strict_vector: bool = True
 ) -> ChessMemorySystem:
     """创建Chess记忆系统"""
     return ChessMemorySystem(
         memory_dir=memory_dir,
         embedding_model=embedding_model,
-        fast_start=fast_start
+        fast_start=fast_start,
+        strict_vector=strict_vector
     )
 
 # 测试和演示

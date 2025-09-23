@@ -75,6 +75,12 @@ class ChessAIAgentAdapter:
         self.last_interaction_time = time.time()
         
         self.logger.info(f"Chess AI Agent适配器初始化完成 (难度: {difficulty})")
+        
+        # 简易意图关键字集合（本地判定，避免额外工具调用）
+        self._intent_keywords = {
+            'analysis': ["分析", "局面", "怎么走", "建议", "move", "analysis"],
+            'chat': ["你好", "谢谢", "再见", "聊天", "hi", "hello"]
+        }
     
     def _init_agent(self):
         """初始化AI Agent"""
@@ -304,8 +310,21 @@ class ChessAIAgentAdapter:
                 vs.speak("没有听清楚，请再试一次。", blocking=True)
                 return "未识别到有效语音。"
 
-            # 调用聊天
-            reply = self.process_user_message(user_text)
+            # 简易意图识别并路由
+            text = user_text.strip()
+            lower = text.lower()
+            intent = 'chat'
+            for k in ['analysis', 'chat']:
+                if any(w in text for w in self._intent_keywords[k]) or any(w in lower for w in self._intent_keywords[k]):
+                    intent = k
+                    break
+
+            if intent == 'analysis':
+                # 将消息标准化为分析请求，避免多余工具调用
+                prompt = f"用户请求局面分析与建议：{text}"
+                reply = self.process_user_message(prompt)
+            else:
+                reply = self.process_user_message(text)
 
             # 播报回复
             vs.speak(reply, blocking=False)

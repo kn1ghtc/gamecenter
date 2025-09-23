@@ -4,9 +4,26 @@ import os
 # 游戏配置
 BOARD_SIZE = 8
 SQUARE_SIZE = 80
-WINDOW_WIDTH = BOARD_SIZE * SQUARE_SIZE + 400  # 预留侧边栏空间
-WINDOW_HEIGHT = BOARD_SIZE * SQUARE_SIZE + 100
+WINDOW_WIDTH = BOARD_SIZE * SQUARE_SIZE + 360  # 优化侧边栏空间
+WINDOW_HEIGHT = BOARD_SIZE * SQUARE_SIZE + 80   # 减少顶部空间
 FPS = 60
+
+# UI字体配置
+FONT_SIZES = {
+    'TITLE': 24,
+    'BUTTON': 16,
+    'INFO': 14,
+    'SMALL': 12,
+    'LARGE': 20
+}
+
+# UI边距配置
+UI_MARGINS = {
+    'PANEL_PADDING': 10,
+    'BUTTON_SPACING': 8,
+    'BOARD_MARGIN': 10,
+    'TEXT_SPACING': 5
+}
 
 # 颜色配置 (RGB)
 COLORS = {
@@ -21,7 +38,8 @@ COLORS = {
     'UI_PANEL': (70, 70, 70),
     'TEXT': (255, 255, 255),
     'BUTTON': (100, 100, 100),
-    'BUTTON_HOVER': (130, 130, 130)
+    'BUTTON_HOVER': (130, 130, 130),
+    'ACCENT': (100, 149, 237)  # 天蓝色，用于强调元素
 }
 
 # AI 配置
@@ -71,7 +89,10 @@ PATHS = {
     'models': _os.path.join(_chess_dir, 'training', 'models'),
     'data': _os.path.join(_chess_dir, 'data'),
     # 修正为当前 chess 模块下的 assets 目录（实际资源所在路径）
-    'assets': _os.path.join(_chess_dir, 'assets')
+    'assets': _os.path.join(_chess_dir, 'assets'),
+    # 临时文件存储目录（避免C盘权限问题）
+    'temp': _os.path.join(_chess_dir, 'test_data', 'temp'),
+    'voice_cache': _os.path.join(_chess_dir, 'test_data', 'chess_voice_cache')
 }
 
 # 确保目录存在
@@ -79,6 +100,23 @@ for path in PATHS.values():
     os.makedirs(path, exist_ok=True)
 # 确保数据库目录存在
 os.makedirs(os.path.dirname(DATABASE_PATH), exist_ok=True)
+
+# 临时文件清理函数
+def cleanup_temp_files():
+    """清理临时文件"""
+    try:
+        import shutil
+        if _os.path.exists(PATHS['voice_cache']):
+            # 清理语音缓存文件
+            for file in _os.listdir(PATHS['voice_cache']):
+                file_path = _os.path.join(PATHS['voice_cache'], file)
+                try:
+                    if _os.path.isfile(file_path):
+                        _os.unlink(file_path)
+                except Exception as e:
+                    print(f"⚠️ 清理文件失败: {file_path}, {e}")
+    except Exception as e:
+        print(f"⚠️ 清理临时文件失败: {e}")
 
 # 回填 MEDIUM 模型路径（若未显式指定）
 if AI_LEVELS['MEDIUM'].get('model_path') in (None, ''):
