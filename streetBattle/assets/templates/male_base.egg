@@ -1,0 +1,83 @@
+<CoordinateSystem> { Z-Up }
+
+<Material> base_material {
+  <Scalar> ambient { 0.2 0.2 0.2 1.0 }
+  <Scalar> diffuse { 0.8 0.8 0.8 1.0 }
+  <Scalar> specular { 0.1 0.1 0.1 1.0 }
+  <Scalar> shininess { 50 }
+}
+
+<Group> "character_root" {
+  <Transform> {
+    <Matrix4> {
+      1.0 0 0 0
+      0 1.8 0 0
+      0 0 1 0
+      0 0 0 1
+    }
+  }
+  
+  <Group> "body" {
+    <VertexPool> body_vpool {
+      // 简化的人体几何形状
+      <Vertex> 0 { 0 0 0 }
+      <Vertex> 1 { 0.5 0 0 }
+      <Vertex> 2 { 0.5 0 1.8 }
+      <Vertex> 3 { 0 0 1.8 }
+      <Vertex> 4 { -0.5 0 0 }
+      <Vertex> 5 { -0.5 0 1.8 }
+      <Vertex> 6 { 0 0.2 0.9 }
+      <Vertex> 7 { 0 -0.2 0.9 }
+    }
+    
+    <Polygon> {
+      <MRef> { base_material }
+      <VertexRef> { 0 1 2 3 <Ref> { body_vpool } }
+    }
+    <Polygon> {
+      <MRef> { base_material }
+      <VertexRef> { 0 4 5 3 <Ref> { body_vpool } }
+    }
+    <Polygon> {
+      <MRef> { base_material }
+      <VertexRef> { 1 6 7 2 <Ref> { body_vpool } }
+    }
+  }
+  
+  <Group> "head" {
+    <Transform> {
+      <Matrix4> {
+        1 0 0 0
+        0 1 0 0
+        0 0 1 1.62
+        0 0 0 1
+      }
+    }
+    
+    <VertexPool> head_vpool {
+      <Vertex> 0 { -0.15 -0.15 0 }
+      <Vertex> 1 { 0.15 -0.15 0 }
+      <Vertex> 2 { 0.15 0.15 0 }
+      <Vertex> 3 { -0.15 0.15 0 }
+      <Vertex> 4 { -0.1 -0.1 0.3 }
+      <Vertex> 5 { 0.1 -0.1 0.3 }
+      <Vertex> 6 { 0.1 0.1 0.3 }
+      <Vertex> 7 { -0.1 0.1 0.3 }
+    }
+    
+    <Polygon> {
+      <MRef> { base_material }
+      <VertexRef> { 0 1 2 3 <Ref> { head_vpool } }
+    }
+    <Polygon> {
+      <MRef> { base_material }
+      <VertexRef> { 4 5 6 7 <Ref> { head_vpool } }
+    }
+  }
+}
+
+<Group> "animations" {
+  // 动画占位符
+  <Scalar> fps { 24 }
+  <Char*> animation_type { "character" }
+}

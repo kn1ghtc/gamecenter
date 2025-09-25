@@ -1,0 +1,262 @@
+{
+  "kyo_kusanagi": {
+    "display_name": "Kyo Kusanagi",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 1.0,
+      "g": 0.8,
+      "b": 0.6,
+      "description": "Warm skin tone"
+    },
+    "fighting_style": "Kusanagi Ancient Martial Arts + Pyrokinesis",
+    "origin": "Japan",
+    "difficulty": 3
+  },
+  "iori_yagami": {
+    "display_name": "Iori Yagami",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.9,
+      "g": 0.9,
+      "b": 1.0,
+      "description": "Cool pale skin"
+    },
+    "fighting_style": "Yagami Ancient Martial Arts + Purple Flames",
+    "origin": "Japan",
+    "difficulty": 4
+  },
+  "mai_shiranui": {
+    "display_name": "Mai Shiranui",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 1.0,
+      "g": 0.88,
+      "b": 0.8,
+      "description": "Radiant skin"
+    },
+    "fighting_style": "Shiranui-ryu Ninjutsu",
+    "origin": "International",
+    "difficulty": 4
+  },
+  "terry_bogard": {
+    "display_name": "Terry Bogard",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.9,
+      "g": 0.7,
+      "b": 0.5,
+      "description": "Tanned skin"
+    },
+    "fighting_style": "Street Fighting + Hakkyokuseiken",
+    "origin": "International",
+    "difficulty": 5
+  },
+  "andy_bogard": {
+    "display_name": "Andy Bogard",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.95,
+      "g": 0.8,
+      "b": 0.7,
+      "description": "Light tan"
+    },
+    "fighting_style": "Koppo-ken + Shiranui-ryu Ninjutsu",
+    "origin": "International",
+    "difficulty": 4
+  },
+  "joe_higashi": {
+    "display_name": "Joe Higashi",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.85,
+      "g": 0.7,
+      "b": 0.6,
+      "description": "Darker skin"
+    },
+    "fighting_style": "Muay Thai",
+    "origin": "International",
+    "difficulty": 3
+  },
+  "ryo_sakazaki": {
+    "display_name": "Ryo Sakazaki",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.9,
+      "g": 0.8,
+      "b": 0.7,
+      "description": "Athletic skin"
+    },
+    "fighting_style": "Kyokugenryu Karate",
+    "origin": "International",
+    "difficulty": 1
+  },
+  "robert_garcia": {
+    "display_name": "Robert Garcia",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.8,
+      "g": 0.7,
+      "b": 0.6,
+      "description": "Mediterranean skin"
+    },
+    "fighting_style": "Kyokugenryu Karate",
+    "origin": "International",
+    "difficulty": 2
+  },
+  "king": {
+    "display_name": "King",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 1.0,
+      "g": 0.85,
+      "b": 0.8,
+      "description": "Fair skin"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 2
+  },
+  "yuri_sakazaki": {
+    "display_name": "Yuri Sakazaki",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 1.0,
+      "g": 0.9,
+      "b": 0.85,
+      "description": "Young fair skin"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 5
+  },
+  "leona_heidern": {
+    "display_name": "Leona Heidern",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.9,
+      "g": 0.8,
+      "b": 0.75,
+      "description": "Military tan"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 1
+  },
+  "athena_asamiya": {
+    "display_name": "Athena Asamiya",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 1.0,
+      "g": 0.95,
+      "b": 0.9,
+      "description": "Porcelain skin"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 5
+  },
+  "sie_kensou": {
+    "display_name": "Sie Kensou",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.95,
+      "g": 0.85,
+      "b": 0.75,
+      "description": "Asian skin tone"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 1
+  },
+  "chin_gentsai": {
+    "display_name": "Chin Gentsai",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.9,
+      "g": 0.8,
+      "b": 0.7,
+      "description": "Aged skin"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 3
+  },
+  "chizuru_kagura": {
+    "display_name": "Chizuru Kagura",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.98,
+      "g": 0.9,
+      "b": 0.85,
+      "description": "Elegant pale"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 3
+  },
+  "ralf_jones": {
+    "display_name": "Ralf Jones",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.85,
+      "g": 0.7,
+      "b": 0.6,
+      "description": "Soldier tan"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 4
+  },
+  "clark_still": {
+    "display_name": "Clark Still",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.8,
+      "g": 0.7,
+      "b": 0.6,
+      "description": "Military dark"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 1
+  },
+  "blue_mary": {
+    "display_name": "Blue Mary",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.95,
+      "g": 0.85,
+      "b": 0.8,
+      "description": "Fighter skin"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 5
+  },
+  "geese_howard": {
+    "display_name": "Geese Howard",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.85,
+      "g": 0.8,
+      "b": 0.75,
+      "description": "Villain pale"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 4
+  },
+  "orochi": {
+    "display_name": "Orochi",
+    "description": "A legendary fighter from The King of Fighters '97",
+    "color_scheme": {
+      "r": 0.7,
+      "g": 0.7,
+      "b": 0.8,
+      "description": "Supernatural pale"
+    },
+    "fighting_style": "Mixed Martial Arts",
+    "origin": "International",
+    "difficulty": 3
+  }
+}

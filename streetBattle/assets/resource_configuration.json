@@ -1,0 +1,43 @@
+﻿{
+    "audio":  {
+                  "total_size":  "500KB",
+                  "files":  [
+                                "bgm_loop.ogg",
+                                "combo.wav",
+                                "hit.wav",
+                                "combo_enhanced.wav",
+                                "combo_generated.wav",
+                                "defeat_enhanced.wav",
+                                "hit_generated.wav",
+                                "victory_enhanced.wav"
+                            ],
+                  "location":  "audio/"
+              },
+    "resource_tier":  {
+                          "features":  [
+                                           "animations",
+                                           "textures",
+                                           "materials",
+                                           "optimized_meshes"
+                                       ],
+                          "name":  "sketchfab",
+                          "description":  "High quality community models with complete animations and textures",
+                          "total_size":  "7.88GB",
+                          "priority":  1,
+                          "character_count":  88,
+                          "formats":  [
+                                          "gltf",
+                                          "bin",
+                                          "fbx"
+                                      ]
+                      },
+    "metadata":  {
+                     "version":  "2.0",
+                     "tier_reduced_to":  1,
+                     "description":  "Optimized single-tier KOF resource configuration (Sketchfab only)",
+                     "space_saved":  "1.24GB",
+                     "created":  "2025-09-25 17:04:54",
+                     "optimization_date":  "2025-09-25",
+                     "tier_reduced_from":  3
+                 }
+}

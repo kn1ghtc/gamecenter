@@ -1,0 +1,181 @@
+{
+  "characters": [
+    {
+      "name": "Kyo Kusanagi",
+      "id": "kyo_kusanagi",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph.egg.pz",
+      "animations": {
+        "idle": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz",
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-run.egg.pz",
+        "light": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz",
+        "heavy": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-run.egg.pz",
+        "hurt": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz",
+        "jump": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-run.egg.pz"
+      }
+    },
+    {
+      "name": "Iori Yagami",
+      "id": "iori_yagami",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-model.egg",
+      "animations": {
+        "idle": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg",
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg"
+      }
+    },
+    {
+      "name": "Terry Bogard",
+      "id": "terry_bogard",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph.egg.pz",
+      "animations": {
+        "idle": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz",
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-run.egg.pz"
+      }
+    },
+    {
+      "name": "Andy Bogard",
+      "id": "andy_bogard",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-model.egg",
+      "animations": {
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg"
+      }
+    },
+    {
+      "name": "Joe Higashi",
+      "id": "joe_higashi",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph.egg.pz",
+      "animations": {
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz",
+        "heavy": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-run.egg.pz"
+      }
+    },
+    {
+      "name": "Ryo Sakazaki",
+      "id": "ryo_sakazaki",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-model.egg",
+      "animations": {
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg"
+      }
+    },
+    {
+      "name": "Robert Garcia",
+      "id": "robert_garcia",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph.egg.pz",
+      "animations": {
+        "idle": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz",
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-run.egg.pz"
+      }
+    },
+    {
+      "name": "Yuri Sakazaki",
+      "id": "yuri_sakazaki",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-model.egg",
+      "animations": {
+        "idle": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg",
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg"
+      }
+    },
+    {
+      "name": "King",
+      "id": "king",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph.egg.pz",
+      "animations": {
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz"
+      }
+    },
+    {
+      "name": "Mai Shiranui",
+      "id": "mai_shiranui",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-model.egg",
+      "animations": {
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg",
+        "jump": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg"
+      }
+    },
+    {
+      "name": "Leona Heidern",
+      "id": "leona_heidern",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph.egg.pz",
+      "animations": {
+        "idle": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz",
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-run.egg.pz"
+      }
+    },
+    {
+      "name": "Clark Still",
+      "id": "clark_still",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-model.egg",
+      "animations": {
+        "idle": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg",
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg"
+      }
+    },
+    {
+      "name": "Ralf Jones",
+      "id": "ralf_jones",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph.egg.pz",
+      "animations": {
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz",
+        "heavy": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-run.egg.pz"
+      }
+    },
+    {
+      "name": "Athena Asamiya",
+      "id": "athena_asamiya",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-model.egg",
+      "animations": {
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg"
+      }
+    },
+    {
+      "name": "Sie Kensou",
+      "id": "sie_kensou",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph.egg.pz",
+      "animations": {
+        "idle": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz",
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-run.egg.pz"
+      }
+    },
+    {
+      "name": "Chin Gentsai",
+      "id": "chin_gentsai",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-model.egg",
+      "animations": {
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg"
+      }
+    },
+    {
+      "name": "Chizuru Kagura",
+      "id": "chizuru_kagura",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph.egg.pz",
+      "animations": {
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz"
+      }
+    },
+    {
+      "name": "Blue Mary",
+      "id": "blue_mary",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-model.egg",
+      "animations": {
+        "idle": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg",
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg"
+      }
+    },
+    {
+      "name": "Geese Howard",
+      "id": "geese_howard",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph.egg.pz",
+      "animations": {
+        "idle": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-walk.egg.pz",
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/samples/roaming-ralph/models/ralph-run.egg.pz"
+      }
+    },
+    {
+      "name": "Orochi",
+      "id": "orochi",
+      "model": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-model.egg",
+      "animations": {
+        "walk": "https://raw.githubusercontent.com/panda3d/panda3d/master/models/panda-walk4.egg"
+      }
+    }
+  ]
+}

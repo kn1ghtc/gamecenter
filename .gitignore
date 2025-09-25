@@ -3,3 +3,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Large game assets - avoid storing in remote repository
+streetBattle/assets/characters/
+streetBattle/assets/models/
+streetBattle/assets/textures/
+streetBattle/assets/audio/
+
+# Resource reports and temporary files
+streetBattle/assets/*_report.json
+streetBattle/assets/audit_report.json
+streetBattle/assets/cleanup_report.json
+
