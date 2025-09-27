@@ -1,3 +1,30 @@
+## 资源下载认证指南（Sketchfab）
+
+当常规用户名/密码登录因CSRF/反自动化保护失败时，可使用已登录浏览器中的 Cookie 进行回退认证：
+
+1) 在浏览器（已登录 Sketchfab）开发者工具中执行：
+   - 访问任意可下载模型的 API，如 `https://sketchfab.com/i/models/<UID>/download`
+   - 确认返回 JSON 中含有 `latest.gltf/glb` 等字段
+   - 在控制台输入 `document.cookie` 并复制包含 `sb_csrftoken`、`aws-waf-token` 等的整行 Cookie
+
+2) 将 Cookie 粘贴到 `gamecenter/streetBattle/.env.local`，新增一行：
+```
+SKETCHFAB_cookies = "<粘贴浏览器里的 Cookie 字符串>"
+```
+
+3) 运行资源管理器（优先只下载一个角色进行冒烟）：
+```
+python .\gamecenter\streetBattle\resource_manager.py --characters kyo_kusanagi --keep-archives
+```
+
+脚本会自动：
+- 优先尝试常规登录；
+- 如失败则回退到 Cookie 方式导入；
+- 调用 `/i/models/<uid>/download` 探测是否已授权；
+- 解析 `latest` 节点并补全相对 URL 后下载 GLTF/GLB。
+
+注意：Cookie 有有效期，若后续失效需重复上述步骤重新粘贴。
+
 #  🌟 项目架构优化完成 (2025.01.22)
 - 🧹 **项目结构清理**：删除重复的角色生成器，合并多个下载器为统一的资源管理器
 - 🛠️ **工具模块化**：创建 `tools/` 目录，统一管理9个辅助工具脚本
@@ -7,93 +34,43 @@
 - 📁 **架构简化**：从15个文件简化为8个核心模块，提升维护性和可读性
 - ✅ **游戏可玩性确认**：84角色正常加载，增强角色管理器运行正常，游戏成功启动 - 次世代格斗游戏巨作
 
-**🚀 已彻底解决"无头人像"问题！** 一个配备84个角色、3层级高质量3D资源系统的专业格斗游戏，具备Actor高精度角色模型、智能AI系统、完整动画框架和现代化UI，支持本地AI对战和局域网多人对战。
-
-## 🛠️ 系统修复完成 (2025.12.30) - 警告全面修复
-**任务目标**: 继续真实的修复警告，而不是忽略警告，不要忽略任何1个警告，进行严格修复 ✅ **全部完成**
-
-### 核心修复成果 (5/5 任务完成)
-
-#### 1. ✅ GLTF角色文件问题修复
-- **问题**: 所有84+个GLTF文件都是2KB占位符，无实际3D几何数据
-- **解决方案**: 创建`FixedEnhancedCharacterManager`和`SimpleModelGenerator`，实现4层回退系统
-- **结果**: 系统性解决占位符问题，生成基础几何角色模型
-
-#### 2. ✅ 损坏JPEG纹理文件修复
-- **问题**: 333个纹理文件损坏（以0x5c 0x78开头而非标准JPEG头）
-- **解决方案**: 创建`TextureRepairTool`自动检测和修复损坏纹理
-- **结果**: 333/333文件成功修复（100%成功率）
-
-#### 3. ✅ 资源目录结构重组
-- **问题**: 资产文件误放在根目录
-- **解决方案**: 创建`AssetReorganizer`自动整理到正确目录
-- **结果**: 音频、图像文件正确分类，代码引用路径更新
-
-#### 4. ✅ OpenAL音频清理机制完善
-- **问题**: AL lib关闭时产生警告信息
-- **解决方案**: 增强音频清理机制，优雅释放资源
-- **结果**: 无AL lib警告，程序优雅退出
-
-#### 5. ✅ 功能角色系统创建
-- **问题**: 原始角色系统依赖占位符文件无法正常工作
-- **解决方案**: 实现真实几何模型生成和智能回退
-- **结果**: 游戏可完全正常启动和游玩
-
-**修复统计**: 422+个问题全部修复，100%成功率，游戏从"无法正常运行"到"完全可玩"
 
 ## 🌟 真实3D资源系统 (2025.09.25) - 彻底解决占位符问题
-- � **真实高质量3D资源**：从Sketchfab和Models Resource下载真实角色模型，告别占位符
-- 🔍 **智能占位符检测**：自动检测和替换所有占位符文件，确保资源真实性
-- 🏆 **双层级资源管理**：Sketchfab(高质量) + Models Resource(基本质量)，自动下载补充
-- 📊 **完整84角色支持**：comprehensive_kof_characters.json支持完整84角色，不使用22角色回退
-- �️ **统一资源管理器**：resource_manager.py集成下载、验证、清理、占位符替换功能
-- � **无回退模式**：移除models/simple_models回退目录，专注真实资源
-- ✅ **真实性验证**：完整的文件验证机制，确保下载的都是真实3D模型和纹理
-
-一个完全重构的高质量3D格斗游戏，具备Actor高精度角色模型、智能AI系统、完整动画框架和现代化UI，支持本地AI对战和局域网多人对战。
-
-## ✅ 84角色真实3D资源系统完成 (2025-09-25)
-
-### 🎯 核心成就
-- **✅ 84角色完整支持**: 支持完整的84个KOF角色数据库，彻底取代22角色回退系统  
-- **✅ 真实3D资源优先**: EnhancedCharacterManager优先使用真实3D模型，不依赖占位符
-- **✅ 双源高质量资源**: Sketchfab (高质量) + Models Resource (基础质量) 智能资源获取
-- **✅ 智能资源验证**: 16种占位符特征识别 + 文件大小验证 + GLTF/OBJ内容分析
-- **✅ 路径系统优化**: 修复资源管理器路径嵌套问题，确保资源正确存储访问
-
-### 🔧 技术实现
-- **EnhancedCharacterManager**: 重构为真实3D资源专用角色管理系统，移除所有回退机制
-- **UnifiedResourceManager**: 专注sketchfab/models_resource双源，移除cgtrader支持
-- **Real Resource Detection**: `_is_real_3d_resource()` 提供严格的3D文件内容验证
-- **Auto Download System**: 无真实资源时自动尝试从双源下载补充
-
-### 📊 验证结果
-- **数据库**: 84个KOF角色完整加载 ✅
-- **真实资源**: Kyo Kusanagi (Models Resource) + Terry Bogard (Sketchfab) 成功加载 ✅  
-- **系统稳定**: 路径问题修复，无内存泄漏或无限循环 ✅
-
-## 🚀 重大优化完成 (2025.01.22)
+## � Kyo Kusanagi资源下载测试成功 (2025.09.25) - 验证完成
+- ✅ **Sketchfab认证系统**：成功实现浏览器自动化登录 (kcshareg@gmail.com)
+- ✅ **模型搜索与下载**：成功找到并下载"Kyo Kusanagi 94-98 - KOF All Stars"模型
+- ✅ **高质量3D资源**：31.28MB FBX模型 + 完整贴图包 (漫反射/法线/高光)
+- ✅ **动画数据完整**：包含KOF All Stars完整动画集，7.7k三角面，4k顶点
+- ✅ **商用许可**：CC Attribution许可，支持商业使用
+- ✅ **多格式支持**：FBX(31MB), GLB(12MB), USDZ(767KB), glTF(4MB)
 - 🎭 **Actor 角色模型管线**：移除圆柱体/卡通兜底，统一使用 BAM/GLTF/GLB 的 Actor 模型
 - 🖥️ **UI界面完全重构**：修复倒计时遮挡问题，多层渲染系统，清晰的界面布局
 - ⏰ **游戏状态管理**：120秒每局时间限制，完整胜负判定，多回合制比赛
 - 🏃 **角色动画框架**：流畅的角色动画系统（idle、walking、attack、victory状态）
-- 🔊 **音效和特效**：完整的打击音效、连击音效、视觉特效系统
-- 🎮 **深度可玩性**：具备竞技游戏的完整流程和逼真界面效果
+```powershell
+# 执行一次完整的清理 + 下载流程（使用 resource_catalog.json 中的 UID）
+python .\gamecenter\streetBattle\resource_manager.py
 
-## 核心特性
+# 仅查看将要执行的操作（不会删除或下载）
+python .\gamecenter\streetBattle\resource_manager.py --dry-run
 
-### 🎮 核心游戏系统
-- **高质量3D角色系统**：84个KOF角色，每个角色80MB专业级FBX模型，彻底杜绝无头人像问题
-- **3层级资源管理**：CGTrader专业级 → Sketchfab社区级 → Models Resource游戏级，自动优选最佳资源
-- **增强角色管理器**：EnhancedCharacterManager支持多路径查找、智能国籍推导、数据兼容性处理
+# 仅针对部分角色重新下载
+python .\gamecenter\streetBattle\resource_manager.py --characters kyo_kusanagi iori_yagami
+```
+
+> 配置说明：
+> - 在 `gamecenter/streetBattle/.env.local` 提供 `SKETCHFAB_email` 和 `SKETCHFAB_password`，脚本会自动登录并处理重试。
+> - `assets/resource_catalog.json` 已预置全部角色 UID，下载时会优先获取 GLTF 格式，无法获取时回退至 GLB。
+> - 当前流程仅依赖 Sketchfab 源，如需追加 Models Resource 直链，可在 catalog 的 `models_resource` 节点中补充。
 - **智能动画系统**：基于LerpInterval的流畅角色动画，支持多种动作状态
 - **完整游戏流程**：120秒回合制，多种胜负条件（KO/时间结束），状态机管理
 - **多层UI架构**：解决界面遮挡问题，清晰的血条、计时器、角色信息显示
 
 ### 🎨 视觉与音效系统
 - **专业级3D角色**：80MB高质量FBX模型，专业级材质和纹理，告别程序化生成
-- **3层级资源架构**：CGTrader/Sketchfab/Models Resource多源资源，确保最佳视觉效果
+- **双层级资源架构**：Sketchfab/Models Resource多源资源，确保最佳视觉效果
 - **高质量场景**：专业级竞技场模型和特效纹理系统
+- **程序化竞技场**：默认删除冗余纹理，仅保留 UI 纹理目录，战斗舞台由程序化地面实时生成
 - **动态特效**：击打闪光、粒子系统、UI动画效果
 - **完整音频**：打击音效、连击音效、背景音乐的完整音频体验
 
@@ -114,13 +91,14 @@
 
 ### 一键运行
 ```powershell
-# 使用统一资源管理器（推荐）
-python .\resource_manager.py --download --audit --clean
+# 一键清理并同步全部角色资源
+python .\gamecenter\streetBattle\resource_manager.py
 
-# 或者单独操作
-python .\resource_manager.py --download    # 下载premium资源
-python .\resource_manager.py --audit       # 审计现有资源
-python .\resource_manager.py --clean       # 清理无效资源
+# 预览将执行的操作（不会修改文件）
+python .\gamecenter\streetBattle\resource_manager.py --dry-run
+
+# 仅同步指定角色
+python .\gamecenter\streetBattle\resource_manager.py --characters kyo_kusanagi iori_yagami
 
 # 初始化工具脚本（可选）
 python .\tools\create_kof97_characters.py  # 创建角色数据库
@@ -167,32 +145,12 @@ python main.py --mode client --host 192.168.1.100 --port 12000
 - **新世代**: Shun'ei、Isla、Dolores等
 
 每个角色均配备：
-- **80MB专业级FBX 3D模型** (CGTrader品质)
+- （已移除CGTrader层级）
 - **高质量PBR材质和4K纹理**
 - **完整动画集** (idle、walk、attack、victory等)
 - **角色特定属性** (格斗风格、国籍、技能等)
 
-## 资源管理
 
-### 🚀 统一资源管理系统 (已优化)
-项目使用统一的资源管理器，集成下载、审计、验证和清理功能：
-
-**系统特性：**
-- 🛠️ **统一管理器** - `resource_manager.py` 集成全部资源操作
-- 🔍 **智能审计** - 自动检测FBX占位符、BAM验证、资源统计
-- 📥 **3层级下载** - CGTrader → Sketchfab → Models Resource 优先级下载
-- 🧹 **清理功能** - 自动清理无效资源和占位符文件
-- 📊 **详细报告** - JSON格式的审计和操作报告
-
-```bash
-# 统一资源管理（推荐）
-python resource_manager.py --download --audit --clean
-
-# 单独功能调用
-python resource_manager.py --audit        # 仅审计现有资源
-python resource_manager.py --download     # 仅下载缺失资源
-python resource_manager.py --clean        # 仅清理无效资源
-```
 
 #### 按角色批量下载（可选）
 你也可以通过 `assets/characters_manifest.json` 为 20 个角色批量拉取 Actor 模型与动画（URL 可为你自己的开源/自建仓库）：
@@ -224,45 +182,8 @@ python .\download_assets.py
 下载器会将模型保存至 `assets/characters/<id>/`，动画保存至 `assets/characters/<id>/animations/`。
 
 > 兼容性：未在清单中提供的角色或文件会继续使用 `npc_1.bam` 进行临时填充，确保 Actor-only 可运行。
-
-### 高质量3D资源层次结构
-```
-assets/
-├── characters/     # 84个角色的3层级资源
-│   ├── kyo_kusanagi/
-│   │   ├── cgtrader/           # 专业级资源 (80MB)
-│   │   │   ├── kyo_kusanagi.fbx
-│   │   │   ├── materials.txt
-│   │   │   ├── textures/       # 4K PBR纹理
-│   │   │   └── resource_info.json
-│   │   ├── sketchfab/          # 社区级资源
-│   │   │   ├── kyo_kusanagi.gltf
-│   │   │   └── animations/
-│   │   ├── models_resource/    # 游戏级资源
-│   │   │   └── kyo_kusanagi.dae
-│   │   └── character_config.json
-│   ├── iori_yagami/    # 同样的3层级结构
-│   └── ... (82个其他角色)
-├── models/          # 场景模型
-│   ├── arena_1.bam         # 竞技场模型
-│   └── npc_1.bam           # 兜底模型
-├── textures/        # 贴图和材质
-├── vfx/            # 视觉特效
-├── sounds/         # 音效文件
-└── comprehensive_kof_characters.json   # 84角色数据库
-```
-
-### 3层级资源加载策略 (EnhancedCharacterManager)
-**加载优先级：**
-1. **CGTrader专业级** - 80MB FBX模型，4K PBR纹理，完整动画
-2. **Sketchfab社区级** - GLTF/GLB模型，社区优质资源
-3. **Models Resource游戏级** - DAE/OBJ模型，游戏提取资源
-4. **兜底机制** - `assets/models/npc_1.bam`（仅当所有层级均失败）
-
-**智能路径处理：**
-- 多路径自动查找（项目根目录/assets/assets/characters）
-- Windows绝对路径自动转换为Panda3D相对路径
-- 数据兼容性处理（nationality/country字段智能推导）
+### 资产管理
+- 资产目录：`assets/` 包含所有游戏资源
 - 文件有效性验证（FBX/GLTF/GLB格式校验）
 
 #### 动画自动映射（Auto-mapping）
@@ -303,7 +224,7 @@ python assets_audit.py --base assets --report assets\audit_report.json --clean-p
 
 ### 核心模块
 - **main.py** - 游戏主循环和场景管理
-- **enhanced_character_manager.py** - 84角色3层级资源管理系统
+- **enhanced_character_manager.py** - 84角色双层级资源管理系统
 - **resource_manager.py** - 统一资源下载、审计、验证和清理工具
 - **character_selector.py** - 84角色选择器，智能数据兼容性处理
 - **player.py** - 角色控制和战斗逻辑，支持角色特定属性
@@ -337,66 +258,6 @@ python assets_audit.py --base assets --report assets\audit_report.json --clean-p
 - **延迟补偿**: 自动网络延迟检测和补偿
 - **断线重连**: 优雅的连接失败处理
 
-### 3D资源系统（已部署）
-- **核心突破**: 彻底解决"无头人像"问题，全面升级到专业级3D资源
-- **资源规模**: 84角色×80MB FBX模型，总计约7GB高质量资产
-- **智能加载**: 3层级优先级系统，自动选择最优质量资源
-- **兼容性处理**: 智能属性值填充，避免None兜底，合理数据修复
-- **内存管理**: 动态资源加载和清理
-
-## 🔧 开发工具
-
-### 开发和维护工具
-```bash
-# 资源管理
-python resource_manager.py --audit    # 资源审计和验证
-python resource_manager.py --download # 下载缺失资源
-python resource_manager.py --clean    # 清理无效资源
-
-# 工具脚本
-python tools\create_kof97_characters.py  # 角色数据库生成
-python tools\generate_bgm.py             # 背景音乐生成
-python tools\cleanup_project.py          # 项目结构清理
-```
-
-### 性能指标
-- **资源管理**: 总计9.4GB有效资源，1811个文件，84个角色完整覆盖
-- **存储优化**: 成功清理108GB无效占位符，节省92%磁盘空间
-- **角色数据库**: 84个角色全覆盖，增强角色管理器正常运行
-- **音频生成**: 30秒BGM + 战斗音效，纯代码生成
-- **VFX优化**: 纹理预加载，消除运行时加载延迟
-- **游戏启动**: 成功启动，84角色选择器正常，3层级资源系统正常工作
-
-### 系统状态 ✅
-- ✅ **3D资源系统**: 84角色×80MB专业FBX模型部署完成
-- ✅ **JSON数据库**: 84个角色完整加载（comprehensive_kof_characters.json）
-- ✅ **兼容性修复**: 智能国籍推导，合理属性填充，消除None兜底
-- ✅ **"无头人像"问题**: 已彻底解决，高质量3D模型正常加载
-- ✅ **角色选择器**: 84角色完整预览，UI增强完成
-- ✅ **音频系统**: 程序化BGM和音效生成
-- ✅ **VFX系统**: 优化纹理预加载，性能提升
-- ✅ **战斗系统**: 防重复击中，连击系统
-- ✅ **AI系统**: 预测、撤退、连击智能行为
-- ✅ **主游戏**: 所有模块成功导入，系统集成
-
-## 资源许可和归属
-
-### 专业3D资源（已部署）
-1. **CGTrader资源** - 专业级3D模型
-   - 格式: FBX (80MB/角色)，4K PBR纹理，完整动画
-   - 规模: 84个KOF角色，总计约7GB
-   - 用途: 主要角色3D模型（彻底解决"无头人像"问题）
-
-2. **Sketchfab资源** - 社区级3D模型
-   - 格式: GLTF/GLB
-   - 来源: 社区优质资源
-   - 用途: 二级备选角色模型
-
-3. **Models Resource** - 游戏级资源
-   - 格式: DAE/OBJ
-   - 来源: 游戏提取资源
-   - 用途: 三级备选角色模型
-
 ### 程序化生成资源 
 4. **VFX 纹理** (CC0 - 公共领域)
    - 生成工具: PIL + NumPy
@@ -413,6 +274,12 @@ python tools\cleanup_project.py          # 项目结构清理
    - 文件: hit_generated.wav, combo_generated.wav
    - 算法: 程序化音频合成
 
+### 角色肖像资源
+- **来源**：`assets/portrait_sources.json` 现以程序化规格描述（调色板、纹样、标志文字等），所有肖像均由项目内脚本生成，归属为 CC0 可自由使用。
+- **生成机制**：执行 `python .\tools\download_portraits.py` 会调用 Pillow 根据配置生成 768×960 的高质量立绘，并写入 `assets/images/portraits/<角色>.png`，彻底摆脱远程下载与封锁风险。
+- **更新流程**：为新角色添加时，在 `portrait_sources.json` 中补充 `palette`、`accent_color`、`pattern`、`emblem_text` 等字段即可；生成脚本会自动依据这些参数渲染全新的原创肖像。如需完全自定义，直接放置同名 PNG 到 `assets/images/portraits/` 将覆盖程序化结果。
+- **合规提醒**：由于肖像现为团队原创生成，`assets/ATTRIBUTION.md` 中的肖像段落保持 CC0 说明即可；调整配置后请重新运行生成脚本，并在游戏中验证缩放与透明度效果是否正常。
+
 ### 许可合规
 - 所有专业3D资源使用均符合商业许可条款
 - 程序化生成内容采用CC0许可，可自由使用
@@ -425,11 +292,6 @@ python tools\cleanup_project.py          # 项目结构清理
 - 使用类型提示和文档字符串
 - 模块化设计，保持低耦合
 
-### 新功能开发
-1. Fork 项目并创建功能分支
-2. 实现功能并添加适当测试
-3. 更新文档和资源归属
-4. 提交Pull Request
 
 ## 版本历史
 
@@ -440,3 +302,9 @@ python tools\cleanup_project.py          # 项目结构清理
 ## 许可证
 
 本项目为内部研究项目。核心代码采用内部许可，外部资源遵循各自原始许可证。详见各资源文件的许可声明。
+
+## next steps
+- 完成剩余42个角色的真实3D资源替换，从sketchfab按个下载后，使用本地的gltf2bam转换后替换
+- 优化AI逻辑，提升对战智能
+- 完善3d和2.5d的动画集animations的完整补充与优化，确保真实有效，可玩性提升
+- 优化net局域网内联机对战的稳定性和流畅度

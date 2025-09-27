@@ -1,81 +1,9 @@
 {
-  "last_level": 29,
+  "last_level": 6,
   "max_level_reached": 29,
   "total_score": 1620,
   "play_time": 0,
   "saves": [
-    {
-      "id": 11,
-      "level": 20,
-      "score": 160,
-      "player_health": 100,
-      "bullet_type": "PIERCING",
-      "timestamp": "2025-09-14T13:11:11.316883",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 21,
-      "score": 320,
-      "player_health": 100,
-      "bullet_type": "PIERCING",
-      "timestamp": "2025-09-14T13:12:40.823071",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 22,
-      "score": 470,
-      "player_health": 100,
-      "bullet_type": "PIERCING",
-      "timestamp": "2025-09-14T13:13:03.413085",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 23,
-      "score": 600,
-      "player_health": 76,
-      "bullet_type": "PIERCING",
-      "timestamp": "2025-09-14T13:14:18.177418",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 24,
-      "score": 760,
-      "player_health": 75,
-      "bullet_type": "NORMAL",
-      "timestamp": "2025-09-14T13:15:15.936338",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 25,
-      "score": 940,
-      "player_health": 48,
-      "bullet_type": "PIERCING",
-      "timestamp": "2025-09-14T13:17:09.157244",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 26,
-      "score": 1130,
-      "player_health": 96,
-      "bullet_type": "EXPLOSIVE",
-      "timestamp": "2025-09-14T13:18:07.983834",
-      "play_time": 0
-    },
-    {
-      "id": 11,
-      "level": 27,
-      "score": 1310,
-      "player_health": 81,
-      "bullet_type": "EXPLOSIVE",
-      "timestamp": "2025-09-14T13:19:28.402714",
-      "play_time": 0
-    },
     {
       "id": 11,
       "level": 28,
@@ -92,6 +20,78 @@
       "player_health": 100,
       "bullet_type": "RAPID",
       "timestamp": "2025-09-14T13:20:41.904446",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 1,
+      "score": 40,
+      "player_health": 100,
+      "bullet_type": "PIERCING",
+      "timestamp": "2025-09-26T22:05:50.453638",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 2,
+      "score": 80,
+      "player_health": 95,
+      "bullet_type": "NORMAL",
+      "timestamp": "2025-09-26T22:06:28.054628",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 3,
+      "score": 120,
+      "player_health": 100,
+      "bullet_type": "HEAVY",
+      "timestamp": "2025-09-26T22:07:34.271710",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 4,
+      "score": 170,
+      "player_health": 100,
+      "bullet_type": "EXPLOSIVE",
+      "timestamp": "2025-09-26T22:10:00.536404",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 3,
+      "score": 40,
+      "player_health": 100,
+      "bullet_type": "PIERCING",
+      "timestamp": "2025-09-26T22:14:08.663826",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 4,
+      "score": 90,
+      "player_health": 100,
+      "bullet_type": "HEAVY",
+      "timestamp": "2025-09-26T22:15:50.352753",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 5,
+      "score": 140,
+      "player_health": 100,
+      "bullet_type": "HEAVY",
+      "timestamp": "2025-09-26T22:16:46.229828",
+      "play_time": 0
+    },
+    {
+      "id": 11,
+      "level": 6,
+      "score": 200,
+      "player_health": 99,
+      "bullet_type": "HEAVY",
+      "timestamp": "2025-09-26T22:18:29.444751",
       "play_time": 0
     }
   ],

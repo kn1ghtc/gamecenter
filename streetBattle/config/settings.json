@@ -1,0 +1,34 @@
+{
+    "audio": {
+        "effects_volume": 0.8,
+        "music_volume": 0.75,
+        "muted": false
+    },
+    "controls": {
+        "keyboard": {
+            "attack": "j",
+            "down": "s",
+            "jump": "space",
+            "left": "a",
+            "right": "d",
+            "special": "k",
+            "up": "w"
+        }
+    },
+    "gameplay": {
+        "cpu_character": "iori_yagami",
+        "difficulty": "normal",
+        "player_character": "kyo_kusanagi",
+        "rounds_to_win": 2
+    },
+    "graphics": {
+        "fullscreen": false,
+        "resolution": [
+            1024,
+            768
+        ],
+        "vsync": true
+    },
+    "preferred_version": "2.5d",
+    "remember_last_version": true
+}

@@ -1,0 +1,1 @@
+"""StreetBattle test suite."""

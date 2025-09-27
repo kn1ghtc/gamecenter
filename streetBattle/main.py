@@ -1,9 +1,30 @@
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+from types import ModuleType
+import random
+import math
+
+
+# ---------------------------------------------------------------------------
+# Bootstrap: ensure ``gamecenter`` 绝对导入在脚本直接运行时可用
+# ---------------------------------------------------------------------------
+_PROJECT_ROOT = Path(__file__).resolve().parents[1]
+_PROJECT_ROOT_STR = str(_PROJECT_ROOT)
+if _PROJECT_ROOT_STR not in sys.path:
+	sys.path.insert(0, _PROJECT_ROOT_STR)
+
+if "gamecenter" not in sys.modules:
+	gamecenter_module = ModuleType("gamecenter")
+	gamecenter_module.__path__ = [_PROJECT_ROOT_STR]
+	sys.modules["gamecenter"] = gamecenter_module
+
+
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import AmbientLight, DirectionalLight, Vec4, Vec3, ClockObject, WindowProperties
+from panda3d.core import AmbientLight, DirectionalLight, Vec4, Vec3, ClockObject, WindowProperties, CardMaker, NodePath, Texture, PNMImage
 from direct.task import Task
 from direct.actor.Actor import Actor
-import sys
-import argparse
 
 from gamecenter.streetBattle.player import Player
 from gamecenter.streetBattle.combat import CombatSystem
@@ -18,18 +39,40 @@ from gamecenter.streetBattle.character_animator import CharacterAnimator
 from gamecenter.streetBattle.game_mode_selector import GameModeSelector
 from gamecenter.streetBattle.character_selector import CharacterSelector
 from gamecenter.streetBattle.special_moves import SpecialMovesSystem, enhance_player_with_special_moves
+from gamecenter.streetBattle.config import SettingsManager
+
+
 
 
 class StreetBattleGame(ShowBase):
-	def __init__(self):
+	def __init__(self, settings_manager: SettingsManager | None = None):
+		self.settings_manager = settings_manager or SettingsManager()
+		graphics_settings = self.settings_manager.get("graphics", {}) or {}
+		resolution = graphics_settings.get("resolution", [1024, 768])
+		if not isinstance(resolution, (list, tuple)) or len(resolution) != 2:
+			resolution = [1024, 768]
+		fullscreen = bool(graphics_settings.get("fullscreen", False))
+		vsync_enabled = bool(graphics_settings.get("vsync", True))
+
 		super().__init__()
 		self.disableMouse()
-		self.window_title = "StreetBattle - KOF97 Style Fighting Game"
+		self.window_title = "StreetBattle - Fighting Game"
 		try:
 			props = WindowProperties()
-			props.setSize(1280, 720)
+			props.setSize(int(resolution[0]), int(resolution[1]))
+			props.setFullscreen(fullscreen)
 			props.setTitle(self.window_title)
+			# Avoid forcing the window to the foreground to prevent SetForegroundWindow warnings
+			try:
+				props.setForeground(False)
+			except Exception:
+				pass
 			self.win.requestProperties(props)
+			if not vsync_enabled:
+				try:
+					self.win.setSwapInterval(0)
+				except Exception:
+					pass
 		except Exception:
 			pass
 		
@@ -48,6 +91,7 @@ class StreetBattleGame(ShowBase):
 		# UI systems
 		self.mode_selector = GameModeSelector(self)
 		self.character_selector = CharacterSelector(self, self.char_manager)
+		self.stage_backdrop = None
 		
 		# Show mode selection immediately
 		self.mode_selector.show(callback=self._on_game_mode_selected)
@@ -62,12 +106,17 @@ class StreetBattleGame(ShowBase):
 		elif self.game_initialized:
 			# Return to character selection
 			self._return_to_character_selection()
-		elif self.character_selector and not self.mode_selector:
-			# Return to mode selection
-			self._return_to_mode_selection()
 		else:
-			# Clean up and exit game
-			self._cleanup_and_exit()
+			selector_visible = bool(getattr(self.character_selector, 'visible', False))
+			mode_visible = bool(getattr(self.mode_selector, 'visible', False))
+			if selector_visible:
+				self._return_to_mode_selection()
+			elif mode_visible:
+				# Clean up and exit game from top-level menu
+				self._cleanup_and_exit()
+			else:
+				# Default back to mode selector
+				self._return_to_mode_selection()
 	
 	def _cleanup_and_exit(self):
 		"""Clean up resources and exit game"""
@@ -123,16 +172,99 @@ class StreetBattleGame(ShowBase):
 	
 	def _return_to_mode_selection(self):
 		"""Return to game mode selection"""
-		self.character_selector.hide()
-		self.mode_selector.show(callback=self._on_game_mode_selected)
+		if hasattr(self, 'character_selector'):
+			self.character_selector.hide()
+		if hasattr(self, 'mode_selector'):
+			self.mode_selector.show(callback=self._on_game_mode_selected)
 	
 	def _return_to_character_selection(self):
 		"""Return to character selection"""
 		# Clean up game
-		if hasattr(self, 'update_task'):
-			self.taskMgr.remove('update-task')
+		for task_name in [
+			'update-task',
+			'light-anim',
+			'start-first-round',
+			'end-game-action',
+			'hud-flash',
+			'show-fight-text',
+			'hide-fight-text',
+			'victory-flash'
+		]:
+			try:
+				self.taskMgr.remove(task_name)
+			except Exception:
+				pass
 		
+		if hasattr(self, 'players'):
+			for player in self.players:
+				try:
+					node = getattr(player, 'node', None)
+					if node:
+						node.removeNode()
+				except Exception:
+					pass
+			self.players = []
+
+		if hasattr(self, 'combat'):
+			self.combat = None
+		if hasattr(self, 'special_moves'):
+			self.special_moves = None
+
+		for light_attr in ('ambientNP', 'directionalNP'):
+			node = getattr(self, light_attr, None)
+			if node:
+				try:
+					self.render.clearLight(node)
+				except Exception:
+					pass
+				try:
+					node.removeNode()
+				except Exception:
+					pass
+			setattr(self, light_attr, None)
+
+		for node_attr in ('ground', 'stage_backdrop'):
+			node = getattr(self, node_attr, None)
+			if node:
+				try:
+					node.removeNode()
+				except Exception:
+					pass
+			setattr(self, node_attr, None)
+
+		if hasattr(self, 'vfx'):
+			try:
+				root = getattr(self.vfx, 'particles_root', None)
+				if root:
+					root.removeNode()
+			except Exception:
+				pass
+			self.vfx = None
+
+		if hasattr(self, 'audio') and self.audio:
+			try:
+				self.audio.cleanup()
+			except Exception:
+				pass
+			self.audio = None
+
+		if hasattr(self, 'hud') and self.hud:
+			try:
+				self.hud.ui_root.hide()
+			except Exception:
+				pass
+			self.hud = None
+
+		if hasattr(self, 'netpeer') and self.netpeer:
+			try:
+				self.netpeer.stop()
+			except Exception:
+				pass
+			self.netpeer = None
+
 		self.game_initialized = False
+		self.selected_character = None
+		self.selected_opponent = None
 		
 		# Show character selection again
 		if self.current_game_mode == 'adventure':
@@ -229,42 +361,167 @@ class StreetBattleGame(ShowBase):
 			return Task.cont
 		self.taskMgr.add(_light_anim, 'light-anim')
 
-		# Ground: use high-quality Arena FPS model, fallback to simpler options
+		# Ground: build Panda3D-textured arena purely from local assets
 		try:
-			# Try to load high-quality arena from Arena FPS sample
-			self.ground = self.loader.loadModel('assets/models/arena_1.bam')
-			if not self.ground:
-				self.ground = self.loader.loadModel('assets/models/arena_1.gltf')
-			self.ground.reparentTo(self.render)
-			self.ground.setScale(1.0)
-			self.ground.setPos(0, 0, 0)
-			print("Loaded high-quality arena model")
-		except Exception as e:
-			try:
-				# Fallback to basic arena
-				self.ground = self.loader.loadModel('assets/arena.bam')
-				self.ground.setTexture(self.loader.loadTexture('assets/arena.png'), 1)
-				self.ground.reparentTo(self.render)
-				self.ground.setScale(1.0)
-				self.ground.setPos(0, 0, 0)
-				print("Loaded basic arena model")
-			except Exception:
-				try:
-					self.ground = self.loader.loadModel('models/environment')
-					self.ground.reparentTo(self.render)
-					self.ground.setScale(0.25)
-					self.ground.setPos(-8, 42, 0)
-					print("Loaded default Panda3D environment")
-				except Exception:
-					from panda3d.core import CardMaker
-					cm = CardMaker('ground')
-					cm.setFrame(-20, 20, -10, 10)
-					card = self.render.attachNewNode(cm.generate())
-					card.setP(-90)
-					card.setPos(0, 0, 0)
-					card.setColor(0.1, 0.6, 0.1, 1)
-					print("Created basic ground plane")
+			self._build_textured_arena()
+		except Exception:
+			self._create_procedural_ground()
+		self._finalize_scene_setup()
 
+	def _build_textured_arena(self):
+		"""Construct a lightweight arena using Panda3D default textures only."""
+		if getattr(self, 'ground', None):
+			self.ground.removeNode()
+		arena_root = NodePath('arena_root')
+
+		# Floor
+		floor_maker = CardMaker('arena_floor')
+		floor_maker.setFrame(-14, 14, -8, 8)
+		floor_np = arena_root.attachNewNode(floor_maker.generate())
+		floor_np.setP(-90)
+		floor_np.setTwoSided(True)
+		floor_tex = self.loader.loadTexture('assets/textures/arena_floor.png')
+		if floor_tex:
+			floor_tex.setAnisotropicDegree(2)
+			floor_np.setTexture(floor_tex)
+		else:
+			floor_np.setColor(0.18, 0.18, 0.2, 1)
+
+		# Center ring
+		ring_maker = CardMaker('arena_ring')
+		ring_maker.setFrame(-6, 6, -6, 6)
+		ring_np = arena_root.attachNewNode(ring_maker.generate())
+		ring_np.setP(-90)
+		ring_np.setPos(0, 0, 0.02)
+		ring_np.setTwoSided(True)
+		ring_tex = self.loader.loadTexture('assets/textures/arena_ring.png')
+		if ring_tex:
+			ring_tex.setAnisotropicDegree(2)
+			ring_np.setTexture(ring_tex)
+		else:
+			ring_np.setColor(0.35, 0.25, 0.22, 1)
+
+		# Lighting reference pillars
+		pillar_maker = CardMaker('arena_pillar')
+		pillar_maker.setFrame(-0.6, 0.6, 0, 5)
+		pillar_tex = self.loader.loadTexture('assets/textures/arena_pillar.png')
+		for pos in [(-10, -6, 0), (-10, 6, 0), (10, -6, 0), (10, 6, 0)]:
+			pillar_np = arena_root.attachNewNode(pillar_maker.generate())
+			pillar_np.setPos(*pos)
+			pillar_np.setTwoSided(True)
+			if pillar_tex:
+				pillar_np.setTexture(pillar_tex)
+			else:
+				pillar_np.setColor(0.5, 0.45, 0.4, 1)
+
+		arena_root.flattenStrong()
+		arena_root.reparentTo(self.render)
+		arena_root.setPos(0, 0, 0)
+		self.ground = arena_root
+		self._build_stage_backdrop()
+		print("Built local textured arena")
+
+	def _create_procedural_ground(self):
+		"""Fallback: create flat-colored arena geometry."""
+		cm = CardMaker('fallback_ground')
+		cm.setFrame(-14, 14, -8, 8)
+		card = self.render.attachNewNode(cm.generate())
+		card.setP(-90)
+		card.setTwoSided(True)
+		card.setColor(0.15, 0.15, 0.16, 1)
+		self.ground = card
+		print("Created fallback procedural arena surface")
+		self._build_stage_backdrop()
+
+	def _build_stage_backdrop(self):
+		"""Create a non-blocking scenic backdrop behind the arena."""
+		if getattr(self, 'stage_backdrop', None):
+			try:
+				self.stage_backdrop.removeNode()
+			except Exception:
+				pass
+			self.stage_backdrop = None
+
+		backdrop_root = NodePath('stage_backdrop')
+		backdrop_root.reparentTo(self.render)
+		backdrop_root.setPos(0, 18, 5.5)
+		backdrop_root.setScale(1, 1, 1)
+
+		cm = CardMaker('stage_background_card')
+		cm.setFrame(-16, 16, -9, 9)
+		card_np = backdrop_root.attachNewNode(cm.generate())
+		card_np.setTwoSided(True)
+		card_np.setDepthWrite(False)
+		card_np.setDepthTest(False)
+		card_np.setBin('background', 0)
+		card_np.setColor(0.05, 0.08, 0.15, 1)
+
+		tex = self._generate_backdrop_texture()
+		if tex:
+			card_np.setTexture(tex)
+
+		# Add a subtle floor horizon strip for depth
+		floor_cm = CardMaker('stage_horizon')
+		floor_cm.setFrame(-16, 16, -2.5, -1.5)
+		floor_np = backdrop_root.attachNewNode(floor_cm.generate())
+		floor_np.setTwoSided(True)
+		floor_np.setDepthWrite(False)
+		floor_np.setDepthTest(False)
+		floor_np.setBin('background', 1)
+		floor_np.setColor(0.15, 0.12, 0.2, 1)
+
+		self.stage_backdrop = backdrop_root
+
+	def _generate_backdrop_texture(self):
+		"""Procedurally create a gradient backdrop texture."""
+		try:
+			styles = [
+				{'top': (0.04, 0.07, 0.18), 'mid': (0.18, 0.25, 0.45), 'bottom': (0.45, 0.35, 0.25), 'glow': (0.9, 0.75, 0.45)},
+				{'top': (0.03, 0.05, 0.12), 'mid': (0.16, 0.26, 0.46), 'bottom': (0.32, 0.18, 0.3), 'glow': (0.78, 0.55, 0.8)},
+				{'top': (0.02, 0.04, 0.1), 'mid': (0.12, 0.25, 0.4), 'bottom': (0.25, 0.36, 0.42), 'glow': (0.65, 0.85, 0.95)}
+			]
+			style = random.choice(styles)
+
+			width, height = 512, 512
+			img = PNMImage(width, height)
+
+			def blend(a, b, t):
+				return tuple(max(0.0, min(1.0, a_i * (1 - t) + b_i * t)) for a_i, b_i in zip(a, b))
+
+			for y in range(height):
+				t = y / float(height - 1)
+				if t < 0.45:
+					color = blend(style['top'], style['mid'], t / 0.45)
+				else:
+					color = blend(style['mid'], style['bottom'], (t - 0.45) / 0.55)
+				for x in range(width):
+					wave = 0.02 * math.sin((x / width) * math.pi * 4)
+					img.setXel(x, y,
+						max(0.0, min(1.0, color[0] + wave)),
+						max(0.0, min(1.0, color[1] + wave)),
+						max(0.0, min(1.0, color[2] + wave)))
+
+			# Add glowing skyline strips near horizon
+			horizon_y = int(height * 0.62)
+			for x in range(width):
+				glow_strength = 0.6 + 0.4 * math.sin((x / width) * math.pi * 3)
+				for dy in range(6):
+					y = min(height - 1, horizon_y + dy)
+					current = tuple(img.getXel(x, y)[i] for i in range(3))
+					blended = blend(current, style['glow'], glow_strength * (1 - dy / 6.0) * 0.4)
+					img.setXel(x, y, *blended)
+
+			tex = Texture()
+			tex.load(img)
+			tex.setMagfilter(Texture.FTLinear)
+			tex.setMinfilter(Texture.FTLinearMipmapLinear)
+			return tex
+		except Exception as exc:
+			print(f"Backdrop generation failed: {exc}")
+			return None
+
+	def _finalize_scene_setup(self):
+		"""Finish initializing gameplay systems once the arena exists."""
 		# Gameplay systems
 		self.mode = 'local'  # Will be updated based on game mode
 		self.netpeer = None
@@ -419,37 +676,46 @@ class StreetBattleGame(ShowBase):
 
 		# Load enhanced audio assets (non-fatal)
 		try:
-			# Try to load generated or downloaded audio files from optimized audio directory
-			try:
-				self.audio.load_bgm('assets/audio/bgm_loop.ogg')
-			except Exception:
-				# Fallback to WAV if OGG fails
-				self.audio.load_bgm('assets/audio/bgm_loop.wav')
-			
-			try:
-				# Prefer generated hit sound if available from optimized audio directory
-				self.audio.load_sfx('assets/audio/hit_generated.wav', name='hit')
-				print("Loaded generated hit sound")
-			except Exception:
-				try:
-					self.audio.load_sfx('assets/hit.wav', name='hit')
-					print("Loaded basic hit sound")
-				except Exception:
-					print("No hit sound available")
-			
-			try:
-				# Load combo sound
-				self.audio.load_sfx('assets/sounds/combo_generated.wav', name='combo')
-				print("Loaded generated combo sound")
-			except Exception:
-				try:
-					self.audio.load_sfx('assets/combo.wav', name='combo')
-					print("Loaded basic combo sound")
-				except Exception:
-					print("No combo sound available")
-			
+			audio_candidates = [
+				Path('assets/audio/bgm_loop.ogg'),
+				Path('assets/audio/bgm_loop.wav'),
+			]
+			bgm_loaded = False
+			for bgm_path in audio_candidates:
+				if bgm_path.exists():
+					self.audio.load_bgm(str(bgm_path))
+					bgm_loaded = True
+					break
+			if not bgm_loaded:
+				print("No background music available")
+
+			hit_candidates = [
+				Path('assets/audio/hit_generated.wav'),
+				Path('assets/audio/hit.wav'),
+			]
+			for hit_path in hit_candidates:
+				if hit_path.exists():
+					self.audio.load_sfx(str(hit_path), name='hit')
+					print(f"Loaded hit sound: {hit_path}")
+					break
+			else:
+				print("No hit sound available")
+
+			combo_candidates = [
+				Path('assets/audio/combo_generated.wav'),
+				Path('assets/audio/combo_enhanced.wav'),
+				Path('assets/audio/combo.wav'),
+			]
+			for combo_path in combo_candidates:
+				if combo_path.exists():
+					self.audio.load_sfx(str(combo_path), name='combo')
+					print(f"Loaded combo sound: {combo_path}")
+					break
+			else:
+				print("No combo sound available")
+
 			# play bgm in local mode
-			if self.mode == 'local':
+			if self.mode == 'local' and bgm_loaded:
 				self.audio.play_bgm(loop=True)
 		except Exception as e:
 			print(f"Audio loading failed: {e}")
@@ -1013,15 +1279,9 @@ Jump + Attack = Air Attack"""
 
 
 def main():
-	parser = argparse.ArgumentParser()
-	parser.add_argument('--mode', choices=['local', 'host', 'client'], default='local', help='Deprecated: Use in-game mode selection')
-	parser.add_argument('--host', help='Deprecated: Use in-game network mode')
-	parser.add_argument('--port', type=int, default=12000, help='Deprecated: Use in-game network mode')
-	args = parser.parse_args()
+	from streetBattle.launcher import launch
 
-	# Ignore command line arguments and use in-game selection
-	app = StreetBattleGame()
-	app.run()
+	launch()
 
 
 if __name__ == '__main__':

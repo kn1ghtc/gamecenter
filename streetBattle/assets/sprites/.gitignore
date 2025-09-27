@@ -1,0 +1,6 @@
+# Generated sprite sheets and manifests for the 2.5D mode
+*.png
+*.webp
+*.gif
+*.json
+!.gitignore

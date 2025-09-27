@@ -1,0 +1,1484 @@
+{
+    "hero": {
+        "default_skill": "light_strike",
+        "input_map": {
+            "attack": "light_strike",
+            "special": "heavy_strike"
+        },
+        "skills": [
+            {
+                "name": "light_strike",
+                "animation": "attack_light",
+                "damage": 10,
+                "cooldown": 0.65,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.18,
+                "followups": {
+                    "special": "heavy_strike"
+                }
+            },
+            {
+                "name": "heavy_strike",
+                "animation": "attack_heavy",
+                "damage": 18,
+                "cooldown": 1.25,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.24
+            }
+        ]
+    },
+    "shadow": {
+        "default_skill": "shadow_jab",
+        "input_map": {
+            "attack": "shadow_jab",
+            "special": "void_spike"
+        },
+        "skills": [
+            {
+                "name": "shadow_jab",
+                "animation": "attack_light",
+                "damage": 9,
+                "cooldown": 0.6,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17
+            },
+            {
+                "name": "void_spike",
+                "animation": "attack_heavy",
+                "damage": 16,
+                "cooldown": 1.1,
+                "hit_frames": [
+                    2,
+                    3,
+                    4
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "kyo_kusanagi": {
+        "default_skill": "oni_yaki",
+        "input_map": {
+            "attack": "oni_yaki",
+            "special": "orochinagi"
+        },
+        "skills": [
+            {
+                "name": "oni_yaki",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.49,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {}
+            },
+            {
+                "name": "orochinagi",
+                "animation": "attack_heavy",
+                "damage": 28,
+                "cooldown": 0.97,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "benimaru_nikaido": {
+        "default_skill": "ryusei_ken",
+        "input_map": {
+            "attack": "ryusei_ken",
+            "special": "thunder_god_fist"
+        },
+        "skills": [
+            {
+                "name": "ryusei_ken",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.48,
+                "hit_frames": [
+                    1,
+                    2
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "thunder_god_fist"
+                }
+            },
+            {
+                "name": "thunder_god_fist",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.95,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "goro_daimon": {
+        "default_skill": "judo_chop",
+        "input_map": {
+            "attack": "judo_chop",
+            "special": "earthquake_throw"
+        },
+        "skills": [
+            {
+                "name": "judo_chop",
+                "animation": "attack_light",
+                "damage": 19,
+                "cooldown": 0.53,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.19,
+                "followups": {}
+            },
+            {
+                "name": "earthquake_throw",
+                "animation": "attack_heavy",
+                "damage": 30,
+                "cooldown": 1.05,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.26
+            }
+        ]
+    },
+    "iori_yagami": {
+        "default_skill": "yamibarai",
+        "input_map": {
+            "attack": "yamibarai",
+            "special": "yaotome"
+        },
+        "skills": [
+            {
+                "name": "yamibarai",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.49,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {}
+            },
+            {
+                "name": "yaotome",
+                "animation": "attack_heavy",
+                "damage": 28,
+                "cooldown": 0.98,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "chizuru_kagura": {
+        "default_skill": "shinsoku_no_norito",
+        "input_map": {
+            "attack": "shinsoku_no_norito",
+            "special": "san_ate"
+        },
+        "skills": [
+            {
+                "name": "shinsoku_no_norito",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.51,
+                "hit_frames": [
+                    1,
+                    2
+                ],
+                "hitstop": 0.18,
+                "followups": {
+                    "special": "san_ate"
+                }
+            },
+            {
+                "name": "san_ate",
+                "animation": "attack_heavy",
+                "damage": 26,
+                "cooldown": 1.0,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "terry_bogard": {
+        "default_skill": "burn_knuckle",
+        "input_map": {
+            "attack": "burn_knuckle",
+            "special": "buster_wolf"
+        },
+        "skills": [
+            {
+                "name": "burn_knuckle",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.49,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {}
+            },
+            {
+                "name": "buster_wolf",
+                "animation": "attack_heavy",
+                "damage": 28,
+                "cooldown": 0.97,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "andy_bogard": {
+        "default_skill": "zan_ei_ken",
+        "input_map": {
+            "attack": "zan_ei_ken",
+            "special": "shoryudan"
+        },
+        "skills": [
+            {
+                "name": "zan_ei_ken",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.48,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "shoryudan"
+                }
+            },
+            {
+                "name": "shoryudan",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.96,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "joe_higashi": {
+        "default_skill": "bakuretsu_punch",
+        "input_map": {
+            "attack": "bakuretsu_punch",
+            "special": "screw_upper"
+        },
+        "skills": [
+            {
+                "name": "bakuretsu_punch",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.48,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {}
+            },
+            {
+                "name": "screw_upper",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.95,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "mai_shiranui": {
+        "default_skill": "ryuenbu",
+        "input_map": {
+            "attack": "ryuenbu",
+            "special": "phoenix_fan"
+        },
+        "skills": [
+            {
+                "name": "ryuenbu",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.48,
+                "hit_frames": [
+                    1,
+                    2
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "phoenix_fan"
+                }
+            },
+            {
+                "name": "phoenix_fan",
+                "animation": "attack_heavy",
+                "damage": 26,
+                "cooldown": 0.95,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "ryo_sakazaki": {
+        "default_skill": "ko_ou_ken",
+        "input_map": {
+            "attack": "ko_ou_ken",
+            "special": "hienshippukyaku"
+        },
+        "skills": [
+            {
+                "name": "ko_ou_ken",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.5,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {}
+            },
+            {
+                "name": "hienshippukyaku",
+                "animation": "attack_heavy",
+                "damage": 28,
+                "cooldown": 0.99,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.24
+            }
+        ]
+    },
+    "robert_garcia": {
+        "default_skill": "ryu_ga",
+        "input_map": {
+            "attack": "ryu_ga",
+            "special": "gen_ei_kyaku"
+        },
+        "skills": [
+            {
+                "name": "ryu_ga",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.49,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {}
+            },
+            {
+                "name": "gen_ei_kyaku",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.97,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "yuri_sakazaki": {
+        "default_skill": "ko_ouken",
+        "input_map": {
+            "attack": "ko_ouken",
+            "special": "haoh_shoukouken"
+        },
+        "skills": [
+            {
+                "name": "ko_ouken",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.47,
+                "hit_frames": [
+                    1,
+                    2
+                ],
+                "hitstop": 0.16,
+                "followups": {
+                    "special": "haoh_shoukouken"
+                }
+            },
+            {
+                "name": "haoh_shoukouken",
+                "animation": "attack_heavy",
+                "damage": 26,
+                "cooldown": 0.94,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "leona_heidern": {
+        "default_skill": "moon_slash",
+        "input_map": {
+            "attack": "moon_slash",
+            "special": "v_slasher"
+        },
+        "skills": [
+            {
+                "name": "moon_slash",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.48,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "v_slasher"
+                }
+            },
+            {
+                "name": "v_slasher",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.95,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "ralf_jones": {
+        "default_skill": "vulcan_punch",
+        "input_map": {
+            "attack": "vulcan_punch",
+            "special": "galactica_phantom"
+        },
+        "skills": [
+            {
+                "name": "vulcan_punch",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.5,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.18,
+                "followups": {}
+            },
+            {
+                "name": "galactica_phantom",
+                "animation": "attack_heavy",
+                "damage": 29,
+                "cooldown": 1.0,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.25
+            }
+        ]
+    },
+    "clark_still": {
+        "default_skill": "gatling_attack",
+        "input_map": {
+            "attack": "gatling_attack",
+            "special": "argentine_backbreaker"
+        },
+        "skills": [
+            {
+                "name": "gatling_attack",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.52,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.18,
+                "followups": {}
+            },
+            {
+                "name": "argentine_backbreaker",
+                "animation": "attack_heavy",
+                "damage": 30,
+                "cooldown": 1.02,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.25
+            }
+        ]
+    },
+    "athena_asamiya": {
+        "default_skill": "psycho_ball",
+        "input_map": {
+            "attack": "psycho_ball",
+            "special": "shining_crystal_bit"
+        },
+        "skills": [
+            {
+                "name": "psycho_ball",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.47,
+                "hit_frames": [
+                    1,
+                    2
+                ],
+                "hitstop": 0.16,
+                "followups": {
+                    "special": "shining_crystal_bit"
+                }
+            },
+            {
+                "name": "shining_crystal_bit",
+                "animation": "attack_heavy",
+                "damage": 26,
+                "cooldown": 0.93,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.21
+            }
+        ]
+    },
+    "sie_kensou": {
+        "default_skill": "dragon_punch",
+        "input_map": {
+            "attack": "dragon_punch",
+            "special": "senpuu_kyaku"
+        },
+        "skills": [
+            {
+                "name": "dragon_punch",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.49,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {}
+            },
+            {
+                "name": "senpuu_kyaku",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.96,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "chin_gentsai": {
+        "default_skill": "drunken_palm",
+        "input_map": {
+            "attack": "drunken_palm",
+            "special": "gourd_blast"
+        },
+        "skills": [
+            {
+                "name": "drunken_palm",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.52,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.18,
+                "followups": {}
+            },
+            {
+                "name": "gourd_blast",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 1.02,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.24
+            }
+        ]
+    },
+    "kim_kaphwan": {
+        "default_skill": "hangetsu_zan",
+        "input_map": {
+            "attack": "hangetsu_zan",
+            "special": "houou_tenbu_kyaku"
+        },
+        "skills": [
+            {
+                "name": "hangetsu_zan",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.47,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "houou_tenbu_kyaku"
+                }
+            },
+            {
+                "name": "houou_tenbu_kyaku",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.93,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "chang_koehan": {
+        "default_skill": "iron_ball_swing",
+        "input_map": {
+            "attack": "iron_ball_swing",
+            "special": "typhoon_crush"
+        },
+        "skills": [
+            {
+                "name": "iron_ball_swing",
+                "animation": "attack_light",
+                "damage": 19,
+                "cooldown": 0.54,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.19,
+                "followups": {}
+            },
+            {
+                "name": "typhoon_crush",
+                "animation": "attack_heavy",
+                "damage": 30,
+                "cooldown": 1.06,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.27
+            }
+        ]
+    },
+    "choi_bounge": {
+        "default_skill": "slash_saber",
+        "input_map": {
+            "attack": "slash_saber",
+            "special": "mad_blade"
+        },
+        "skills": [
+            {
+                "name": "slash_saber",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.46,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.16,
+                "followups": {
+                    "special": "mad_blade"
+                }
+            },
+            {
+                "name": "mad_blade",
+                "animation": "attack_heavy",
+                "damage": 26,
+                "cooldown": 0.91,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "heidern": {
+        "default_skill": "cross_cutter",
+        "input_map": {
+            "attack": "cross_cutter",
+            "special": "final_bringer"
+        },
+        "skills": [
+            {
+                "name": "cross_cutter",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.51,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.18,
+                "followups": {}
+            },
+            {
+                "name": "final_bringer",
+                "animation": "attack_heavy",
+                "damage": 28,
+                "cooldown": 1.0,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.24
+            }
+        ]
+    },
+    "takuma_sakazaki": {
+        "default_skill": "kyokugen_ryu_renbu",
+        "input_map": {
+            "attack": "kyokugen_ryu_renbu",
+            "special": "haoh_shikouken"
+        },
+        "skills": [
+            {
+                "name": "kyokugen_ryu_renbu",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.51,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.18,
+                "followups": {}
+            },
+            {
+                "name": "haoh_shikouken",
+                "animation": "attack_heavy",
+                "damage": 29,
+                "cooldown": 1.01,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.25
+            }
+        ]
+    },
+    "king": {
+        "default_skill": "venom_strike",
+        "input_map": {
+            "attack": "venom_strike",
+            "special": "double_strike"
+        },
+        "skills": [
+            {
+                "name": "venom_strike",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.49,
+                "hit_frames": [
+                    1,
+                    2
+                ],
+                "hitstop": 0.16,
+                "followups": {
+                    "special": "double_strike"
+                }
+            },
+            {
+                "name": "double_strike",
+                "animation": "attack_heavy",
+                "damage": 26,
+                "cooldown": 0.96,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "kasumi_todo": {
+        "default_skill": "kasane_ate",
+        "input_map": {
+            "attack": "kasane_ate",
+            "special": "musou_shinza"
+        },
+        "skills": [
+            {
+                "name": "kasane_ate",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.48,
+                "hit_frames": [
+                    1,
+                    2
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "musou_shinza"
+                }
+            },
+            {
+                "name": "musou_shinza",
+                "animation": "attack_heavy",
+                "damage": 26,
+                "cooldown": 0.95,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "blue_mary": {
+        "default_skill": "mary_tornado",
+        "input_map": {
+            "attack": "mary_tornado",
+            "special": "super_mary_typhoon"
+        },
+        "skills": [
+            {
+                "name": "mary_tornado",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.48,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.16,
+                "followups": {
+                    "special": "super_mary_typhoon"
+                }
+            },
+            {
+                "name": "super_mary_typhoon",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.95,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "ryuji_yamazaki": {
+        "default_skill": "serpent_slap",
+        "input_map": {
+            "attack": "serpent_slap",
+            "special": "guillotine"
+        },
+        "skills": [
+            {
+                "name": "serpent_slap",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.5,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {}
+            },
+            {
+                "name": "guillotine",
+                "animation": "attack_heavy",
+                "damage": 29,
+                "cooldown": 0.99,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.24
+            }
+        ]
+    },
+    "geese_howard": {
+        "default_skill": "reppuken",
+        "input_map": {
+            "attack": "reppuken",
+            "special": "raigun_storm"
+        },
+        "skills": [
+            {
+                "name": "reppuken",
+                "animation": "attack_light",
+                "damage": 19,
+                "cooldown": 0.51,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.18,
+                "followups": {}
+            },
+            {
+                "name": "raigun_storm",
+                "animation": "attack_heavy",
+                "damage": 30,
+                "cooldown": 1.01,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.25
+            }
+        ]
+    },
+    "billy_kane": {
+        "default_skill": "senpuukon",
+        "input_map": {
+            "attack": "senpuukon",
+            "special": "power_cane"
+        },
+        "skills": [
+            {
+                "name": "senpuukon",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.49,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {}
+            },
+            {
+                "name": "power_cane",
+                "animation": "attack_heavy",
+                "damage": 28,
+                "cooldown": 0.97,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "yashiro_nanakase": {
+        "default_skill": "jet_counter",
+        "input_map": {
+            "attack": "jet_counter",
+            "special": "final_impact"
+        },
+        "skills": [
+            {
+                "name": "jet_counter",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.49,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {}
+            },
+            {
+                "name": "final_impact",
+                "animation": "attack_heavy",
+                "damage": 28,
+                "cooldown": 0.98,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.24
+            }
+        ]
+    },
+    "shermie": {
+        "default_skill": "axel_spiral",
+        "input_map": {
+            "attack": "axel_spiral",
+            "special": "thunder_clap"
+        },
+        "skills": [
+            {
+                "name": "axel_spiral",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.48,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "thunder_clap"
+                }
+            },
+            {
+                "name": "thunder_clap",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.95,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "chris": {
+        "default_skill": "dash_elbow",
+        "input_map": {
+            "attack": "dash_elbow",
+            "special": "twilight_blaze"
+        },
+        "skills": [
+            {
+                "name": "dash_elbow",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.46,
+                "hit_frames": [
+                    1,
+                    2
+                ],
+                "hitstop": 0.16,
+                "followups": {
+                    "special": "twilight_blaze"
+                }
+            },
+            {
+                "name": "twilight_blaze",
+                "animation": "attack_heavy",
+                "damage": 26,
+                "cooldown": 0.92,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "orochi_yashiro": {
+        "default_skill": "void_counter",
+        "input_map": {
+            "attack": "void_counter",
+            "special": "hell_thrust"
+        },
+        "skills": [
+            {
+                "name": "void_counter",
+                "animation": "attack_light",
+                "damage": 19,
+                "cooldown": 0.5,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {}
+            },
+            {
+                "name": "hell_thrust",
+                "animation": "attack_heavy",
+                "damage": 29,
+                "cooldown": 0.99,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.24
+            }
+        ]
+    },
+    "orochi_shermie": {
+        "default_skill": "thunder_kiss",
+        "input_map": {
+            "attack": "thunder_kiss",
+            "special": "storm_lariat"
+        },
+        "skills": [
+            {
+                "name": "thunder_kiss",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.48,
+                "hit_frames": [
+                    1,
+                    2
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "storm_lariat"
+                }
+            },
+            {
+                "name": "storm_lariat",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.95,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "orochi_chris": {
+        "default_skill": "dark_dash",
+        "input_map": {
+            "attack": "dark_dash",
+            "special": "catastrophe_spark"
+        },
+        "skills": [
+            {
+                "name": "dark_dash",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.45,
+                "hit_frames": [
+                    1,
+                    2
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "catastrophe_spark"
+                }
+            },
+            {
+                "name": "catastrophe_spark",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.91,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "orochi_leona": {
+        "default_skill": "blood_moon_slash",
+        "input_map": {
+            "attack": "blood_moon_slash",
+            "special": "riot_of_blood"
+        },
+        "skills": [
+            {
+                "name": "blood_moon_slash",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.47,
+                "hit_frames": [
+                    1,
+                    2
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "riot_of_blood"
+                }
+            },
+            {
+                "name": "riot_of_blood",
+                "animation": "attack_heavy",
+                "damage": 28,
+                "cooldown": 0.93,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "orochi_iori": {
+        "default_skill": "dark_flame_slash",
+        "input_map": {
+            "attack": "dark_flame_slash",
+            "special": "blood_yaotome"
+        },
+        "skills": [
+            {
+                "name": "dark_flame_slash",
+                "animation": "attack_light",
+                "damage": 19,
+                "cooldown": 0.47,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "blood_yaotome"
+                }
+            },
+            {
+                "name": "blood_yaotome",
+                "animation": "attack_heavy",
+                "damage": 29,
+                "cooldown": 0.95,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.24
+            }
+        ]
+    },
+    "rugal_bernstein": {
+        "default_skill": "dark_barrier",
+        "input_map": {
+            "attack": "dark_barrier",
+            "special": "gigantic_pressure"
+        },
+        "skills": [
+            {
+                "name": "dark_barrier",
+                "animation": "attack_light",
+                "damage": 19,
+                "cooldown": 0.5,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.18,
+                "followups": {}
+            },
+            {
+                "name": "gigantic_pressure",
+                "animation": "attack_heavy",
+                "damage": 30,
+                "cooldown": 1.0,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.25
+            }
+        ]
+    },
+    "omega_rugal": {
+        "default_skill": "genocide_cutter",
+        "input_map": {
+            "attack": "genocide_cutter",
+            "special": "god_press"
+        },
+        "skills": [
+            {
+                "name": "genocide_cutter",
+                "animation": "attack_light",
+                "damage": 19,
+                "cooldown": 0.49,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.18,
+                "followups": {}
+            },
+            {
+                "name": "god_press",
+                "animation": "attack_heavy",
+                "damage": 30,
+                "cooldown": 0.99,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.26
+            }
+        ]
+    },
+    "shingo_yabuki": {
+        "default_skill": "misogi_slap",
+        "input_map": {
+            "attack": "misogi_slap",
+            "special": "flame_strike"
+        },
+        "skills": [
+            {
+                "name": "misogi_slap",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.48,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.16,
+                "followups": {}
+            },
+            {
+                "name": "flame_strike",
+                "animation": "attack_heavy",
+                "damage": 26,
+                "cooldown": 0.96,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.22
+            }
+        ]
+    },
+    "whip": {
+        "default_skill": "sonic_shot",
+        "input_map": {
+            "attack": "sonic_shot",
+            "special": "desert_trigger"
+        },
+        "skills": [
+            {
+                "name": "sonic_shot",
+                "animation": "attack_light",
+                "damage": 17,
+                "cooldown": 0.48,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "desert_trigger"
+                }
+            },
+            {
+                "name": "desert_trigger",
+                "animation": "attack_heavy",
+                "damage": 27,
+                "cooldown": 0.96,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "k_dash": {
+        "default_skill": "iron_trigger",
+        "input_map": {
+            "attack": "iron_trigger",
+            "special": "heat_drive"
+        },
+        "skills": [
+            {
+                "name": "iron_trigger",
+                "animation": "attack_light",
+                "damage": 18,
+                "cooldown": 0.47,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.17,
+                "followups": {
+                    "special": "heat_drive"
+                }
+            },
+            {
+                "name": "heat_drive",
+                "animation": "attack_heavy",
+                "damage": 28,
+                "cooldown": 0.94,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.23
+            }
+        ]
+    },
+    "maxima": {
+        "default_skill": "m24_blaster",
+        "input_map": {
+            "attack": "m24_blaster",
+            "special": "maxima_press"
+        },
+        "skills": [
+            {
+                "name": "m24_blaster",
+                "animation": "attack_light",
+                "damage": 19,
+                "cooldown": 0.52,
+                "hit_frames": [
+                    2,
+                    3
+                ],
+                "hitstop": 0.19,
+                "followups": {}
+            },
+            {
+                "name": "maxima_press",
+                "animation": "attack_heavy",
+                "damage": 30,
+                "cooldown": 1.03,
+                "hit_frames": [
+                    3,
+                    4
+                ],
+                "hitstop": 0.26
+            }
+        ]
+    }
+}

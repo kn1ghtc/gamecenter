@@ -1,278 +1,317 @@
-# 🥊 StreetBattle 3D格斗游戏
+# Game Center 开发文档
 
-> 受KOF97启发，基于Panda3D引擎的3D/2.5D街头格斗游戏，支持本地与局域网对战，具备回滚同步、真实3D资源、现代化UI与粒子特效。
+> 最后更新：2025-09-27（北京时间）
 
-- **位置**: `streetBattle/`
-- **状态**: ✅ 完整可玩，支持角色选择、游戏模式选择、本地/局域网对战、combo连击、现代化UI设计
-- **最新更新 2025-12-30**: �️ **完成全面系统修复与资源重组**
-  - ✅ **占位符修复**: 发现并修复84+个GLTF占位符文件（仅2KB JSON元数据）
-  - ✅ **纹理修复**: 修复333个损坏纹理文件（0x5c 0x78错误头→标准JPEG格式）
-  - ✅ **资源重组**: 移动误放资产到正确目录（win.ogg/lose.ogg→audio/music/，particle.png→images/effects/）
-  - ✅ **模型生成系统**: 创建SimpleModelGenerator生成几何模型作为占位符角色
-  - ✅ **角色管理器重构**: FixedEnhancedCharacterManager智能回退：BAM→简单模型→Arena FPS→空节点
-  - ✅ **音频清理增强**: 完善OpenAL清理机制，防止AL lib关闭警告
-  - ✅ **功能验证**: 5/5测试通过，游戏可正常启动和角色加载
-  - ✅ **系统稳定性**: 修复所有警告，实现优雅的资源清理和错误处理
-- **特色**:
-  - **现代化UI设计**: 基于Street Fighter/KOF标准的专业格斗游戏界面
-    - 顶部水平血条布局（左右对称）
-    - 中央倒计时器与回合信息
-    - 现代渐变色彩方案与动画效果
-    - 符合行业标准的HUD元素定位
-    - 已移除任何半透明/不透明遮挡层（确认日志：[HUD] ... alpha=0）
-  - **完整的玩家控制系统**: 
-    - WASD移动、空格/鼠标攻击、J跳跃
-    - 组合技能系统（如：右+轻攻击 = 突进技）
-    - 实时输入调试与反馈系统
-  - **真实3D角色与场景资源**（`assets/`目录，支持自定义替换）  
-  - **🆕 智能角色系统**：FixedEnhancedCharacterManager支持多层级回退（占位GLTF检测→几何模型生成→BAM fallback→Arena FPS备用）
-  - **🆕 简单模型生成器**：SimpleModelGenerator可生成基础几何体（盒子/圆柱）作为角色占位符，支持材质着色
-  - **🆕 纹理修复工具**：TextureRepairTool自动检测并修复损坏JPEG文件（0x5c 0x78→标准JPEG头）
-  - **🆕 资源重组器**：AssetReorganizer自动整理误放资产到正确目录结构
-  - **完整的游戏模式选择**（冒险、对战、网络模式）
-  - **20个KOF97风格角色**可选，支持键盘和鼠标双重选择方式
-  - **Panda3D高性能渲染**，动态光影、摄像机抖动、粒子/光晕/击中特效
-  - **回滚同步系统**：主机端保存状态历史，客户端预测+重放，支持高延迟下的流畅对战
-  - **音效/音乐系统**：真实BGM与SFX，支持自定义
-  - **支持本地AI对战、局域网主机/客户端对战**
+Game Center 是一个汇集多款 Python 游戏与工具的项目集合，覆盖 3D/2.5D 格斗、平台跳跃、棋类 AI 以及资源处理脚本。本指南聚焦于统一的项目结构、运行方式和当前可用功能，便于后续维护与扩展。
 
-## 🎨 优化的单层级资源系统
-### **角色模型** (88个KOF角色，单层级Sketchfab)
-- **📁 位置**: `assets/characters/[角色名]/sketchfab/` 
-- **主模型格式**: GLTF/GLB高质量社区资源（7.88GB总容量）
-  - `kyo_kusanagi.gltf` + `kyo_kusanagi.bin` (完整模型+动画数据)
-  - 包含纹理、材质、动画序列的完整3D资源包
-- **优化特性**: 
-  - 单层级查找（无需多tier fallback），加载速度更快
-  - 统一的Sketchfab质量标准，视觉效果一致
-  - Enhanced Character Manager自动检测最佳资源格式
-- **支持角色**: 完整KOF系列88个经典角色
+## 目录
 
-### **🎵 整合音效系统**
-- **📁 统一位置**: `assets/audio/` (所有音频文件集中管理)
-- **高质量音效**: 44.1kHz WAV/OGG文件，总容量500KB
-  - `bgm_loop.ogg` (104KB) - 循环背景音乐
-  - `hit.wav` (35KB) - 基础打击音效
-  - `combo_enhanced.wav` (43KB) - 连击增强音效  
-  - `victory_enhanced.wav` (86KB) - 胜利音效
-  - `lose.ogg` (7.5KB) - 失败音效（下降颤音）
-- **背景音乐**: `bgm_loop.ogg` - 循环播放的格斗主题音乐
-
-### **💥 视觉特效资源**
-- **场景模型**: `arena_1.bam` - 高质量格斗竞技场
-- **粒子特效**: `hit_spark.png` (32x32) - 程序生成的橙白色击中火花
-- **能量粒子**: `particle.png` - 技能释放特效纹理
-
-### **🔧 开发工具集**
-- **`premium_model_downloader.py`** - 从互联网搜索和下载高质量3D模型
-- **`real_model_creator.py`** - 创建真实的角色模型变体和配置系统
-- **`enhanced_audio_creator.py`** - 生成专业级游戏音效文件
-- **`model_converter.py`** - 通用3D格式转换为Panda3D兼容格式
-- **`assets_audit.py`** - 资源完整性和质量检查工具
-
-## 运行方式
-```powershell
-cd gamecenter/streetBattle
-# 直接运行（推荐）- 包含完整的游戏模式选择和角色选择界面
-python main.py
-
-# 或使用模块方式运行
-cd ../..
-python -m gamecenter.streetBattle.main
-
-# 命令行参数（可选）
-python main.py --mode local    # 本地AI对战
-python main.py --mode host --port 12000    # 启动主机
-python main.py --mode client --host 192.168.1.100 --port 12000    # 启动客户端
-```
-
-## 游戏控制
-- **游戏模式选择**: 鼠标点击或键盘导航选择冒险/对战/网络模式
-- **角色选择**: 鼠标点击角色头像或使用WASD/方向键导航，Enter确认
-- **战斗控制**: 
-  - WASD - 角色移动
-  - 空格/鼠标左键 - 轻攻击  
-  - 鼠标右键 - 重攻击
-  - J - 跳跃
-  - H - 显示/隐藏帮助
-  - ESC - 返回上级菜单
-  - 提示：只有在“FIGHT!”阶段输入才会驱动角色（日志打印 Player input: [...] 代表输入已生效）
-
-## 回滚同步与网络对战说明
-- 主机端每帧保存状态快照，收到延迟输入时自动回滚并重放，保证对战公平与流畅。
-- 客户端本地预测并保存输入历史，收到主机快照后自动重放修正。
-- 支持高延迟/丢包环境下的流畅体验。
-
-## UI与特效美化
-- 渐变血条、combo连击槽、受击闪烁、3D HUD
-- 动态光影、摄像机抖动、粒子/光晕/击中特效
-- 所有UI与特效均可自定义美化，详见 `ui.py`、`vfx.py`。
- - HUD 透明性确认：启动时控制台会打印 `[HUD] ... alpha=0 (transparent)`，确保不遮挡3D场景。
-
-## 自动化测试
-```powershell
-# 单元测试
-python -m unittest gamecenter/streetBattle/test_combat.py
-# 集成smoke测试
-python gamecenter/streetBattle/smoke_integration_test.py
-# 回滚仿真测试
-python gamecenter/streetBattle/test_rollback_sim.py
-```
-
-## 资源自定义与扩展
-- 替换 `assets/` 下的模型、贴图、音效即可自定义角色、场景与特效。
-- 支持BAM/PNG/WAV/OGG等主流格式。
-- 代码结构清晰，便于扩展新角色、技能、UI与网络协议。
+1. [项目概览](#项目概览)
+2. [仓库结构](#仓库结构)
+3. [环境准备与通用依赖](#环境准备与通用依赖)
+4. [快速开始](#快速开始)
+5. [StreetBattle——3D/2.5D 格斗平台](#streetbattle3d25d-格斗平台)
+6. [其他子项目概览](#其他子项目概览)
+7. [开发工具脚本](#开发工具脚本)
+8. [贡献流程](#贡献流程)
+9. [许可证与资源来源](#许可证与资源来源)
 
 ---
-# Game Center 项目集合
 
-这是一个游戏开发项目集合，包含多个经典游戏的 Python 实现。
+## 项目概览
 
-## 项目列表
+- **仓库定位**：整合多个子项目的游戏中心，提供共享的资源管理和测试流程。
+- **核心语言**：Python 3.12（默认），Windows 11 + PowerShell 为主要运行环境。
+- **主要框架**：Panda3D、Pygame、LangChain、Pillow、Requests、NumPy/SciPy 等。
+- **资源策略**：所有可分发素材均采用开源或 CC0 授权；避免使用临时或程序化占位资产。
 
-### 🎮 超级玛丽兄弟 (Super Mario Bros)
-- **位置**: `superMario/`
-- **状态**: ✅ 完成
-- **特色**: 30关卡、积分系统、声音效果、背景音乐（支持切换）、自动资源下载、继续/关卡选择、中英双语支持、中文字体跨平台回退（Windows/macOS/Linux）、UI文字阴影+描边美化、3D卡通风格精灵（自动生成）、统一配置系统
-- **运行**: `cd superMario; python main.py`
+---
 
-#### 常用按键
-- `Enter`: 开始游戏
-- `↑/↓`: 菜单选择
-- `Q`: 退出游戏
-- `M`: 切换背景音乐 开/关
-- `P`: 暂停/继续
-- `←/→`: 关卡选择页切换关卡
+## 仓库结构
 
-### ♟️ 国际象棋 (Chess)
-- **位置**: `chess/`
-- **状态**: ✅ 基础完成，AI陪伴功能已实现
-- **特色**: 
-  - 完整国际象棋游戏规则
-  - 多级AI难度：Easy/Medium/Hard/GPT AI
-  - **🆕 Chess AI Agent v2.0 - 超级智能陪伴助理**
-    - ChromaDB/LanceDB向量记忆系统（RAG）
-    - OpenAI语音陪伴聊天功能
-    - MCP工具集成（网络搜索、学术研究）
-    - 自主任务规划和执行
-    - 个性化AI助理（友好导师、竞技专家、耐心教师、休闲朋友）
-    - 持久化游戏记忆和学习经验
-- **运行**: `cd chess; python game.py`
+```
+gamecenter/
+├─ streetBattle/        # 3D/2.5D 格斗主项目
+├─ superMario/          # Super Mario Brothers 平台跳跃
+# Game Center 开发手册
 
-#### Chess AI Agent v2.0 功能亮点
-- **🧠 智能记忆**: 使用ChromaDB存储游戏历史、对话记录、策略学习
-- **🗣️ 语音陪伴**: OpenAI TTS/STT或本地语音引擎，实时语音交流
-- **🔧 工具集成**: MCP服务（深度研究、网络搜索、代码分析等）
-- **📋 自主规划**: 根据游戏情况自动规划和执行任务
-- **🎭 个性定制**: 4种AI个性，适应不同用户需求
-- **💾 持久化**: 所有交互和学习都会保存，持续改进
+> 最后更新：2025-09-27（北京时间）
 
-#### 测试状态
-- **总测试通过率**: 100% (7/7通过) ✅
-- ✅ Agent适配器创建和接口：完全正常
-- ✅ Agent聊天同步功能：智能对话正常
-- ✅ Agent创建和基础功能：核心功能稳定
-- ✅ 错误处理：异常恢复机制正常
-- ✅ 记忆持久化：ChromaDB向量存储正常
-- ✅ 记忆系统基础：向量搜索功能正常
-- ✅ 移动生成：智能决策和解释正常
+Game Center 集成了五款 Python 游戏（Chess、StreetBattle、Stickman Game、Super Mario、Tank Battle），统一了资源治理、测试流程和运维策略。本手册作为唯一权威文档，对整体环境、各子模块特性、常用脚本与质量保证手段进行系统说明，便于团队协同维护与版本迭代。
 
-#### 最新修复 (v2025.09.22)
-- 🔧 **OpenAI嵌入**: 修复SSL证书问题，正确配置API调用
-- 🔧 **资源清理**: 完善ChessPlanningEngine清理机制
-- 🔧 **临时文件**: 改进Windows平台文件删除逻辑
-- 🔧 **API现代化**: 更新LangChain导入，消除弃用警告
-- 🔧 **向量存储**: 恢复完整ChromaDB向量功能
- - 🖥️ **UI 自适应**: 棋盘界面默认 1024×768，窗口可调整大小；右侧信息/历史/吃子面板与按钮区域自适应布局。语音与问答按钮固定在界面可视范围内，不会被遮挡。
- - ⚡ **性能优化**: 记忆系统支持快速启动（延迟初始化向量库），减少首次加载卡顿；移除启动阶段数据一致性校验。
- - 🗣️ **语音增强**: 走子语音包含“棋子名称+起止位置+简要理由”；新增“语音聊天”引导提示、一次性听写并播报AI回复。
- - 🔔 **提示气泡**: 语音与问答操作时在右上角显示Toast（开始说话、AI思考、AI播报中）。
+## 目录
 
-#### 新增功能与优化（v2025.09.22-后续）
-- 🤖 Assistant 一体化入口：原“Voice Chat/Ask Question”合并为单一按钮“Assistant”。点击后：
-  - 播报提示→短时监听（约2-3秒）；
-  - 本地意图识别（无需外部工具）判断是“局面分析/建议”还是“闲聊”；
-  - 直接进入最短响应路径，减少无关调用与卡顿。
-- 🧠 RAG 严格模式：记忆检索默认启用 strict_vector，仅使用向量检索；网络/证书异常时不再静默关键词降级，返回空结果并记录日志。
- - 🧠 RAG 严格模式：记忆检索默认启用 strict_vector，仅使用向量检索；网络/证书异常时不再静默关键词降级，返回空结果并记录日志。
- - 🔑 API 配置简化：棋类陪伴组件仅需设置环境变量 `OPENAI_API_KEY`；不再读取 `base_url` 或任何 wildcard 变量。
-- 🪟 拖动/缩放更流畅：窗口尺寸变化引发的布局重算增加节流，显著降低拖动卡顿。
-- 🔊 语音播放更顺滑：OpenAI TTS 播放采用短轮询的非严格阻塞，界面更跟手。
+1. [项目概览](#项目概览)
+2. [目录结构](#目录结构)
+3. [环境准备](#环境准备)
+4. [运行方式概览](#运行方式概览)
+5. [游戏模块总览](#游戏模块总览)
+   1. [Chess](#chess)
+   2. [StreetBattle](#streetbattle)
+   3. [Stickman Game](#stickman-game)
+   4. [Super Mario Bros](#super-mario-bros)
+   5. [Tank Battle](#tank-battle)
+6. [工具与自动化脚本](#工具与自动化脚本)
+7. [质量保障与测试](#质量保障与测试)
+8. [贡献流程](#贡献流程)
+9. [许可证与资源来源](#许可证与资源来源)
 
-#### 语音与问答使用说明（陪伴模式）
-- 进入方式: 主菜单点“与 AI（Companion）对战”。
-- `Voice Chat` 按钮:
-  - 点击后会播报提示“请在提示音后说话，三秒内结束”。
-  - 系统监听一次你的简短语音（2-3秒），自动结束并识别。
-  - AI 会用语音播报和文字同时响应。
-- `Ask` 按钮:
-  - 点击会发送一条预设或自定义问题给AI并显示回答（文本，同时尝试语音播报）。
-- 提示信号:
-  - 开始说话: 有语音提示文案；
-  - 结束说话: 录音自动停止并转入识别；
-  - AI播报: 语音输出播放期间不可重复触发；播放结束后可继续操作。
-- 常见问题:
-  - 若无麦克风或系统语音库不可用，将回退为文本问答；
-  - 若OpenAI TTS不可用，会自动使用系统TTS或静默回退；
-  - RAG在严格模式下不会降级为关键词检索；若向量库暂不可用，将返回空结果并记录日志。
+---
 
-### 🏃 跑酷游戏 (Stickman Game)
-- **位置**: `stickman_game/`
-- **状态**: 开发中
+## 项目概览
 
-### 🚀 超级玛丽 (Super Mario)
-- **位置**: `superMario/`
-- **状态**: ✅ 完成
+- **定位**：单一仓库存放五款可独立运行的游戏项目，与资源、工具脚本共享。
+- **目标平台**：Windows 11，PowerShell 为默认终端；Python 3.12 是推荐运行时。
+- **核心依赖**：Pygame、Panda3D、LangChain、Pillow、Requests、NumPy/SciPy、PyTorch 等。
+- **资源策略**：全部素材保持合法来源（CC0/CC-BY 等），通过脚本自动校验与同步，避免占位资产。
 
-### ⚔️ 坦克大战 (Tank Battle)
-- **位置**: `tankBattle/`
-- **状态**: 开发中
+---
 
-## 技术栈
+## 目录结构
 
-- **Python 3.8+**
-- **Pygame** - 游戏开发框架
-- **Pillow** - 图像处理
-- **Requests** - 网络请求
-- **NumPy + SciPy** - 程序化音效合成（WAV）
-
-## 开发环境
-
-```powershell
-# 安装基础依赖（Windows PowerShell）
-python -m pip install -U pip; pip install pygame pillow requests numpy scipy
-
-# 运行超级玛丽
-cd superMario; python main.py
+```
+gamecenter/
+├─ README.md                 # 本文档（唯一项目文档）
+├─ chess/                    # 国际象棋 + AI 陪伴系统
+├─ streetBattle/             # 3D/2.5D 格斗平台
+├─ stickman_game/            # 火柴人动作冒险
+├─ superMario/               # 超级玛丽平台跳跃
+├─ tankBattle/               # 坦克大战 + 强化学习 AI
+└─ tools/                    # 通用工具脚本与资源流水线
 ```
 
-### 字体与资源说明
-- 中文字体优先使用 `assets/fonts/chinese_font.otf`，若加载异常，则自动回退到系统字体（Windows: `msyh.ttc`/`simhei.ttf` 等；macOS: `PingFang.ttc` 等；Linux: `WenQuanYi`/`Noto CJK` 等）。
-- 文本渲染默认带阴影与描边，确保中文在浅/深背景下都清晰可读。
-- 资源下载失败时，下载器会自动生成 3D 卡通风格的本地资源：
-	- `assets/images/mario.png`、`tiles.png`（包含地面+管道）、`enemy.png`、`coin.png`、`powerup.png`、`goal.png`
-	- `assets/sounds/*.wav` 音效与 `background_music.wav` 由 NumPy/SciPy 合成，不为空，兼容 `pygame.mixer`；若在线音乐下载失败会使用该本地合成BGM。
+顶层还包含其他安全研究项目（如 `llmAttack/`、`NetPenetration/`），与游戏中心无直接耦合，此处不展开。
 
-### 存档与关卡
-- 首次运行会在 `levels/` 下自动生成 30 个关卡（程序化生成，固定种子保证稳定性）。
-- 主菜单包含 “继续游戏 / 新游戏 / 关卡选择 / 退出”。存在 `assets/savegame.json` 时显示“继续游戏”。
-- 游戏进行中会在过关或失去生命时自动保存进度（关卡、分数、生命、剩余时间）。
+---
 
-### 统一配置
-- 配置文件：`assets/config.json`（可选）。
-- 默认值位于 `src/config.py`。可覆盖项：
-	- `game.max_levels`、`game.initial_lives`、`game.time_per_level`、`game.music_enabled`
-	- `player.speed`、`player.jump_force`、`player.gravity`、`player.max_fall_speed`
-	- `player.skills.double_jump`、`player.skills.dash`
+## 环境准备
 
-## 贡献
+所有模块均可在同一虚拟环境中运行，建议按照如下步骤初始化：
 
-欢迎为任何游戏项目贡献代码！请确保：
-- 代码符合 PEP 8 规范
-- 添加适当的注释和文档
-- 测试游戏功能正常
+```powershell
+python -m venv .venv; .\.venv\Scripts\Activate.ps1
+python -m pip install -U pip wheel
+```
 
-## 许可证
+- **通用依赖**：大部分 Pygame/Panda3D 项目需要 `pygame`, `pillow`, `requests`, `numpy`, `scipy`。
+- **模块专属依赖**：
+  - Chess：`langchain`, `chromadb`, `torch`, `openai`, `pygame`, `speechrecognition`, `pyaudio`（可选），`python-chess` 等。
+  - StreetBattle（3D）：`panda3d`, `numpy`; 2.5D 模式仅需 `pygame`。
+  - Tank Battle：`torch`, `tqdm`, `numpy`。
 
-各项目采用相应开源许可证。
+各子项目提供独立的 `requirements*.txt` 时，请优先参考对应文件。
+
+---
+
+## 运行方式概览
+
+1. 在 `gamecenter/` 根目录激活虚拟环境。
+2. 根据目标游戏进入其子目录并执行主入口：
+   - Chess：`python chess/main.py`（或 `python -m chess.game`）
+   - StreetBattle：`cd streetBattle; python main.py`
+   - Stickman Game：`cd stickman_game; python main.py`
+   - Super Mario：`cd superMario; python main.py`
+   - Tank Battle：`cd tankBattle; python main.py`
+3. 如需运行工具或测试，参见相应章节。
+
+---
+
+## 游戏模块总览
+
+### Chess
+
+**概览**：现代化国际象棋平台，集成多层级 AI、语音助手、记忆检索与自对弈训练。项目结构围绕 GUI（Pygame）、AI Agent（LangChain/OpenAI）与数据存储（SQLite/向量数据库）展开。
+
+**核心特性**
+- 四种对战模式：双人、传统 AI（Minimax）、机器学习 AI（AlphaZero 架构）、GPT 专家 AI。
+- **Chess AI Agent**：具备记忆库（ChromaDB/LanceDB）、任务规划、工具链调用（MCP 服务）以及跨平台语音交互（OpenAI Whisper/TTS，系统 TTS 回退）。
+- **训练体系**：并行自对弈、经验回放、双头神经网络，支持 GPU 加速与混合精度。
+- **数据持久化**：自动记录棋局（PGN、FEN、特征向量）并保存至 SQLite。
+
+**依赖 & 配置**
+- 标准依赖见 `chess/requirements.txt`。
+- 启用语音或 GPT 模式需要配置 `OPENAI_API_KEY` 环境变量。
+- 语音测试脚本：`python chess/test_voice.py --mode <tts|stt|full>`。
+
+**运行与测试**
+```powershell
+cd gamecenter/chess
+python main.py                   # GUI 入口
+python -m pytest tests           # 运行单元/集成测试
+python tools/training.py --episodes 100  # 示例训练脚本
+```
+
+**关键目录**
+- `ai/`: 记忆、规划、工具、语音、ML AI 模块。
+- `assets/`: 棋子图像、音效、语音缓存。
+- `config/`: UI/颜色/字体/路径等集中配置。
+
+---
+
+### StreetBattle
+
+**概览**：KOF 97/98 风格的格斗平台，提供 Panda3D 3D 模式与 Pygame 2.5D 模式。最新版本支持 43 名角色的自动化资源生成、颜色调制与技能配置。
+
+**核心特性**
+- **双引擎**：`main.py` 提供 GUI 启动器，`twod5/game.py` 负责 2.5D 快速对战。
+- **Roster 管理**：`config/roster.json`、`config/skills.json` 描述角色属性、输入映射和技能；`tools/build_kof_roster_assets.py` 可一键再生成 manifest 与配置。
+- **资源管线**：精灵 manifest 统一引用 Martial Hero CC0 包，可通过 `tools/sync_sprites.py` 与 `tools/sync_portraits.py` 维护。3D 模式资源由 `resource_manager.py` 负责拉取与审计。
+- **全自动测试**：`tests/test_smoke.py` 校验精灵、技能、设置；额外的 `test_combat.py`、`test_rollback_sim.py` 验证战斗逻辑。
+
+**运行指令**
+```powershell
+cd gamecenter/streetBattle
+python main.py              # GUI 启动器
+python twod5/game.py        # 直接进入 2.5D 模式
+```
+
+**配置要点**
+- `config/settings.json`：存储图形/音频/键位以及 `gameplay.player_character`、`gameplay.cpu_character`。
+- `assets/sprites/<fighter>/manifest.json`：逐角色动画配置（自动生成，可手动微调）。
+- 胜利提示、HUD 等根据角色 display name 动态渲染。
+
+**测试**
+```powershell
+cd gamecenter
+python -m pytest streetBattle/tests/test_smoke.py
+```
+
+**常用脚本**
+- `tools/build_kof_roster_assets.py`：批量生成 43 名角色的 manifest/skills/roster。
+- `tools/resource_manager.py`：3D 模式资源下载、审计、清理。
+- `tools/assets_audit.py`：资产完整性扫描。
+
+---
+
+### Stickman Game
+
+**概览**：单人火柴人动作冒险，包含 30 关卡、武器切换、全屏增益与多彩 UI。
+
+**核心特性**
+- 侧向平台关卡，支持手枪、炸弹、近战（可通过 `switch_weapon` 切换）。
+- 全屏模式提供移动、跳跃、射程等增益，增强战斗节奏。
+- 敌人 AI 拥有基础追踪/攻击范围设定；每关时间限制与得分系统。
+- 跨平台中文字体自动探测与回退，确保界面文本稳定显示。
+
+**运行与控制**
+```powershell
+cd gamecenter/stickman_game
+python main.py
+```
+
+| 操作 | 键位 |
+| --- | --- |
+| 左/右移动 | ← / → |
+| 跳跃 | 空格 |
+| 射击 | Z |
+| 投掷炸弹 | X |
+| 切换武器 | C |
+| 全屏切换 | F11 |
+
+**关键模块**
+- `src/config.py`：分值、敌人、平台、UI、字体等统一配置。
+- `src/game.py`：状态机、关卡逻辑、事件处理。
+- `assets/`：精灵、音效、关卡数据。
+
+---
+
+### Super Mario Bros
+
+**概览**：完整的 2D 平台跳跃游戏，包含 30 个关卡、积分系统、自动资源下载与中英双语 UI。
+
+**核心特性**
+- 游戏启动自动校验/下载素材（图片、音频、字体），支持离线回退。
+- 完整音频系统，使用 NumPy/SciPy 生成音效，支持静音回退。
+- 关卡组件模块化：`src/player.py`, `src/level.py`, `src/scoring.py` 等。
+- 跨平台字体检测，确保中文文本显示。
+
+**运行与控制**
+```powershell
+cd gamecenter/superMario
+python main.py
+```
+
+| 操作 | 键位 |
+| --- | --- |
+| 开始/下一关 | Enter |
+| 左/右移动 | A / D 或 ← / → |
+| 跳跃 | 空格 / W / ↑ |
+| 暂停 | P |
+| 退出 | Q |
+
+**依赖**
+- `pygame`, `pillow`, `requests`, `numpy`, `scipy`。
+- 资源下载逻辑位于 `src/downloader.py`，支持断点续传。
+
+---
+
+### Tank Battle
+
+**概览**：坦克对战游戏，强化学习 AI（Double DQN + Huber Loss + LayerNorm）与地图要素（围墙、基地、防御）。
+
+**核心特性**
+- 三种 AI 难度：规则 AI（简单/中等）与强化学习策略（困难）。
+- GPU 加速训练，支持 `torch.compile`、AMP、并行环境采样。
+- 30 关预设地图、子弹/掩体系统、基地胜负条件。
+- UI 支持中文字体、透明度调节、HUD 控件。
+
+**运行与训练**
+```powershell
+cd gamecenter/tankBattle
+python main.py                          # 游戏入口
+python train_ai.py --episodes 1000      # GPU 强化学习
+python main.py --smoke-test --frames 300
+```
+
+**配置**
+- `config.py`：地图、武器、HUD、AI 参数。
+- `ai/reinforcement_learning.py`：核心 DQN 模型与训练循环。
+- `training_config.json`：可调超参（批量、学习率、并行环境数）。
+
+---
+
+## 工具与自动化脚本
+
+| 脚本 | 说明 |
+| --- | --- |
+| `tools/build_kof_roster_assets.py` | 生成 StreetBattle 43 名角色的 manifest / roster / skills 配置 |
+| `tools/resource_manager.py` | StreetBattle 3D 资源下载、授权校验、临时文件清理 |
+| `tools/sync_sprites.py` | 2.5D 精灵批量同步与 manifest 验证 |
+| `tools/sync_portraits.py` | 角色肖像自动化拉取 / 渲染 |
+| `tools/assets_audit.py` | CC0 资产校验与占位资源清理 |
+| `superMario/src/downloader.py` | 超级玛丽资源自检与下载 |
+| `tankBattle/system_check.py` | 坦克大战依赖、显卡、声音环境快速诊断 |
+
+执行脚本前请激活虚拟环境、备份重要资产，并在 PowerShell 中运行（部分脚本依赖 Windows API）。
+
+---
+
+## 质量保障与测试
+
+- **StreetBattle**：`python -m pytest streetBattle/tests/test_smoke.py`（验证 manifest、技能、设置）；建议定期运行 `test_combat.py` 和 `test_rollback_sim.py`。
+- **Chess**：`python -m pytest` 覆盖 GUI、规则、AI 接口；训练脚本支持离线验证。
+- **Tank Battle**：提供 `--smoke-test` 模式快速回归，训练脚本内置日志。
+- **Super Mario / Stickman**：暂未提供自动化测试，需要通过快速通关、资源加载、输入回放进行人工冒烟；建议在后续迭代补充 pytest 框架。
+
+测试通过是合并修改前的硬性要求；如因环境差异产生告警（例如 `pkg_resources` 弃用），请记录并评估是否需要抑制或升级依赖。
+
+---
+
+## 贡献流程
+
+1. 新建分支，遵循 PEP 8 与项目现有代码风格；单文件长度保持在 1000 行以内。
+2. 修改前阅读本 README，确保文档同步更新；禁止新增其他说明文档。
+3. 执行针对性测试（至少包含 StreetBattle 冒烟测试，或模块专属测试）。
+4. 在提交信息中记录变更动机、测试结果和外部资源来源。
+5. 提交 PR 前检查依赖、脚本、资源是否随改动同步更新。
+
+---
+
+## 许可证与资源来源
+
+- **代码**：遵循仓库根目录许可。
+- **StreetBattle 精灵**：Martial Hero（LuizMelo，CC0 1.0），许可证存放于 `streetBattle/assets/sprites/LICENSE_martial_hero.txt`。
+- **UI/音效**：Kenney UI Pack、NumPy/SciPy 生成音效（CC0 或 MIT），详情见各资产目录。
+- **3D 模型 & 肖像**：resource manager / portrait pipeline 生成，保留来源与授权信息于 `assets/ATTRIBUTION.md`。
+
+引入新素材前需确认授权可再分发，并在资源目录附上来源、许可证及更新时间。

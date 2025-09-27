@@ -1,30 +1,34 @@
-#!/usr/bin/env python3
-"""
-Enhanced Character Manager with Optimized Single-Tier Resource Support
-Supports single high-quality tier per character: Sketchfab (Complete Community Resources)
-Optimized for performance with 7.88GB premium assets and consolidated configurations.
-"""
-
 import json
 import os
 from typing import Dict, List, Optional, Any, Tuple
 from direct.actor.Actor import Actor
-from panda3d.core import Vec3, Filename, getModelPath, VirtualFileSystem
+from panda3d.core import (
+    Vec3, Filename, getModelPath,
+    Material, GeomNode, AmbientLight, DirectionalLight, VBase4,
+    NodePath
+)
 from pathlib import Path
 import glob
 
-# Local audit helpers
+# Local audit helpers (safe optional import via importlib to avoid linter errors)
+# Default stubs
+def is_bam_likely_valid(p): return os.path.getsize(p) > 256 if os.path.exists(p) else False
+def is_egg_valid(p): return os.path.getsize(p) > 256 if os.path.exists(p) else False
+def is_glb_valid(p): return os.path.getsize(p) > 1024 if os.path.exists(p) else False
+def is_gltf_valid(p): return os.path.getsize(p) > 512 if os.path.exists(p) else False
+def is_egg_pz_valid(p): return os.path.getsize(p) > 256 if os.path.exists(p) else False
+
 try:
-    from gamecenter.streetBattle.assets_audit import (
-        is_bam_likely_valid, is_egg_valid, is_glb_valid, is_gltf_valid, is_egg_pz_valid
-    )
+    import importlib
+    _aa = importlib.import_module('gamecenter.streetBattle.assets_audit')
+    is_bam_likely_valid = getattr(_aa, 'is_bam_likely_valid', is_bam_likely_valid)
+    is_egg_valid = getattr(_aa, 'is_egg_valid', is_egg_valid)
+    is_glb_valid = getattr(_aa, 'is_glb_valid', is_glb_valid)
+    is_gltf_valid = getattr(_aa, 'is_gltf_valid', is_gltf_valid)
+    is_egg_pz_valid = getattr(_aa, 'is_egg_pz_valid', is_egg_pz_valid)
 except Exception:
-    # Fallback stubs
-    def is_bam_likely_valid(p): return os.path.getsize(p) > 256 if os.path.exists(p) else False
-    def is_egg_valid(p): return os.path.getsize(p) > 256 if os.path.exists(p) else False
-    def is_glb_valid(p): return os.path.getsize(p) > 1024 if os.path.exists(p) else False
-    def is_gltf_valid(p): return os.path.getsize(p) > 512 if os.path.exists(p) else False
-    def is_egg_pz_valid(p): return os.path.getsize(p) > 256 if os.path.exists(p) else False
+    # Keep stubs
+    pass
 
 class EnhancedCharacterManager:
     """Enhanced character manager with premium multi-tier resource support"""
@@ -40,6 +44,7 @@ class EnhancedCharacterManager:
         script_root = os.path.dirname(os.path.abspath(__file__))
         self.assets_dir = Path(script_root) / "assets"
         self.characters_dir = self.assets_dir / "characters"
+        self._simple_model_generator = None
         
         # Initialize Panda3D search paths
         self._setup_panda3d_paths(script_root)
@@ -49,8 +54,6 @@ class EnhancedCharacterManager:
         
         print(f"Enhanced Character Manager initialized:")
         print(f"- {len(self.comprehensive_characters)} total KOF characters")
-        print(f"- Optimized single-tier resources (Sketchfab only)")
-        print(f"- Resource tier: Sketchfab (7.88GB premium assets with animations)")
     
     def _setup_panda3d_paths(self, script_root: str):
         """Setup Panda3D search paths for our assets"""
@@ -62,35 +65,18 @@ class EnhancedCharacterManager:
                 script_root,
             ]:
                 getModelPath().prependDirectory(Filename.fromOsSpecific(p))
-            
-            # Mount VFS for legacy texture paths
-            try:
-                vfs = VirtualFileSystem.getGlobalPtr()
-                maps_dir = os.path.join(script_root, 'assets', 'characters', 'maps')
-                
-                # Create maps directory if it doesn't exist
-                if not os.path.exists(maps_dir):
-                    os.makedirs(maps_dir, exist_ok=True)
-                    # Create a basic texture placeholder
-                    placeholder_path = os.path.join(maps_dir, 'default_texture.jpg')
-                    if not os.path.exists(placeholder_path):
-                        with open(placeholder_path, 'wb') as f:
-                            # Create minimal 1x1 JPEG header
-                            f.write(b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xff\xdb\x00C\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14\x1d\x1a\x1f\x1e\x1d\x1a\x1c\x1c $.\' ",#\x1c\x1c(7),01444\x1f\'9=82<.342\xff\xc0\x00\x11\x08\x00\x01\x00\x01\x01\x01\x11\x00\x02\x11\x01\x03\x11\x01\xff\xc4\x00\x14\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\xff\xc4\x00\x14\x10\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xda\x00\x0c\x03\x01\x00\x02\x11\x03\x11\x00\x3f\x00\x00\xff\xd9')
-                
-                local_maps = Filename.fromOsSpecific(maps_dir)
-                panda_abs_maps = Filename('/c/Panda3D-1.10.15-x64/models/maps')
-                vfs.mount(local_maps, panda_abs_maps, 0)
-                print(f"[EnhancedCharacterManager] VFS mounted: {maps_dir} -> {panda_abs_maps}")
-            except Exception as e:
-                print(f"Warning: Failed to mount VFS for texture paths: {e}")
-                # Try alternative approach without VFS
-                try:
-                    maps_dir = os.path.join(script_root, 'assets', 'characters', 'maps')
-                    if not os.path.exists(maps_dir):
-                        os.makedirs(maps_dir, exist_ok=True)
-                except Exception:
-                    pass
+
+            maps_dir = os.path.join(script_root, 'assets', 'characters', 'maps')
+            if not os.path.exists(maps_dir):
+                os.makedirs(maps_dir, exist_ok=True)
+                placeholder_path = os.path.join(maps_dir, 'default_texture.jpg')
+                if not os.path.exists(placeholder_path):
+                    with open(placeholder_path, 'wb') as f:
+                        # Minimal 1x1 JPEG payload
+                        f.write(b'\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xff\xdb\x00C\x00\x08\x06\x06\x07\x06\x05\x08\x07\x07\x07\t\t\x08\n\x0c\x14\r\x0c\x0b\x0b\x0c\x19\x12\x13\x0f\x14\x1d\x1a\x1f\x1e\x1d\x1a\x1c\x1c $.\' ",#\x1c\x1c(7),01444\x1f\'9=82<.342\xff\xc0\x00\x11\x08\x00\x01\x00\x01\x01\x01\x11\x00\x02\x11\x01\x03\x11\x01\xff\xc4\x00\x14\x00\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x08\xff\xc4\x00\x14\x10\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xff\xda\x00\x0c\x03\x01\x00\x02\x11\x03\x11\x00\x3f\x00\x00\xff\xd9')
+
+            # Ensure Panda can resolve maps/ textures directly from the project assets directory
+            getModelPath().prependDirectory(Filename.fromOsSpecific(maps_dir))
         except Exception as e:
             print(f"Warning: Failed to setup Panda3D paths: {e}")
     
@@ -110,7 +96,7 @@ class EnhancedCharacterManager:
                     return candidate
             return None
 
-        # Load comprehensive character database (84 characters)
+        # Load comprehensive character database (43 characters with valid UIDs)
         comprehensive_file = find_file("comprehensive_kof_characters.json")
         if comprehensive_file:
             try:
@@ -272,7 +258,9 @@ class EnhancedCharacterManager:
             elif ext in ['.obj', '.dae', '.max', '.3ds']:
                 return model_file.stat().st_size > 1024  # Basic size check
             elif ext == '.bam':
-                return model_file.stat().st_size > 1024  # BAM files are valid
+                # BAM files should be reasonably sized (not just headers)
+                size = model_file.stat().st_size
+                return size > 50 * 1024  # At least 50KB for meaningful BAM files
             else:
                 return False
         except Exception:
@@ -302,27 +290,31 @@ class EnhancedCharacterManager:
             # Additional content validation for GLTF
             if ext == '.gltf':
                 try:
+                    # Use JSON parsing for proper GLTF validation instead of string search
+                    import json
                     with open(model_file, 'r', encoding='utf-8') as f:
-                        content = f.read(2048)  # Read first 2KB
-                        
-                    # Check for real GLTF content indicators
-                    real_indicators = [
-                        '"buffers":', '"meshes":', '"nodes":', '"scenes":',
-                        '"accessors":', '"materials":', '"textures":'
-                    ]
+                        gltf_data = json.load(f)
                     
-                    # Must have at least 3 real GLTF components
-                    indicator_count = sum(1 for indicator in real_indicators if indicator in content)
-                    if indicator_count < 3:
+                    if not isinstance(gltf_data, dict):
                         return False
-                        
-                    # Check for placeholder indicators (reject if found)
-                    placeholder_hints = [
-                        'placeholder', 'dummy', 'temp', 'test',
-                        '"byteLength": 0', '"count": 0'
-                    ]
                     
-                    if any(hint in content.lower() for hint in placeholder_hints):
+                    # Check for essential GLTF components
+                    required_components = ['meshes', 'nodes', 'scenes']
+                    has_required = all(key in gltf_data and gltf_data[key] for key in required_components)
+                    
+                    if not has_required:
+                        return False
+                    
+                    # Check for mesh data (ensure it's not empty)
+                    meshes = gltf_data.get('meshes', [])
+                    if not meshes or all(not mesh.get('primitives') for mesh in meshes):
+                        return False
+                    
+                    # Additional checks for real content
+                    nodes = gltf_data.get('nodes', [])
+                    scenes = gltf_data.get('scenes', [])
+                    
+                    if len(nodes) < 1 or len(scenes) < 1:
                         return False
                         
                     return True
@@ -400,73 +392,392 @@ class EnhancedCharacterManager:
         
         return animations
     
-    def create_enhanced_character_model(self, character_name: str, pos: Vec3 = Vec3(0, 0, 0), resource_tier: str = "auto") -> Optional[Actor]:
-        """Create enhanced character model using ONLY real 3D resources - 84 character support, no 22-character fallbacks"""
-        # Prioritize real resources from resource manager system
-        from gamecenter.streetBattle.resource_manager import UnifiedResourceManager
+    def _fix_bam_materials(self, model, character_name):
+        """为BAM模型修复材质 - 解决材质缺失导致的空白显示问题"""
+        print(f"🎨 为{character_name}修复BAM材质")
         
+        # 角色部位颜色配置
+        part_colors = {
+            'skin': (0.9, 0.7, 0.5, 1),      # 皮肤色
+            'hair': (0.2, 0.1, 0.0, 1),      # 头发色
+            'shirt': (0.0, 0.3, 0.8, 1),     # 上衣色（蓝色）
+            'pants': (0.1, 0.1, 0.1, 1),     # 裤子色（黑色）
+            'shoes': (0.4, 0.2, 0.1, 1),     # 鞋子色（棕色）
+            'accessories': (0.6, 0.0, 0.0, 1), # 配件色（红色）
+            'default': (0.8, 0.8, 0.8, 1)    # 默认色（灰色）
+        }
+        
+        # 找到所有GeomNode
+        geom_nodes = model.findAllMatches("**/+GeomNode")
+        print(f"找到 {geom_nodes.getNumPaths()} 个GeomNode")
+        
+        for i in range(geom_nodes.getNumPaths()):
+            geom_node_path = geom_nodes.getPath(i)
+            geom_node = geom_node_path.node()
+            
+            if isinstance(geom_node, GeomNode):
+                node_name = geom_node.getName()
+                
+                # 根据节点名称猜测颜色
+                color = self._guess_part_color(node_name.lower(), part_colors)
+                
+                # 创建材质
+                material = Material()
+                material.setDiffuse(color)
+                material.setAmbient((color[0]*0.4, color[1]*0.4, color[2]*0.4, 1))
+                material.setSpecular((0.2, 0.2, 0.2, 1))
+                material.setShininess(8)
+                
+                # 应用材质和颜色
+                geom_node_path.setMaterial(material)
+                geom_node_path.setColor(color)
+        
+        # 全局设置
+        model.setTwoSided(True)  # 双面渲染
+        print(f"✅ {character_name}材质修复完成")
+    
+    def _guess_part_color(self, node_name, part_colors):
+        """根据节点名称猜测部位颜色"""
+        # Kyo特定的节点命名模式
+        kyo_patterns = {
+            # 皮肤部位
+            'skin': ['object_43', 'object_21', 'object_27'],  # 大型皮肤节点
+            # 头发
+            'hair': ['object_11', 'object_17'],  # 头发相关
+            # 上衣
+            'shirt': ['object_15', 'object_29'],  # 上衣相关
+            # 裤子
+            'pants': ['object_31', 'object_33'],  # 下身衣物
+            # 鞋子
+            'shoes': ['object_35', 'object_37'],  # 脚部
+            # 配件
+            'accessories': ['object_7', 'object_9', 'object_19'],  # 小配件
+        }
+        
+        # 检查特定模式
+        for part, patterns in kyo_patterns.items():
+            if any(pattern in node_name for pattern in patterns):
+                return part_colors[part]
+        
+        # 通用模式匹配
+        if any(keyword in node_name for keyword in ['hair', 'head']):
+            return part_colors['hair']
+        elif any(keyword in node_name for keyword in ['shirt', 'chest', 'upper']):
+            return part_colors['shirt']
+        elif any(keyword in node_name for keyword in ['pant', 'leg', 'lower']):
+            return part_colors['pants']
+        elif any(keyword in node_name for keyword in ['shoe', 'foot']):
+            return part_colors['shoes']
+        elif any(keyword in node_name for keyword in ['skin', 'body', 'face']):
+            return part_colors['skin']
+        else:
+            return part_colors['default']
+    
+    def _apply_texture_repair(self, actor, char_id: str, asset_dir: Path):
+        """为特定角色应用高级纹理修复（如Kyo草薙）"""
         try:
-            resource_manager = UnifiedResourceManager()
-            
-            # Skip auto-replacement to avoid path issues, manually check for resources
+            # 目前仅为Kyo草薙提供特殊纹理修复
+            if char_id.lower() in ['kyo_kusanagi', 'kyo']:
+                print(f"🎨 为{char_id}应用高级纹理修复...")
+                
+                # 导入Kyo纹理管理器
+                import sys
+                import os
+                script_dir = os.path.dirname(os.path.abspath(__file__))
+                if script_dir not in sys.path:
+                    sys.path.append(script_dir)
+                
+                from kyo_texture_manager import KyoTextureManager
+                
+                # 创建纹理管理器实例
+                texture_manager = KyoTextureManager(self.base_app.loader)
+                
+                # 应用纹理修复
+                success = texture_manager.apply_kyo_textures(actor)
+                
+                if success:
+                    print(f"✅ {char_id}纹理修复成功！模型应该现在可见了")
+                else:
+                    print(f"⚠️ {char_id}纹理修复失败，将使用基础材质修复")
+                    
+        except Exception as e:
+            print(f"⚠️ 高级纹理修复失败: {e}，使用基础材质修复")
+    
+    def _has_renderable_geometry(self, model: Optional[NodePath]) -> bool:
+        """Return True if the provided NodePath contains at least one Geom with vertices."""
+        if not model or model.isEmpty():
+            return False
+
+        try:
+            geom_matches = model.findAllMatches('**/+GeomNode')
+            for geom_path in geom_matches:
+                geom_node = geom_path.node()
+                if not isinstance(geom_node, GeomNode):
+                    continue
+                for geom_index in range(geom_node.getNumGeoms()):
+                    vdata = geom_node.getGeom(geom_index).getVertexData()
+                    if vdata and vdata.getNumRows() > 0:
+                        return True
+        except Exception as geom_exc:
+            print(f"[EnhancedCharacterManager] Geometry inspection error: {geom_exc}")
+            return False
+
+        return False
+
+    def _ensure_sketchfab_bam(self, char_id: str, sketchfab_dir: Path) -> Optional[Path]:
+        """Ensure a converted BAM exists alongside Sketchfab GLTF/GLB resources."""
+        try:
+            target = sketchfab_dir / f"{char_id}.bam"
+            if target.exists() and self._is_real_3d_resource(target):
+                return target
+
+            source: Optional[Path] = None
+            preferred = [sketchfab_dir / f"{char_id}.gltf", sketchfab_dir / f"{char_id}.glb"]
+            for pattern in ("*.gltf", "*.glb"):
+                for candidate in sketchfab_dir.glob(pattern):
+                    if candidate not in preferred:
+                        preferred.append(candidate)
+
+            for candidate in preferred:
+                if candidate.exists():
+                    source = candidate
+                    break
+
+            if not source:
+                return None
+
+            print(f"[EnhancedCharacterManager] Converting {source.name} to BAM for {char_id}")
+            source_filename = Filename.fromOsSpecific(str(source))
+            model = self.base_app.loader.loadModel(source_filename)
+            if not model or model.isEmpty():
+                print(f"[EnhancedCharacterManager] Conversion skipped: {source.name} failed to load")
+                return None
+
+            if not self._has_renderable_geometry(model):
+                print(f"[EnhancedCharacterManager] Conversion skipped: {source.name} contains empty geometry")
+                return None
+
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target_filename = Filename.fromOsSpecific(str(target))
+            write_success = model.writeBamFile(str(target_filename))
+            model.removeNode()
+
+            if write_success and target.exists():
+                print(f"[EnhancedCharacterManager] ✅ Created {target.name}")
+                return target
+            else:
+                print(f"[EnhancedCharacterManager] Conversion failed to produce BAM for {char_id}")
+                return None
+        except Exception as exc:
+            print(f"[EnhancedCharacterManager] BAM conversion error for {char_id}: {exc}")
+            return None
+    def _get_simple_model_generator(self):
+        """Lazily instantiate the procedural model generator to avoid import side-effects until needed."""
+        if self._simple_model_generator is None:
+            try:
+                from gamecenter.streetBattle.utils.model_generator import SimpleModelGenerator
+                self._simple_model_generator = SimpleModelGenerator()
+            except Exception as e:
+                print(f"[EnhancedCharacterManager] SimpleModelGenerator unavailable: {e}")
+                self._simple_model_generator = False  # Cache failure to avoid repeated attempts
+        return self._simple_model_generator if self._simple_model_generator not in (None, False) else None
+
+    def _create_procedural_placeholder(self, character_name: str, char_data: Dict[str, Any], pos: Vec3) -> Optional[NodePath]:
+        """Generate a simple procedural placeholder so the character remains visible."""
+        generator = self._get_simple_model_generator()
+        if not generator:
+            return None
+
+        try:
+            char_id = char_data.get('id', character_name.lower().replace(' ', '_'))
+            placeholder = generator.generate_character_model(char_id)
+            if not placeholder or placeholder.isEmpty():
+                return None
+
+            placeholder.setName(f"{character_name}_placeholder")
+            placeholder.setPos(pos)
+            placeholder.setTwoSided(True)
+            placeholder.setTag('placeholder', '1')
+            self.character_models[character_name] = placeholder
+            print(f"[EnhancedCharacterManager] ✅ Generated procedural placeholder for {character_name}")
+            return placeholder
+        except Exception as e:
+            print(f"[EnhancedCharacterManager] Failed to create procedural placeholder for {character_name}: {e}")
+            return None
+
+    def _load_local_bam_model(self, character_name: str, char_id: str, char_data: Dict[str, Any], pos: Vec3) -> Optional[NodePath]:
+        """Load pre-converted BAM assets that live directly under the character directory."""
+        candidate_dir = self.characters_dir / char_id
+        if not candidate_dir.exists():
+            return None
+
+        preferred: List[Path] = [
+            candidate_dir / f"{char_id}_working.bam",
+            candidate_dir / f"{char_id}.bam",
+        ]
+
+        try:
+            # Append any other BAM files while keeping order stable
+            for extra in sorted(candidate_dir.glob("*.bam")):
+                if extra not in preferred:
+                    preferred.append(extra)
+
+            tried: List[Path] = []
+            for bam_path in preferred:
+                if not bam_path.exists() or bam_path in tried:
+                    continue
+                tried.append(bam_path)
+
+                if not self._is_real_3d_resource(bam_path):
+                    continue
+
+                try:
+                    filename = Filename.fromOsSpecific(str(bam_path))
+                    filename.makeTrueCase()
+                    model_np = self.base_app.loader.loadModel(filename)
+                except Exception as load_err:
+                    print(f"[EnhancedCharacterManager] Failed to load local BAM {bam_path.name}: {load_err}")
+                    continue
+
+                if not self._has_renderable_geometry(model_np):
+                    print(f"[EnhancedCharacterManager] Local BAM has no geometry: {bam_path.name}")
+                    model_np.removeNode()
+                    continue
+
+                try:
+                    model_np.setPos(pos)
+                    self._fix_bam_materials(model_np, character_name)
+                    self._apply_texture_repair(model_np, char_id, bam_path.parent)
+                    self._apply_character_enhancements(model_np, char_data)
+                except Exception as tweak_err:
+                    print(f"[EnhancedCharacterManager] Local BAM post-processing warning for {bam_path.name}: {tweak_err}")
+
+                self.character_models[character_name] = model_np
+                print(f"[EnhancedCharacterManager] ✅ Using local BAM asset: {character_name} ({bam_path.name})")
+                return model_np
+        except Exception as e:
+            print(f"[EnhancedCharacterManager] Local BAM lookup error for {char_id}: {e}")
+
+        return None
+
+    def _load_sketchfab_resource(
+        self,
+        character_name: str,
+        char_id: str,
+        char_data: Dict[str, Any],
+        sketchfab_dir: Path,
+        pos: Vec3,
+    ) -> Optional[NodePath]:
+        """Load a Sketchfab-sourced asset (prioritising converted BAM files)."""
+
+        try:
+            bam_candidates: List[Path] = []
+            generated_bam = self._ensure_sketchfab_bam(char_id, sketchfab_dir)
+            if generated_bam and generated_bam.exists():
+                bam_candidates.append(generated_bam)
+
+            for extra_bam in sorted(sketchfab_dir.glob("*.bam")):
+                if extra_bam not in bam_candidates:
+                    bam_candidates.append(extra_bam)
+
+            for bam_path in bam_candidates:
+                if not self._is_real_3d_resource(bam_path):
+                    continue
+                try:
+                    load_filename = Filename.fromOsSpecific(str(bam_path))
+                    model_np = self.base_app.loader.loadModel(load_filename)
+                except Exception as exc:
+                    print(f"[EnhancedCharacterManager] Sketchfab BAM load failed for {bam_path.name}: {exc}")
+                    continue
+
+                if not self._has_renderable_geometry(model_np):
+                    print(f"[EnhancedCharacterManager] Sketchfab BAM has no geometry: {bam_path.name}")
+                    model_np.removeNode()
+                    continue
+
+                try:
+                    model_np.setPos(pos)
+                    self._fix_bam_materials(model_np, character_name)
+                    self._apply_texture_repair(model_np, char_id, sketchfab_dir)
+                    self._apply_character_enhancements(model_np, char_data)
+                except Exception as tweak_err:
+                    print(f"[EnhancedCharacterManager] Sketchfab BAM post-processing warning for {bam_path.name}: {tweak_err}")
+
+                self.character_models[character_name] = model_np
+                print(f"[EnhancedCharacterManager] ✅ Using Sketchfab BAM: {character_name} ({bam_path.name})")
+                return model_np
+
+            # As a last resort, attempt to load glTF/GLB directly if Panda3D supports it
+            for ext in ("*.gltf", "*.glb"):
+                for source in sketchfab_dir.glob(ext):
+                    if not self._is_real_3d_resource(source):
+                        continue
+                    try:
+                        load_filename = Filename.fromOsSpecific(str(source))
+                        model_np = self.base_app.loader.loadModel(load_filename)
+                    except Exception:
+                        continue
+
+                    if not self._has_renderable_geometry(model_np):
+                        model_np.removeNode()
+                        continue
+
+                    try:
+                        model_np.setPos(pos)
+                        self._apply_character_enhancements(model_np, char_data)
+                    except Exception as tweak_err:
+                        print(f"[EnhancedCharacterManager] Sketchfab GLTF post-processing warning for {source.name}: {tweak_err}")
+
+                    self.character_models[character_name] = model_np
+                    print(f"[EnhancedCharacterManager] ✅ Using Sketchfab GLTF directly: {character_name} ({source.name})")
+                    return model_np
+
+        except Exception as exc:
+            print(f"[EnhancedCharacterManager] Sketchfab resource load error for {char_id}: {exc}")
+
+        return None
+
+    def create_enhanced_character_model(self, character_name: str, pos: Vec3 = Vec3(0, 0, 0), resource_tier: str = "auto") -> Optional[Actor]:
+        """Create enhanced character model using only locally prepared assets."""
+
+        try:
             print(f"[EnhancedCharacterManager] Checking for real resources for {character_name}...")
-            
-            # Get real 3D resource path for this character
+
             char_data = self.get_character_by_name(character_name)
             if not char_data:
                 print(f"[EnhancedCharacterManager] Character {character_name} not found in comprehensive database")
                 return None
-            
+
             char_id = char_data.get('id', character_name.lower().replace(' ', '_'))
-            
-            # Check for real 3D resources (prioritize sketchfab and models_resource sources)
-            real_resource_paths = []
-            
-            # Priority 1: Sketchfab high-quality models
+
+            local_bam_model = self._load_local_bam_model(character_name, char_id, char_data, pos)
+            if local_bam_model:
+                return local_bam_model
+
             sketchfab_dir = self.characters_dir / char_id / "sketchfab"
             if sketchfab_dir.exists():
-                for model_file in sketchfab_dir.glob("*.gltf"):
-                    if self._is_real_3d_resource(model_file):
-                        real_resource_paths.append((str(model_file), "sketchfab"))
-                for model_file in sketchfab_dir.glob("*.glb"):
-                    if self._is_real_3d_resource(model_file):
-                        real_resource_paths.append((str(model_file), "sketchfab"))
-            
-            # Priority 2: Models_resource basic quality models
-            models_resource_dir = self.characters_dir / char_id / "models_resource"
-            if models_resource_dir.exists():
-                for model_file in models_resource_dir.glob("*.gltf"):
-                    if self._is_real_3d_resource(model_file):
-                        real_resource_paths.append((str(model_file), "models_resource"))
-                for model_file in models_resource_dir.glob("*.obj"):
-                    if self._is_real_3d_resource(model_file):
-                        real_resource_paths.append((str(model_file), "models_resource"))
-            
-            # Try each real resource
-            for model_path, source in real_resource_paths:
-                animations = self._discover_tier_animations(Path(model_path).parent, char_id)
-                actor = self._create_actor_from_path(model_path, animations, character_name, pos)
-                if actor:
-                    print(f"[EnhancedCharacterManager] ✅ Using real 3D resource from {source}: {character_name}")
-                    return actor
-            
-            # If no real resources found, attempt to download them
-            print(f"[EnhancedCharacterManager] No real resources found for {character_name}, attempting download...")
-            success = resource_manager.download_real_resources([character_name])
-            if success:
-                # Retry loading after download
-                return self.create_enhanced_character_model(character_name, pos, resource_tier)
-            
-            print(f"[EnhancedCharacterManager] ❌ Could not obtain real 3D resources for {character_name}")
+                model_np = self._load_sketchfab_resource(character_name, char_id, char_data, sketchfab_dir, pos)
+                if model_np:
+                    return model_np
+
+            placeholder = self._create_procedural_placeholder(character_name, char_data, pos)
+            if placeholder:
+                return placeholder
             return None
-            
+
         except Exception as e:
             print(f"[EnhancedCharacterManager] Error loading real resources: {e}")
+            placeholder = self._create_procedural_placeholder(character_name, locals().get('char_data', {}), pos)
+            if placeholder:
+                return placeholder
             return None
-    
+
     def _create_actor_from_path(self, model_path: str, animations: Dict[str, str], character_name: str, pos: Vec3) -> Optional[Actor]:
         """Create Actor from specific model path and animations"""
         try:
+            # Pre-check: only attempt Actor if the model looks like a character (has skin/animations)
+            if not self._is_actor_candidate(Path(model_path)):
+                return None
             # Normalize paths for Panda3D (convert Windows paths to relative paths)
             def norm_path(p):
                 # Convert absolute Windows path to relative path from script root
@@ -677,6 +988,49 @@ class EnhancedCharacterManager:
         
         print(f"[EnhancedCharacterManager] Arena FPS fallback failed for {character_name}")
         return None
+
+    def _is_actor_candidate(self, model_file: Path) -> bool:
+        """Heuristic to determine if a model likely contains character/armature data.
+        - For .gltf: check presence of 'skins' or non-empty 'animations'
+        - For .glb: consult nearby resource_info.json if present, else allow (best-effort)
+        - For other formats: conservative check by size
+        """
+        try:
+            if not model_file.exists():
+                return False
+            ext = model_file.suffix.lower()
+            if ext == '.gltf':
+                try:
+                    with open(model_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    if not isinstance(data, dict):
+                        return False
+                    has_skins = bool(data.get('skins'))
+                    has_anims = bool(data.get('animations'))
+                    return bool(has_skins or has_anims)
+                except Exception:
+                    return False
+            if ext == '.glb':
+                # Try consult resource_info.json in same dir
+                info = model_file.parent / 'resource_info.json'
+                if info.exists():
+                    try:
+                        meta = json.load(open(info, 'r', encoding='utf-8'))
+                        if isinstance(meta, dict) and 'has_animations' in meta:
+                            return bool(meta.get('has_animations'))
+                    except Exception:
+                        pass
+                # Without metadata, be conservative: avoid Actor on unknown GLB
+                return False
+            if ext in ('.dae', '.bam', '.egg', '.egg.pz'):
+                # Often character formats in our project
+                return True
+            # .obj is typically static; avoid Actor
+            if ext == '.obj':
+                return False
+            return False
+        except Exception:
+            return False
     
     def _apply_character_enhancements(self, actor: Actor, char_data: Dict[str, Any]):
         """Apply character-specific visual and gameplay enhancements"""

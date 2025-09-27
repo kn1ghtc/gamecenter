@@ -22,6 +22,7 @@ class GameModeSelector:
         self.animation_time = 0.0
         self.current_selection = 0  # Currently selected button index
         self.keyboard_active = False
+        self.visible = False
         
         self._create_main_menu()
         
@@ -194,6 +195,9 @@ class GameModeSelector:
         # Enable keyboard navigation
         self._setup_keyboard_navigation()
         self._highlight_current_selection()
+        if not self.base_app.taskMgr.hasTaskNamed('menu-animation'):
+            self.base_app.taskMgr.add(self._animate_ui, 'menu-animation')
+        self.visible = True
     
     def hide(self):
         """Hide the mode selection menu"""
@@ -209,6 +213,7 @@ class GameModeSelector:
         
         # Remove keyboard bindings
         self._cleanup_keyboard_navigation()
+        self.visible = False
     
     def _setup_keyboard_navigation(self):
         """Setup keyboard navigation for menu"""

@@ -322,20 +322,20 @@ class HUD:
                 p0, p1 = players[0], players[1]
                 
                 # Update P1 character info
-                if hasattr(p0, 'character_name') and hasattr(p0, 'character_data'):
-                    char_data = p0.character_data
-                    fighting_style = char_data.get('fighting_style', 'Unknown Style')
-                    nationality = char_data.get('nationality', 'Unknown')
+                char_data_p0 = getattr(p0, 'character_data', None)
+                if hasattr(p0, 'character_name') and isinstance(char_data_p0, dict):
+                    fighting_style = char_data_p0.get('fighting_style', 'Unknown Style')
+                    nationality = char_data_p0.get('nationality', 'Unknown')
                     info_text = f"{fighting_style}\n{nationality}"
                     self.char_info_p0.setText(info_text)
                 else:
                     self.char_info_p0.setText("Street Fighter\nUnknown")
                 
                 # Update P2 character info
-                if hasattr(p1, 'character_name') and hasattr(p1, 'character_data'):
-                    char_data = p1.character_data
-                    fighting_style = char_data.get('fighting_style', 'Unknown Style')
-                    nationality = char_data.get('nationality', 'Unknown')
+                char_data_p1 = getattr(p1, 'character_data', None)
+                if hasattr(p1, 'character_name') and isinstance(char_data_p1, dict):
+                    fighting_style = char_data_p1.get('fighting_style', 'Unknown Style')
+                    nationality = char_data_p1.get('nationality', 'Unknown')
                     info_text = f"{fighting_style}\n{nationality}"
                     self.char_info_p1.setText(info_text)
                 else:
