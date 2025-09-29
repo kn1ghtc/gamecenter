@@ -54,11 +54,10 @@ from gamecenter.streetBattle.combat import CombatSystem
 from gamecenter.streetBattle.net import NetPeer
 from gamecenter.streetBattle.ai import SimpleAI
 from gamecenter.streetBattle.vfx import VFX
-from gamecenter.streetBattle.audio import AudioSystem
+from gamecenter.streetBattle.enhanced_audio_system import AudioSystem
 from gamecenter.streetBattle.ui import HUD
 from gamecenter.streetBattle.enhanced_character_manager import EnhancedCharacterManager as CharacterManager
 from gamecenter.streetBattle.game_state import GameStateManager, GameState
-from gamecenter.streetBattle.character_animator import CharacterAnimator
 from gamecenter.streetBattle.kof_animation_system import KOFAnimationSystem
 from gamecenter.streetBattle.game_mode_selector import GameModeSelector
 from gamecenter.streetBattle.character_selector import CharacterSelector
