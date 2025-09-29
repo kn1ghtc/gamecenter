@@ -1,0 +1,21 @@
+{
+  "character_id": "mai_shiranui",
+  "animation_states": [
+    "idle",
+    "walk",
+    "attack",
+    "defend",
+    "jump",
+    "hit",
+    "victory"
+  ],
+  "current_state": "idle",
+  "config": {
+    "default_fps": 30,
+    "transition_duration": 0.3,
+    "blend_smoothness": 0.8,
+    "bone_hierarchy_depth": 5,
+    "max_blend_animations": 4
+  },
+  "created_at": "2025-09-28T21:02:37.365205"
+}

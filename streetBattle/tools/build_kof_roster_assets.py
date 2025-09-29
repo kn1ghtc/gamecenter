@@ -25,7 +25,7 @@ from typing import Any, Dict, Iterable, List, Tuple
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 SPRITES_ROOT = PROJECT_ROOT / "assets" / "sprites"
 CONFIG_ROOT = PROJECT_ROOT / "config"
-BASE_MANIFEST_PATH = SPRITES_ROOT / "hero" / "manifest.json"
+BASE_MANIFEST_PATH = SPRITES_ROOT / "kyo_kusanagi" / "manifest.json"
 ROSTER_CONFIG_PATH = CONFIG_ROOT / "roster.json"
 SKILL_CONFIG_PATH = CONFIG_ROOT / "skills.json"
 
@@ -92,51 +92,7 @@ CORE_ROSTER: List[FighterSpec] = [
 
 
 CORE_SKILLS: Dict[str, Dict[str, Any]] = {
-    "hero": {
-        "default_skill": "light_strike",
-        "input_map": {"attack": "light_strike", "special": "heavy_strike"},
-        "skills": [
-            {
-                "name": "light_strike",
-                "animation": "attack_light",
-                "damage": 10,
-                "cooldown": 0.65,
-                "hit_frames": [2, 3],
-                "hitstop": 0.18,
-                "followups": {"special": "heavy_strike"},
-            },
-            {
-                "name": "heavy_strike",
-                "animation": "attack_heavy",
-                "damage": 18,
-                "cooldown": 1.25,
-                "hit_frames": [3, 4],
-                "hitstop": 0.24,
-            },
-        ],
-    },
-    "shadow": {
-        "default_skill": "shadow_jab",
-        "input_map": {"attack": "shadow_jab", "special": "void_spike"},
-        "skills": [
-            {
-                "name": "shadow_jab",
-                "animation": "attack_light",
-                "damage": 9,
-                "cooldown": 0.6,
-                "hit_frames": [2, 3],
-                "hitstop": 0.17,
-            },
-            {
-                "name": "void_spike",
-                "animation": "attack_heavy",
-                "damage": 16,
-                "cooldown": 1.1,
-                "hit_frames": [2, 3, 4],
-                "hitstop": 0.22,
-            },
-        ],
-    },
+    # Only characters with high-quality portraits are supported
 }
 
 

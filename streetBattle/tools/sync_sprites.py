@@ -45,86 +45,7 @@ class StateConfig:
 
 
 SPRITE_SOURCES: Dict[str, Dict[str, Any]] = {
-    "hero": {
-        "display_name": "Fantasy Warrior",
-        "source": "Fantasy Warrior Sprite Sheet by @ansimuz",
-        "license": "CC-BY 4.0",
-        "states": [
-            StateConfig(
-                name="idle",
-                url="https://raw.githubusercontent.com/ansimuz/fantasy-warrior-sprite-sheet/master/Sprites/Idle.png",
-                grid=(6, 1),
-                fps=8,
-                loop=True,
-                filename="idle.png",
-            ),
-            StateConfig(
-                name="walk",
-                url="https://raw.githubusercontent.com/ansimuz/fantasy-warrior-sprite-sheet/master/Sprites/Run.png",
-                grid=(8, 1),
-                fps=10,
-                loop=True,
-                filename="walk.png",
-            ),
-            StateConfig(
-                name="attack",
-                url="https://raw.githubusercontent.com/ansimuz/fantasy-warrior-sprite-sheet/master/Sprites/Attack_1.png",
-                grid=(6, 1),
-                fps=12,
-                loop=False,
-                filename="attack.png",
-                hit_frames=[2, 3, 4],
-            ),
-            StateConfig(
-                name="hurt",
-                url="https://raw.githubusercontent.com/ansimuz/fantasy-warrior-sprite-sheet/master/Sprites/Hurt.png",
-                grid=(4, 1),
-                fps=12,
-                loop=False,
-                filename="hurt.png",
-            ),
-        ],
-    },
-    "shadow": {
-        "display_name": "Cyber Shadow",
-        "source": "Fighter Pack (Blue) by @elthen-",
-        "license": "CC0 1.0",
-        "states": [
-            StateConfig(
-                name="idle",
-                url="https://raw.githubusercontent.com/elthen-/Fighter-Pack/main/BlueFighter/Idle.png",
-                grid=(10, 1),
-                fps=10,
-                loop=True,
-                filename="idle.png",
-            ),
-            StateConfig(
-                name="walk",
-                url="https://raw.githubusercontent.com/elthen-/Fighter-Pack/main/BlueFighter/Run.png",
-                grid=(10, 1),
-                fps=12,
-                loop=True,
-                filename="walk.png",
-            ),
-            StateConfig(
-                name="attack",
-                url="https://raw.githubusercontent.com/elthen-/Fighter-Pack/main/BlueFighter/Attack_1.png",
-                grid=(8, 1),
-                fps=14,
-                loop=False,
-                filename="attack.png",
-                hit_frames=[3, 4, 5],
-            ),
-            StateConfig(
-                name="hurt",
-                url="https://raw.githubusercontent.com/elthen-/Fighter-Pack/main/BlueFighter/Hurt.png",
-                grid=(4, 1),
-                fps=12,
-                loop=False,
-                filename="hurt.png",
-            ),
-        ],
-    },
+    # Only characters with high-quality portraits are supported
 }
 
 
@@ -145,18 +66,7 @@ def download_file(url: str, destination: Path, skip_existing: bool) -> bool:
 
 
 def _palette_for_character(key: str) -> Dict[str, tuple[int, int, int]]:
-    if key == "hero":
-        return {
-            "base": (210, 70, 96),
-            "accent": (255, 221, 128),
-            "shadow": (120, 38, 56),
-        }
-    if key == "shadow":
-        return {
-            "base": (72, 124, 228),
-            "accent": (132, 212, 255),
-            "shadow": (32, 56, 112),
-        }
+    # Default palette for all characters
     return {
         "base": (160, 160, 160),
         "accent": (220, 220, 220),

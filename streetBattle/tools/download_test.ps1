@@ -1,1 +1,0 @@
- = " https://raw.githubusercontent.com/Elthen-/Pixel-Art-Animations/master/Fighter%20Pack/Blue/Idle.png?raw=1\; = New-Object System.Net.WebClient; try { .DownloadFile(, \test_idle.png\); Write-Host \OK\ } catch { Write-Host .Exception.Message; exit 1 }

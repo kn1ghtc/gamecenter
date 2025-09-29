@@ -2,9 +2,12 @@
 r"""StreetBattle Asset Resource Manager
 
 This script removes stale character assets and downloads the curated Sketchfab
-models defined in ``assets/resource_catalog.json``. It integrates with
-``SketchfabSessionManager`` to perform authenticated downloads, preferring GLTF
-archives and falling back to GLB when GLTF is unavailable.
+models defined in ``assets/resource_catalog.json``. It orchestrates
+credential-based downloads through ``SketchfabCookieSession`` and the
+sequential downloader, preferring GLTF archives and falling back to GLB when
+necessary. After fetching archives the pipeline automatically extracts assets,
+converts them to Panda3D BAM via ``gltf2bam``, and produces a normalised
+animation set for each character.
 
 Usage examples (PowerShell):
 
@@ -33,7 +36,6 @@ import logging
 import os
 import shutil
 import sys
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
@@ -49,7 +51,18 @@ DEFAULT_PREFERRED_FORMATS: Tuple[str, ...] = ("gltf", "glb")
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from gamecenter.streetBattle.sketchfab_session import SketchfabSessionManager  # noqa: E402
+from gamecenter.streetBattle.sketchfab_tools.cookie_session import (  # noqa: E402
+    SketchfabCookieError,
+    SketchfabCookieSession,
+)
+from gamecenter.streetBattle.sketchfab_tools.conversion import (  # noqa: E402
+    ConversionError,
+    Gltf2BamConverter,
+)
+from gamecenter.streetBattle.sketchfab_tools.downloader import (  # noqa: E402
+    SketchfabDownloadSummary,
+    SketchfabSequentialDownloader,
+)
 
 logger = logging.getLogger("streetbattle.resource_manager")
 
@@ -62,13 +75,19 @@ class ResourceManager:
         self.project_root = project_root
         self.characters_dir = self.assets_dir / "characters"
         self.models_dir = self.assets_dir / "models"
+        self.downloads_dir = self.assets_dir / "downloads"
         self.catalog_path = self.assets_dir / "resource_catalog.json"
         self.manifest_path = self.assets_dir / "characters_manifest.json"
         self.presigned_path = self.assets_dir / "presigned_urls.json"
+        self.cookie_file = self.assets_dir / "sketchfab_cookies.json"
+        self.env_path = self.project_root / "gamecenter" / "streetBattle" / ".env.local"
 
         self.catalog = self._load_catalog()
         self.presigned_map = self._load_presigned_urls()
         self.failed_downloads: List[str] = []
+
+        self.downloads_dir.mkdir(parents=True, exist_ok=True)
+        self.converter = Gltf2BamConverter()
 
     # ------------------------------------------------------------------
     # catalog helpers
@@ -134,7 +153,7 @@ class ResourceManager:
     def download_from_catalog(
         self,
         *,
-        session: Optional[SketchfabSessionManager],
+        cookie_session: Optional[SketchfabCookieSession] = None,
         preferred_formats: Sequence[str] = DEFAULT_PREFERRED_FORMATS,
         dry_run: bool = False,
         subset: Optional[Iterable[str]] = None,
@@ -148,79 +167,234 @@ class ResourceManager:
                 logger.info("[dry-run] Would download %s (preferred: %s)", char_id, list(preferred_formats))
             return
 
-        if session is None:
-            raise ValueError("Sketchfab session is required when not running in dry-run mode")
+        self.failed_downloads = []
+        processed: set[str] = set()
 
-        # 先选取一个用于鉴权探测的UID（优先首个角色）
-        probe_uid: Optional[str] = None
+        active_session = cookie_session or self._create_cookie_session()
+        if active_session:
+            logger.info("Starting authenticated Sketchfab download pipeline")
+            summaries = self._run_authenticated_downloads(
+                characters,
+                active_session,
+                preferred_formats=preferred_formats,
+                keep_archives=keep_archives,
+            )
+            processed.update(summary.character_id for summary in summaries)
+        else:
+            logger.warning("No Sketchfab authentication available – falling back to presigned URLs only")
+
+        # Presigned fallback for anything missing or when auth is unavailable
         for char_id in characters:
-            uid = (self.catalog.get(char_id, {}).get("sketchfab") or {}).get("uid")
-            if uid:
-                probe_uid = uid
-                break
-        # 若子集均无UID，则全量里找一个
-        if not probe_uid:
-            for v in self.catalog.values():
-                uid = (v.get("sketchfab") or {}).get("uid")
-                if uid:
-                    probe_uid = uid
-                    break
-
-        auth_ok = False
-        try:
-            auth_ok = session.ensure_authenticated(test_uid=probe_uid)
-        except Exception:
-            auth_ok = False
-        if not auth_ok:
-            logger.warning("Sketchfab authentication unavailable; will attempt presigned URL fallback if provided")
-
-        for char_id in characters:
-            char_info = self.catalog.get(char_id, {})
-            uid = (char_info.get("sketchfab") or {}).get("uid")
-            if not uid:
-                logger.warning("Character %s is missing sketchfab.uid; skipping", char_id)
+            if char_id in processed:
                 continue
 
-            logger.info("%s -> Sketchfab UID %s", char_id, uid)
-            target_dir = self.characters_dir / char_id / "sketchfab"
-            temp_dir = Path(tempfile.mkdtemp(prefix=f"{char_id}_", dir=str(self.assets_dir)))
+            url = self._resolve_presigned_url(char_id)
+            if not url:
+                self._handle_download_failure(char_id, "No presigned URL available")
+                continue
 
+            logger.info("Using presigned fallback for %s", char_id)
+            download_path = self._download_presigned(
+                url,
+                output_dir=self.downloads_dir,
+                fallback_name=f"{char_id}.zip",
+            )
+            if not download_path:
+                self._handle_download_failure(char_id, "Presigned download failed")
+                continue
+
+            success = self._process_local_archive(
+                char_id,
+                download_path,
+                preferred_formats=preferred_formats,
+                keep_archive=keep_archives,
+            )
+            if success:
+                processed.add(char_id)
+
+        missing = [char for char in characters if char not in processed]
+        if missing:
+            logger.warning(
+                "The following characters failed to prepare: %s",
+                ", ".join(sorted(set(missing))),
+            )
+
+        # reload presigned mapping from disk in case downloader updated it
+        self.presigned_map = self._load_presigned_urls()
+
+    def _create_cookie_session(self) -> Optional[SketchfabCookieSession]:
+        cookie_kwargs: Dict[str, object] = {
+            "env_path": self.env_path,
+            "rate_limit_seconds": 4.5,
+        }
+
+        if self.cookie_file.exists():
             try:
-                download_path: Optional[Path] = None
+                payload = self.cookie_file.read_text(encoding="utf-8")
+                if "REPLACE_WITH_SESSION_COOKIE" not in payload:
+                    cookie_kwargs["cookie_path"] = self.cookie_file
+                else:
+                    logger.debug("Sketchfab cookie file contains placeholder; ignoring")
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.warning("Failed to read Sketchfab cookie file: %s", exc)
 
-                # Prefer authenticated API when available
-                if auth_ok:
-                    download_path = session.download_model(uid, temp_dir, preferred_formats)
+        try:
+            session = SketchfabCookieSession(**cookie_kwargs)  # type: ignore[arg-type]
+            session.ensure_logged_in()
+            return session
+        except SketchfabCookieError as exc:
+            logger.error("Sketchfab authentication unavailable: %s", exc)
+            return None
 
-                # Presigned fallback (when auth failed or API returned nothing)
-                if not download_path:
-                    presigned_url = self.presigned_map.get(char_id) or self.presigned_map.get(uid)
-                    if presigned_url:
-                        logger.info("Using presigned URL fallback for %s", char_id)
-                        download_path = self._download_presigned(presigned_url, temp_dir, uid, preferred_formats)
+    def _run_authenticated_downloads(
+        self,
+        characters: Sequence[str],
+        session: SketchfabCookieSession,
+        *,
+        preferred_formats: Sequence[str],
+        keep_archives: bool,
+    ) -> List[SketchfabDownloadSummary]:
+        downloader = SketchfabSequentialDownloader(
+            catalog_path=self.catalog_path,
+            download_root=self.downloads_dir,
+            cookie_session=session,
+            presigned_map_path=self.presigned_path,
+        )
 
-                if not download_path:
-                    self._handle_download_failure(char_id, "No download path available (auth/presigned)")
+        summaries: List[SketchfabDownloadSummary] = []
+        try:
+            summaries = downloader.run(
+                characters=characters,
+                keep_archives=True,
+                update_presigned=True,
+            )
+        except SketchfabCookieError as exc:
+            logger.error("Authenticated Sketchfab download failed: %s", exc)
+            return []
+
+        prepared: List[SketchfabDownloadSummary] = []
+        for summary in summaries:
+            success = self._process_local_archive(
+                summary.character_id,
+                summary.archive_path,
+                preferred_formats=preferred_formats,
+                keep_archive=True,
+            )
+            if success:
+                prepared.append(summary)
+                if not keep_archives and summary.archive_path.exists():
+                    summary.archive_path.unlink(missing_ok=True)
+
+        # Reflect any new presigned URLs on disk
+        self.presigned_map = downloader.presigned_map
+        self._save_presigned_urls(self.presigned_map)
+        return prepared
+
+    def _process_local_archive(
+        self,
+        character_id: str,
+        archive_path: Path,
+        *,
+        preferred_formats: Sequence[str],
+        keep_archive: bool,
+    ) -> bool:
+        target_dir = self.characters_dir / character_id / "sketchfab"
+        shutil.rmtree(target_dir, ignore_errors=True)
+        target_dir.mkdir(parents=True, exist_ok=True)
+
+        extracted_path = self._unpack_archive(archive_path, target_dir, character_id, preferred_formats)
+        if not extracted_path:
+            self._handle_download_failure(character_id, "Could not locate model inside archive")
+            return False
+
+        try:
+            bam_path = self._generate_bam_assets(character_id, extracted_path, target_dir)
+        except ConversionError as exc:
+            self._handle_download_failure(character_id, f"Conversion failed: {exc}")
+            return False
+
+        logger.info("✅ %s ready: %s", character_id, bam_path)
+
+        if not keep_archive:
+            archive_path.unlink(missing_ok=True)
+
+        return True
+
+    def _generate_bam_assets(self, character_id: str, source_model: Path, target_dir: Path) -> Path:
+        bam_path = target_dir / f"{character_id}.bam"
+        animations_dir = target_dir / "animations"
+        animations_dir.mkdir(parents=True, exist_ok=True)
+
+        conversion = self.converter.convert(
+            source_path=source_model,
+            output_path=bam_path,
+            animations_dir=animations_dir,
+            working_dir=target_dir,
+        )
+
+        self._synchronise_animation_library(animations_dir, conversion.animation_paths)
+        return conversion.bam_path
+
+    def _synchronise_animation_library(self, animations_dir: Path, generated_paths: Sequence[Path]) -> None:
+        if not animations_dir.exists():
+            return
+
+        for anim_path in generated_paths:
+            key = self._infer_animation_key(anim_path.stem)
+            if not key:
+                continue
+            target = animations_dir / f"{key}.bam"
+            if target.resolve() == anim_path.resolve():
+                continue
+            if target.exists():
+                continue
+            try:
+                shutil.copy2(anim_path, target)
+            except OSError as exc:  # pragma: no cover - defensive logging
+                logger.warning("Failed to normalise animation %s: %s", anim_path.name, exc)
+
+    @staticmethod
+    def _infer_animation_key(name: str) -> Optional[str]:
+        lowered = name.lower()
+        mapping = {
+            "idle": ("idle", "stand", "rest", "ready"),
+            "walk": ("walk", "run", "move"),
+            "attack": ("attack", "punch", "kick", "strike"),
+            "light": ("jab", "lp", "lk", "light"),
+            "heavy": ("hp", "hk", "heavy", "strong"),
+            "hurt": ("hurt", "hit", "damage"),
+            "jump": ("jump", "air"),
+            "victory": ("victory", "win", "taunt"),
+            "defeat": ("defeat", "lose", "ko", "death"),
+            "block": ("block", "guard"),
+            "crouch": ("crouch", "duck"),
+        }
+
+        for key, keywords in mapping.items():
+            if any(token in lowered for token in keywords):
+                # Normalise attack variants to attack/light/heavy triad
+                if key in {"light", "heavy"} and "attack" in lowered:
                     continue
+                return key
 
-                extracted_path = self._unpack_archive(download_path, target_dir, char_id, preferred_formats)
-                if not extracted_path:
-                    self._handle_download_failure(char_id, "Could not locate model inside archive")
-                    continue
+        if "attack" in lowered:
+            return "attack"
+        return None
 
-                logger.info("✅ %s ready: %s", char_id, extracted_path)
+    def _resolve_presigned_url(self, char_id: str) -> Optional[str]:
+        if char_id in self.presigned_map:
+            return self.presigned_map[char_id]
 
-                if not keep_archives and download_path.exists():
-                    download_path.unlink(missing_ok=True)
+        uid = self._lookup_model_uid(char_id)
+        if uid and uid in self.presigned_map:
+            return self.presigned_map[uid]
+        return None
 
-            except Exception as exc:
-                self._handle_download_failure(char_id, str(exc))
-            finally:
-                shutil.rmtree(temp_dir, ignore_errors=True)
-
-        if self.failed_downloads:
-            logger.warning("The following characters failed to download: %s", ", ".join(self.failed_downloads))
-            logger.warning("Try re-running with --dry-run to inspect, or use Chrome DevTools MCP fallback as needed.")
+    def _lookup_model_uid(self, char_id: str) -> Optional[str]:
+        data = self.catalog.get(char_id, {})
+        sketchfab = data.get("sketchfab") or {}
+        uid = sketchfab.get("uid")
+        return str(uid) if uid else None
 
     # ------------------------------------------------------------------
     # presigned helper
@@ -228,37 +402,38 @@ class ResourceManager:
     def _download_presigned(
         self,
         url: str,
-        temp_dir: Path,
-        model_uid: str,
-        preferred_formats: Sequence[str],
+        *,
+        output_dir: Path,
+        fallback_name: str,
     ) -> Optional[Path]:
-        """Download a presigned GLTF/GLB or archive and return the local file path."""
+        """Download a presigned asset into ``output_dir`` and return the file path."""
+
+        output_dir.mkdir(parents=True, exist_ok=True)
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) StreetBattle/1.0',
+            'Accept': '*/*',
+            'Connection': 'keep-alive',
+        }
+
+        name = os.path.basename(urlparse(url).path)
+        if not name or '.' not in name:
+            name = fallback_name
+
+        target_path = output_dir / name
+
         try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) StreetBattle/1.0',
-                'Accept': '*/*',
-                'Connection': 'keep-alive',
-            }
-            with requests.get(url, headers=headers, timeout=180, stream=True) as r:
-                r.raise_for_status()
-                # Determine filename
-                name = os.path.basename(urlparse(url).path)
-                lower = name.lower()
-                out_path = temp_dir / (name or f"{model_uid}.bin")
-                with open(out_path, 'wb') as fp:
-                    for chunk in r.iter_content(chunk_size=8192):
+            with requests.get(url, headers=headers, timeout=180, stream=True) as response:
+                response.raise_for_status()
+                with target_path.open('wb') as fp:
+                    for chunk in response.iter_content(chunk_size=65536):
                         if chunk:
                             fp.write(chunk)
-
-            # If direct GLTF/GLB
-            if lower.endswith('.gltf') or lower.endswith('.glb'):
-                return out_path
-
-            # If archive, ensure zip and return path
-            return out_path
-        except Exception as e:
-            logger.error("Presigned download failed: %s", e)
+        except Exception as exc:
+            logger.error("Presigned download failed: %s", exc)
+            target_path.unlink(missing_ok=True)
             return None
+
+        return target_path
 
     def _select_characters(self, subset: Optional[Iterable[str]]) -> List[str]:
         if subset is None:
@@ -337,7 +512,7 @@ class ResourceManager:
         if dry_run:
             try:
                 self.download_from_catalog(
-                    session=None,
+                    cookie_session=None,
                     preferred_formats=preferred_formats,
                     dry_run=True,
                     subset=subset,
@@ -348,35 +523,16 @@ class ResourceManager:
                 logger.error("Dry-run download failed: %s", exc)
                 return False
 
-        try:
-            session = SketchfabSessionManager(project_root=self.project_root)
-        except FileNotFoundError as exc:
-            logger.error("Sketchfab credentials missing: %s", exc)
-            return False
-        except Exception as exc:
-            logger.error("Failed to initialise Sketchfab session: %s", exc)
-            return False
-
-        auth_ok = False
-        try:
-            auth_ok = session.ensure_authenticated()
-        except Exception as exc:
-            logger.error("Sketchfab authentication failed: %s", exc)
-            auth_ok = False
-
-        if not auth_ok:
-            logger.error("Cannot download premium resources without Sketchfab authentication")
-            return False
+        session = self._create_cookie_session()
 
         try:
             self.download_from_catalog(
-                session=session,
+                cookie_session=session,
                 preferred_formats=preferred_formats,
                 dry_run=False,
                 subset=subset,
                 keep_archives=keep_archives,
             )
-            # Refresh manifest so downstream tooling sees new assets
             self.update_manifest(dry_run=False)
             return True
         except Exception as exc:
@@ -551,7 +707,7 @@ class ResourceManager:
         
         # 3. 执行常规下载流程（使用None作为session，依赖预签名URL）
         self.download_from_catalog(
-            session=None,
+            cookie_session=None,
             preferred_formats=preferred_formats,
             dry_run=dry_run,
             subset=subset,
@@ -622,10 +778,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not args.no_clean:
         manager.clear_character_resources(dry_run=args.dry_run)
 
-    session: Optional[SketchfabSessionManager] = None
-    if not args.dry_run and not args.no_download:
-        session = SketchfabSessionManager(str(manager.project_root))
-
     if not args.no_download:
         if args.batch_auto:
             # 使用批量自动化下载模式
@@ -638,7 +790,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         else:
             # 使用常规下载模式
             manager.download_from_catalog(
-                session=session,
                 preferred_formats=preferred_formats,
                 dry_run=args.dry_run,
                 subset=subset,

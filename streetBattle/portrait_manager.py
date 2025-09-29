@@ -33,7 +33,7 @@ TextureFactory = Callable[[], Texture]
 class PortraitManager:
     """Resolve and cache portrait textures for characters."""
 
-    SUPPORTED_EXTENSIONS = ('.png', '.jpg', '.jpeg', '.webp')
+    SUPPORTED_EXTENSIONS = ('.png', '.jpg', '.jpeg')
 
     def __init__(self, loader, assets_dir: str | Path) -> None:
         self.loader = loader
@@ -158,7 +158,7 @@ class PortraitManager:
         try:
             headers = {
                 "User-Agent": "StreetBattle/1.0 (portrait-loader)",
-                "Accept": "image/png,image/jpeg,image/webp;q=0.9,*/*;q=0.8",
+                "Accept": "image/png,image/jpeg;q=0.9,*/*;q=0.8",
             }
             response = requests.get(url, timeout=20, headers=headers)
             response.raise_for_status()

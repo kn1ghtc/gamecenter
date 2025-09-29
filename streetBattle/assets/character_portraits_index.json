@@ -1,0 +1,212 @@
+{
+  "andy_bogard": {
+    "portrait_official": "assets\\images\\portraits\\andy_bogard_official.png",
+    "portrait_standard": "assets\\images\\portraits\\andy_bogard.png",
+    "display_name": "Andy Bogard"
+  },
+  "angel": {
+    "portrait_official": "assets\\images\\portraits\\angel_official.png",
+    "portrait_standard": "assets\\images\\portraits\\angel.png",
+    "display_name": "Angel"
+  },
+  "ash_crimson": {
+    "portrait_official": "assets\\images\\portraits\\ash_crimson_official.png",
+    "portrait_standard": "assets\\images\\portraits\\ash_crimson.png",
+    "display_name": "Ash Crimson"
+  },
+  "athena_asamiya": {
+    "portrait_official": "assets\\images\\portraits\\athena_asamiya_official.png",
+    "portrait_standard": "assets\\images\\portraits\\athena_asamiya.png",
+    "display_name": "Athena Asamiya"
+  },
+  "b_jenet": {
+    "portrait_official": "assets\\images\\portraits\\b_jenet_official.png",
+    "portrait_standard": "assets\\images\\portraits\\b_jenet.png",
+    "display_name": "B Jenet"
+  },
+  "chizuru_kagura": {
+    "portrait_official": "assets\\images\\portraits\\chizuru_kagura_official.png",
+    "portrait_standard": "assets\\images\\portraits\\chizuru_kagura.png",
+    "display_name": "Chizuru Kagura"
+  },
+  "choi_bounge": {
+    "portrait_official": "assets\\images\\portraits\\choi_bounge_official.png",
+    "portrait_standard": "assets\\images\\portraits\\choi_bounge.png",
+    "display_name": "Choi Bounge"
+  },
+  "chris": {
+    "portrait_official": "assets\\images\\portraits\\chris_official.png",
+    "portrait_standard": "assets\\images\\portraits\\chris.png",
+    "display_name": "Chris"
+  },
+  "dolores": {
+    "portrait_official": "assets\\images\\portraits\\dolores_official.png",
+    "portrait_standard": "assets\\images\\portraits\\dolores.png",
+    "display_name": "Dolores"
+  },
+  "gato": {
+    "portrait_official": "assets\\images\\portraits\\gato_official.png",
+    "portrait_standard": "assets\\images\\portraits\\gato.png",
+    "display_name": "Gato"
+  },
+  "geese_howard": {
+    "portrait_official": "assets\\images\\portraits\\geese_howard_official.png",
+    "portrait_standard": "assets\\images\\portraits\\geese_howard.png",
+    "display_name": "Geese Howard"
+  },
+  "goro_daimon": {
+    "portrait_official": "assets\\images\\portraits\\goro_daimon_official.png",
+    "portrait_standard": "assets\\images\\portraits\\goro_daimon.png",
+    "display_name": "Goro Daimon"
+  },
+  "igniz": {
+    "portrait_official": "assets\\images\\portraits\\igniz_official.png",
+    "portrait_standard": "assets\\images\\portraits\\igniz.png",
+    "display_name": "Igniz"
+  },
+  "iori_yagami": {
+    "portrait_official": "assets\\images\\portraits\\iori_yagami_official.png",
+    "portrait_standard": "assets\\images\\portraits\\iori_yagami.png",
+    "display_name": "Iori Yagami"
+  },
+  "isla": {
+    "portrait_official": "assets\\images\\portraits\\isla_official.png",
+    "portrait_standard": "assets\\images\\portraits\\isla.png",
+    "display_name": "Isla"
+  },
+  "joe_higashi": {
+    "portrait_official": "assets\\images\\portraits\\joe_higashi_official.png",
+    "portrait_standard": "assets\\images\\portraits\\joe_higashi.png",
+    "display_name": "Joe Higashi"
+  },
+  "kula_diamond": {
+    "portrait_official": "assets\\images\\portraits\\kula_diamond_official.png",
+    "portrait_standard": "assets\\images\\portraits\\kula_diamond.png",
+    "display_name": "Kula Diamond"
+  },
+  "kyo_kusanagi": {
+    "portrait_official": "assets\\images\\portraits\\kyo_kusanagi_official.png",
+    "portrait_standard": "assets\\images\\portraits\\kyo_kusanagi.png",
+    "display_name": "Kyo Kusanagi"
+  },
+  "k_dash": {
+    "portrait_official": "assets\\images\\portraits\\k_dash_official.png",
+    "portrait_standard": "assets\\images\\portraits\\k_dash.png",
+    "display_name": "K Dash"
+  },
+  "leona_heidern": {
+    "portrait_official": "assets\\images\\portraits\\leona_heidern_official.png",
+    "portrait_standard": "assets\\images\\portraits\\leona_heidern.png",
+    "display_name": "Leona Heidern"
+  },
+  "lin": {
+    "portrait_official": "assets\\images\\portraits\\lin_official.png",
+    "portrait_standard": "assets\\images\\portraits\\lin.png",
+    "display_name": "Lin"
+  },
+  "magaki": {
+    "portrait_official": "assets\\images\\portraits\\magaki_official.png",
+    "portrait_standard": "assets\\images\\portraits\\magaki.png",
+    "display_name": "Magaki"
+  },
+  "mai_shiranui": {
+    "portrait_official": "assets\\images\\portraits\\mai_shiranui_official.png",
+    "portrait_standard": "assets\\images\\portraits\\mai_shiranui.png",
+    "display_name": "Mai Shiranui"
+  },
+  "mature": {
+    "portrait_official": "assets\\images\\portraits\\mature_official.png",
+    "portrait_standard": "assets\\images\\portraits\\mature.png",
+    "display_name": "Mature"
+  },
+  "maxima": {
+    "portrait_official": "assets\\images\\portraits\\maxima_official.png",
+    "portrait_standard": "assets\\images\\portraits\\maxima.png",
+    "display_name": "Maxima"
+  },
+  "mr_big": {
+    "portrait_official": "assets\\images\\portraits\\mr_big_official.png",
+    "portrait_standard": "assets\\images\\portraits\\mr_big.png",
+    "display_name": "Mr Big"
+  },
+  "nakoruru": {
+    "portrait_official": "assets\\images\\portraits\\nakoruru_official.png",
+    "portrait_standard": "assets\\images\\portraits\\nakoruru.png",
+    "display_name": "Nakoruru"
+  },
+  "orochi": {
+    "portrait_official": "assets\\images\\portraits\\orochi_official.png",
+    "portrait_standard": "assets\\images\\portraits\\orochi.png",
+    "display_name": "Orochi"
+  },
+  "ramon": {
+    "portrait_official": "assets\\images\\portraits\\ramon_official.png",
+    "portrait_standard": "assets\\images\\portraits\\ramon.png",
+    "display_name": "Ramon"
+  },
+  "robert_garcia": {
+    "portrait_official": "assets\\images\\portraits\\robert_garcia_official.png",
+    "portrait_standard": "assets\\images\\portraits\\robert_garcia.png",
+    "display_name": "Robert Garcia"
+  },
+  "ryo_sakazaki": {
+    "portrait_official": "assets\\images\\portraits\\ryo_sakazaki_official.png",
+    "portrait_standard": "assets\\images\\portraits\\ryo_sakazaki.png",
+    "display_name": "Ryo Sakazaki"
+  },
+  "saisyu_kusanagi": {
+    "portrait_official": "assets\\images\\portraits\\saisyu_kusanagi_official.png",
+    "portrait_standard": "assets\\images\\portraits\\saisyu_kusanagi.png",
+    "display_name": "Saisyu Kusanagi"
+  },
+  "shermie": {
+    "portrait_official": "assets\\images\\portraits\\shermie_official.png",
+    "portrait_standard": "assets\\images\\portraits\\shermie.png",
+    "display_name": "Shermie"
+  },
+  "shingo_yabuki": {
+    "portrait_official": "assets\\images\\portraits\\shingo_yabuki_official.png",
+    "portrait_standard": "assets\\images\\portraits\\shingo_yabuki.png",
+    "display_name": "Shingo Yabuki"
+  },
+  "shunei": {
+    "portrait_official": "assets\\images\\portraits\\shunei_official.png",
+    "portrait_standard": "assets\\images\\portraits\\shunei.png",
+    "display_name": "Shunei"
+  },
+  "sie_kensou": {
+    "portrait_official": "assets\\images\\portraits\\sie_kensou_official.png",
+    "portrait_standard": "assets\\images\\portraits\\sie_kensou.png",
+    "display_name": "Sie Kensou"
+  },
+  "terry_bogard": {
+    "portrait_official": "assets\\images\\portraits\\terry_bogard_official.png",
+    "portrait_standard": "assets\\images\\portraits\\terry_bogard.png",
+    "display_name": "Terry Bogard"
+  },
+  "vanessa": {
+    "portrait_official": "assets\\images\\portraits\\vanessa_official.png",
+    "portrait_standard": "assets\\images\\portraits\\vanessa.png",
+    "display_name": "Vanessa"
+  },
+  "vice": {
+    "portrait_official": "assets\\images\\portraits\\vice_official.png",
+    "portrait_standard": "assets\\images\\portraits\\vice.png",
+    "display_name": "Vice"
+  },
+  "whip": {
+    "portrait_official": "assets\\images\\portraits\\whip_official.png",
+    "portrait_standard": "assets\\images\\portraits\\whip.png",
+    "display_name": "Whip"
+  },
+  "wolfgang_krauser": {
+    "portrait_official": "assets\\images\\portraits\\wolfgang_krauser_official.png",
+    "portrait_standard": "assets\\images\\portraits\\wolfgang_krauser.png",
+    "display_name": "Wolfgang Krauser"
+  },
+  "yuri_sakazaki": {
+    "portrait_official": "assets\\images\\portraits\\yuri_sakazaki_official.png",
+    "portrait_standard": "assets\\images\\portraits\\yuri_sakazaki.png",
+    "display_name": "Yuri Sakazaki"
+  }
+}

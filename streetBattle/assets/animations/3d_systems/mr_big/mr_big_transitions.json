@@ -1,0 +1,140 @@
+{
+  "idle_to_walk": {
+    "from": "idle",
+    "to": "walk",
+    "duration": 0.2,
+    "type": "smooth"
+  },
+  "idle_to_attack": {
+    "from": "idle",
+    "to": "attack",
+    "duration": 0.1,
+    "type": "instant"
+  },
+  "idle_to_defend": {
+    "from": "idle",
+    "to": "defend",
+    "duration": 0.15,
+    "type": "smooth"
+  },
+  "idle_to_jump": {
+    "from": "idle",
+    "to": "jump",
+    "duration": 0.1,
+    "type": "instant"
+  },
+  "walk_to_idle": {
+    "from": "walk",
+    "to": "idle",
+    "duration": 0.3,
+    "type": "smooth"
+  },
+  "walk_to_attack": {
+    "from": "walk",
+    "to": "attack",
+    "duration": 0.1,
+    "type": "instant"
+  },
+  "walk_to_defend": {
+    "from": "walk",
+    "to": "defend",
+    "duration": 0.2,
+    "type": "smooth"
+  },
+  "walk_to_jump": {
+    "from": "walk",
+    "to": "jump",
+    "duration": 0.1,
+    "type": "instant"
+  },
+  "attack_to_idle": {
+    "from": "attack",
+    "to": "idle",
+    "duration": 0.2,
+    "type": "smooth"
+  },
+  "attack_to_walk": {
+    "from": "attack",
+    "to": "walk",
+    "duration": 0.25,
+    "type": "smooth"
+  },
+  "attack_to_defend": {
+    "from": "attack",
+    "to": "defend",
+    "duration": 0.15,
+    "type": "smooth"
+  },
+  "attack_to_hit": {
+    "from": "attack",
+    "to": "hit",
+    "duration": 0.05,
+    "type": "instant"
+  },
+  "defend_to_idle": {
+    "from": "defend",
+    "to": "idle",
+    "duration": 0.25,
+    "type": "smooth"
+  },
+  "defend_to_walk": {
+    "from": "defend",
+    "to": "walk",
+    "duration": 0.3,
+    "type": "smooth"
+  },
+  "defend_to_attack": {
+    "from": "defend",
+    "to": "attack",
+    "duration": 0.15,
+    "type": "smooth"
+  },
+  "defend_to_hit": {
+    "from": "defend",
+    "to": "hit",
+    "duration": 0.05,
+    "type": "instant"
+  },
+  "jump_to_idle": {
+    "from": "jump",
+    "to": "idle",
+    "duration": 0.2,
+    "type": "smooth"
+  },
+  "jump_to_walk": {
+    "from": "jump",
+    "to": "walk",
+    "duration": 0.2,
+    "type": "smooth"
+  },
+  "jump_to_attack": {
+    "from": "jump",
+    "to": "attack",
+    "duration": 0.1,
+    "type": "instant"
+  },
+  "hit_to_idle": {
+    "from": "hit",
+    "to": "idle",
+    "duration": 0.3,
+    "type": "smooth"
+  },
+  "hit_to_defend": {
+    "from": "hit",
+    "to": "defend",
+    "duration": 0.2,
+    "type": "smooth"
+  },
+  "hit_to_victory": {
+    "from": "hit",
+    "to": "victory",
+    "duration": 0.5,
+    "type": "crossfade"
+  },
+  "victory_to_idle": {
+    "from": "victory",
+    "to": "idle",
+    "duration": 0.5,
+    "type": "crossfade"
+  }
+}

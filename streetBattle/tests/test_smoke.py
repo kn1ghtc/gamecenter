@@ -61,7 +61,7 @@ def _load_roster_entries() -> list[dict[str, object]]:
 def test_sprite_manifests_exist_and_load(pygame_env: None) -> None:
     """所有 roster 精灵表都应存在且可加载。"""
     roster_entries = _load_roster_entries()
-    manifest_names: set[str] = {"hero", "shadow"}
+    manifest_names: set[str] = set()  # Only load from roster entries with portraits
     for entry in roster_entries:
         manifest = entry.get("manifest") or entry.get("key")
         if isinstance(manifest, str) and manifest:

@@ -1,0 +1,781 @@
+{
+  "angel": {
+    "name": "Angel",
+    "origin": "Mexico",
+    "age": 22,
+    "height": "1.68m",
+    "weight": "52kg",
+    "blood_type": "B",
+    "fighting_style": "NESTS Style Combat",
+    "likes": ["Freedom", "Motorcycles"],
+    "dislikes": ["Restrictions", "Betrayal"],
+    "description": "Former NESTS agent with unique chain-based fighting techniques",
+    "team": "Anti-K' Team",
+    "stats": {
+      "power": 85,
+      "speed": 88,
+      "defense": 80,
+      "technique": 90
+    }
+  },
+  "ash_crimson": {
+    "name": "Ash Crimson",
+    "origin": "France",
+    "age": 22,
+    "height": "1.78m",
+    "weight": "59kg",
+    "blood_type": "O",
+    "fighting_style": "Self-taught + Green Flames",
+    "likes": ["Chaos", "Power"],
+    "dislikes": ["Order", "Rules"],
+    "description": "Mysterious fighter seeking the power of the Three Sacred Treasures",
+    "team": "Ash Team",
+    "stats": {
+      "power": 90,
+      "speed": 85,
+      "defense": 75,
+      "technique": 92
+    }
+  },
+  "athena_asamiya": {
+    "name": "麻宫雅典娜",
+    "origin": "日本",
+    "age": 18,
+    "height": "1.63m",
+    "weight": "46kg",
+    "blood_type": "B",
+    "fighting_style": "Psycho Power",
+    "likes": ["Peace", "Music"],
+    "dislikes": ["War", "Violence"],
+    "description": "Psychic high school student with healing and offensive psychic abilities",
+    "team": "Psycho Soldier Team",
+    "stats": {
+      "power": 80,
+      "speed": 85,
+      "defense": 70,
+      "technique": 88
+    }
+  },
+  "b_jenet": {
+    "name": "B. Jenet",
+    "origin": "United Kingdom",
+    "age": 25,
+    "height": "1.68m",
+    "weight": "52kg", 
+    "blood_type": "AB",
+    "fighting_style": "Pirate Combat Style",
+    "likes": ["Adventure", "Treasure"],
+    "dislikes": ["Boredom", "Authority"],
+    "description": "Captain of the Lilian Knights pirate crew",
+    "team": "Garou Team",
+    "stats": {
+      "power": 78,
+      "speed": 82,
+      "defense": 78,
+      "technique": 80
+    }
+  },
+  "chizuru_kagura": {
+    "name": "神楽千鶴",
+    "origin": "日本",
+    "age": 20,
+    "height": "1.69m",
+    "weight": "52kg",
+    "blood_type": "AB",
+    "fighting_style": "Yata no Kagami Power",
+    "likes": ["Traditional culture", "Tea ceremony"],
+    "dislikes": ["Orochi clan", "Chaos"],
+    "description": "Guardian of one of the Three Sacred Treasures, fights to seal Orochi",
+    "team": "Sacred Treasures Team",
+    "stats": {
+      "power": 75,
+      "speed": 70,
+      "defense": 82,
+      "technique": 95
+    }
+  },
+  "choi_bounge": {
+    "name": "蔡宝健",
+    "origin": "韩国",
+    "age": 25,
+    "height": "1.53m",
+    "weight": "42kg",
+    "blood_type": "A",
+    "fighting_style": "Surprise Attack",
+    "likes": ["Sharp objects", "Speed"],
+    "dislikes": ["Being called short", "Slow opponents"],
+    "description": "Small but deadly fighter with razor-sharp claws",
+    "team": "Kim Team",
+    "stats": {
+      "power": 70,
+      "speed": 95,
+      "defense": 65,
+      "technique": 85
+    }
+  },
+  "chris": {
+    "name": "Chris",
+    "origin": "Sweden",
+    "age": 16,
+    "height": "1.61m",
+    "weight": "49kg",
+    "blood_type": "O",
+    "fighting_style": "Mixed Combat + Orochi Power",
+    "likes": ["Music", "Band activities"],
+    "dislikes": ["Practicing", "Serious people"],
+    "description": "Young band member with hidden Orochi power",
+    "team": "New Faces Team",
+    "stats": {
+      "power": 82,
+      "speed": 88,
+      "defense": 72,
+      "technique": 80
+    }
+  },
+  "dolores": {
+    "name": "Dolores",
+    "origin": "Peru",
+    "age": 28,
+    "height": "1.70m",
+    "weight": "58kg",
+    "blood_type": "A",
+    "fighting_style": "Earth Manipulation",
+    "likes": ["Nature", "Ancient history"],
+    "dislikes": ["Pollution", "Destruction"],
+    "description": "Mysterious woman with the power to control earth and stone",
+    "team": "Rival Team",
+    "stats": {
+      "power": 90,
+      "speed": 65,
+      "defense": 88,
+      "technique": 85
+    }
+  },
+  "gato": {
+    "name": "Gato",
+    "origin": "Unknown",
+    "age": 25,
+    "height": "1.80m",
+    "weight": "78kg",
+    "blood_type": "A",
+    "fighting_style": "Self-taught",
+    "likes": ["Solitude", "Training"],
+    "dislikes": ["Weakness", "Crowds"],
+    "description": "Lone wolf fighter with mysterious past",
+    "team": "Garou Team",
+    "stats": {
+      "power": 85,
+      "speed": 88,
+      "defense": 78,
+      "technique": 82
+    }
+  },
+  "geese_howard": {
+    "name": "Geese Howard",
+    "origin": "USA",
+    "age": 52,
+    "height": "1.83m",
+    "weight": "82kg",
+    "blood_type": "B",
+    "fighting_style": "Hakkyokuseiken",
+    "likes": ["Power", "Control"],
+    "dislikes": ["Terry Bogard", "Defeat"],
+    "description": "Ruthless crime boss and master of Hakkyokuseiken",
+    "team": "Boss Team",
+    "stats": {
+      "power": 95,
+      "speed": 70,
+      "defense": 95,
+      "technique": 90
+    }
+  },
+  "goro_daimon": {
+    "name": "大门五郎",
+    "origin": "日本",
+    "age": 26,
+    "height": "2.04m",
+    "weight": "138kg",
+    "blood_type": "A",
+    "fighting_style": "Judo",
+    "likes": ["Judo", "Nature"],
+    "dislikes": ["Pollution", "Rudeness"],
+    "description": "Olympic judo champion with incredible throwing power",
+    "team": "Japan Team",
+    "stats": {
+      "power": 98,
+      "speed": 60,
+      "defense": 92,
+      "technique": 85
+    }
+  },
+  "igniz": {
+    "name": "Igniz",
+    "origin": "Unknown",
+    "age": 22,
+    "height": "1.80m",
+    "weight": "68kg",
+    "blood_type": "Unknown",
+    "fighting_style": "NESTS Boss Style",
+    "likes": ["Godhood", "Perfection"],
+    "dislikes": ["Imperfection", "Humanity"],
+    "description": "Former NESTS leader with god complex and immense power",
+    "team": "NESTS Team",
+    "stats": {
+      "power": 98,
+      "speed": 85,
+      "defense": 90,
+      "technique": 95
+    }
+  },
+  "iori_yagami": {
+    "name": "八神庵",
+    "origin": "日本",
+    "age": 21,
+    "height": "1.82m",
+    "weight": "76kg",
+    "blood_type": "O",
+    "fighting_style": "八神流古武术",
+    "likes": ["Being alone", "Music"],
+    "dislikes": ["Kyo Kusanagi", "Crowds"],
+    "description": "Descendant of the Yagami clan, eternal rival of Kyo Kusanagi",
+    "team": "Rivals Team",
+    "stats": {
+      "power": 92,
+      "speed": 88,
+      "defense": 80,
+      "technique": 90
+    }
+  },
+  "isla": {
+    "name": "Isla",
+    "origin": "Colombia",
+    "age": 16,
+    "height": "1.58m",
+    "weight": "45kg",
+    "blood_type": "O",
+    "fighting_style": "Self-taught + Amplified Spectral Power",
+    "likes": ["Animals", "Freedom"],
+    "dislikes": ["Those From the Past", "Betrayal"],
+    "description": "Young girl with mysterious spectral powers and connection to Shun'ei",
+    "team": "Rival Team",
+    "stats": {
+      "power": 88,
+      "speed": 85,
+      "defense": 75,
+      "technique": 82
+    }
+  },
+  "joe_higashi": {
+    "name": "东丈",
+    "origin": "日本",
+    "age": 26,
+    "height": "1.80m",
+    "weight": "71kg",
+    "blood_type": "AB",
+    "fighting_style": "Muay Thai",
+    "likes": ["Muay Thai", "Training"],
+    "dislikes": ["Giving up", "Weakness"],
+    "description": "Champion Muay Thai fighter and Terry's close friend",
+    "team": "Fatal Fury Team",
+    "stats": {
+      "power": 85,
+      "speed": 90,
+      "defense": 75,
+      "technique": 88
+    }
+  },
+  "k_dash": {
+    "name": "K'",
+    "origin": "Unknown",
+    "age": 18,
+    "height": "1.83m",
+    "weight": "67kg",
+    "blood_type": "B",
+    "fighting_style": "Violence Fighting + Flame Control",
+    "likes": ["Being alone", "Leather jackets"],
+    "dislikes": ["NESTS", "Troublesome things"],
+    "description": "Anti-hero created by NESTS with artificial flame powers",
+    "team": "K' Team",
+    "stats": {
+      "power": 90,
+      "speed": 85,
+      "defense": 78,
+      "technique": 85
+    }
+  },
+  "kula_diamond": {
+    "name": "Kula Diamond",
+    "origin": "Unknown",
+    "age": 14,
+    "height": "1.69m",
+    "weight": "Classified",
+    "blood_type": "Unknown",
+    "fighting_style": "Ice Manipulation",
+    "likes": ["Ice cream", "Candy"],
+    "dislikes": ["Heat", "K'"],
+    "description": "Artificial being created by NESTS with ice manipulation powers",
+    "team": "K' Team",
+    "stats": {
+      "power": 85,
+      "speed": 90,
+      "defense": 70,
+      "technique": 88
+    }
+  },
+  "kyo_kusanagi": {
+    "name": "草薙京",
+    "origin": "日本",
+    "age": 20,
+    "height": "1.81m",
+    "weight": "75kg",
+    "blood_type": "B",
+    "fighting_style": "草薙流古武术",
+    "likes": ["Motorcycles", "School festivals"],
+    "dislikes": ["Studying", "Iori Yagami"],
+    "description": "Heir to the Kusanagi clan and wielder of crimson flames",
+    "team": "Japan Team",
+    "stats": {
+      "power": 90,
+      "speed": 88,
+      "defense": 85,
+      "technique": 92
+    }
+  },
+  "leona_heidern": {
+    "name": "蕾欧娜",
+    "origin": "Brazil",
+    "age": 19,
+    "height": "1.76m",
+    "weight": "66kg",
+    "blood_type": "B", 
+    "fighting_style": "Military Combat + Orochi Power",
+    "likes": ["Peace", "Heidern"],
+    "dislikes": ["Her Orochi blood", "Violence"],
+    "description": "Adopted daughter of Heidern with suppressed Orochi power",
+    "team": "Ikari Warriors Team",
+    "stats": {
+      "power": 88,
+      "speed": 82,
+      "defense": 83,
+      "technique": 85
+    }
+  },
+  "lin": {
+    "name": "Lin",
+    "origin": "Japan",
+    "age": 17,
+    "height": "1.65m",
+    "weight": "52kg",
+    "blood_type": "A",
+    "fighting_style": "Hizoku Ninjutsu",
+    "likes": ["Training", "Honor"],
+    "dislikes": ["Dishonor", "Weakness"],
+    "description": "Young ninja from the Hizoku clan",
+    "team": "Agents Team",
+    "stats": {
+      "power": 78,
+      "speed": 95,
+      "defense": 68,
+      "technique": 90
+    }
+  },
+  "magaki": {
+    "name": "Magaki",
+    "origin": "Unknown",
+    "age": "Unknown",
+    "height": "Unknown",
+    "weight": "Unknown",
+    "blood_type": "Unknown",
+    "fighting_style": "Those From the Past Combat",
+    "likes": ["Power", "Chaos"],
+    "dislikes": ["Humanity", "Order"],
+    "description": "Mysterious being from Those From the Past organization",
+    "team": "Boss Team",
+    "stats": {
+      "power": 95,
+      "speed": 80,
+      "defense": 88,
+      "technique": 92
+    }
+  },
+  "mai_shiranui": {
+    "name": "不知火舞",
+    "origin": "日本",
+    "age": 21,
+    "height": "1.65m",
+    "weight": "48kg",
+    "blood_type": "B",
+    "fighting_style": "不知火流忍术",
+    "likes": ["Andy Bogard", "Fashion"],
+    "dislikes": ["Spiders", "Being ignored"],
+    "description": "Kunoichi master of Shiranui-ryuu ninjutsu, in love with Andy",
+    "team": "Fatal Fury Team",
+    "stats": {
+      "power": 82,
+      "speed": 88,
+      "defense": 75,
+      "technique": 90
+    }
+  },
+  "mature": {
+    "name": "Mature",
+    "origin": "Unknown",
+    "age": "Unknown",
+    "height": "1.72m",
+    "weight": "62kg",
+    "blood_type": "Unknown",
+    "fighting_style": "Orochi Assassin Style",
+    "likes": ["Chaos", "Orochi power"],
+    "dislikes": ["Order", "Weakness"],
+    "description": "One of Orochi's secretaries, serves the Orochi clan",
+    "team": "Orochi Team",
+    "stats": {
+      "power": 88,
+      "speed": 85,
+      "defense": 80,
+      "technique": 92
+    }
+  },
+  "maxima": {
+    "name": "Maxima",
+    "origin": "Canada",
+    "age": 29,
+    "height": "2.04m",
+    "weight": "204kg",
+    "blood_type": "O",
+    "fighting_style": "Cybernetic Enhancement Combat",
+    "likes": ["Machines", "K'"],
+    "dislikes": ["NESTS", "Malfunctions"],
+    "description": "Cyborg fighter and K's loyal partner",
+    "team": "K' Team",
+    "stats": {
+      "power": 95,
+      "speed": 65,
+      "defense": 92,
+      "technique": 80
+    }
+  },
+  "mr_big": {
+    "name": "Mr. Big",
+    "origin": "USA",
+    "age": 43,
+    "height": "1.87m",
+    "weight": "83kg",
+    "blood_type": "AB",
+    "fighting_style": "Stick Fighting",
+    "likes": ["Money", "Power"],
+    "dislikes": ["Losing", "Interference"],
+    "description": "Crime boss and master of staff fighting techniques",
+    "team": "AOF Team",
+    "stats": {
+      "power": 85,
+      "speed": 78,
+      "defense": 85,
+      "technique": 88
+    }
+  },
+  "nakoruru": {
+    "name": "Nakoruru",
+    "origin": "Japan",
+    "age": 17,
+    "height": "1.53m",
+    "weight": "42kg",
+    "blood_type": "AB",
+    "fighting_style": "Ainu Ancient Combat + Nature Power",
+    "likes": ["Nature", "Animals"],
+    "dislikes": ["Pollution", "Cruelty"],
+    "description": "Nature-loving Ainu priestess with animal companions",
+    "team": "Samurai Shodown Team",
+    "stats": {
+      "power": 75,
+      "speed": 92,
+      "defense": 72,
+      "technique": 88
+    }
+  },
+  "orochi": {
+    "name": "Orochi",
+    "origin": "Unknown",
+    "age": "Ancient",
+    "height": "Variable",
+    "weight": "Unknown",
+    "blood_type": "Unknown",
+    "fighting_style": "Ancient Divine Power",
+    "likes": ["Destruction", "Chaos"],
+    "dislikes": ["Humanity", "Order"],
+    "description": "Ancient entity seeking to destroy humanity and return Earth to nature",
+    "team": "Boss Team",
+    "stats": {
+      "power": 100,
+      "speed": 75,
+      "defense": 98,
+      "technique": 100
+    }
+  },
+  "ramon": {
+    "name": "Ramon",
+    "origin": "Mexico",
+    "age": 25,
+    "height": "1.85m",
+    "weight": "82kg",
+    "blood_type": "A",
+    "fighting_style": "Lucha Libre",
+    "likes": ["Wrestling", "Justice"],
+    "dislikes": ["Cheating", "Cowardice"],
+    "description": "Masked luchador fighting for justice and honor",
+    "team": "Mexico Team",
+    "stats": {
+      "power": 88,
+      "speed": 85,
+      "defense": 78,
+      "technique": 82
+    }
+  },
+  "robert_garcia": {
+    "name": "Robert Garcia",
+    "origin": "Italy",
+    "age": 24,
+    "height": "1.80m",
+    "weight": "85kg",
+    "blood_type": "O",
+    "fighting_style": "Kyokugenryu Karate",
+    "likes": ["Money", "Yuri Sakazaki"],
+    "dislikes": ["Poverty", "Ryo's overprotectiveness"],
+    "description": "Wealthy playboy and practitioner of Kyokugenryu Karate",
+    "team": "Art of Fighting Team",
+    "stats": {
+      "power": 88,
+      "speed": 88,
+      "defense": 78,
+      "technique": 85
+    }
+  },
+  "ryo_sakazaki": {
+    "name": "坂崎良",
+    "origin": "日本",
+    "age": 24,
+    "height": "1.79m",
+    "weight": "85kg",
+    "blood_type": "O",
+    "fighting_style": "Kyokugenryu Karate",
+    "likes": ["Training", "Protecting Yuri"],
+    "dislikes": ["Men approaching Yuri", "Laziness"],
+    "description": "Master of Kyokugenryu Karate and overprotective brother",
+    "team": "Art of Fighting Team",
+    "stats": {
+      "power": 92,
+      "speed": 82,
+      "defense": 82,
+      "technique": 88
+    }
+  },
+  "saisyu_kusanagi": {
+    "name": "草薙柴舟",
+    "origin": "日本",
+    "age": 46,
+    "height": "1.80m",
+    "weight": "73kg",
+    "blood_type": "B",
+    "fighting_style": "Kusanagi Ancient Martial Arts",
+    "likes": ["Training", "His son Kyo"],
+    "dislikes": ["Laziness", "Orochi clan"],
+    "description": "Kyo's father and former KOF champion",
+    "team": "Masters Team",
+    "stats": {
+      "power": 90,
+      "speed": 75,
+      "defense": 88,
+      "technique": 95
+    }
+  },
+  "shermie": {
+    "name": "Shermie",
+    "origin": "France", 
+    "age": 20,
+    "height": "1.73m",
+    "weight": "58kg",
+    "blood_type": "B",
+    "fighting_style": "Wrestling + Orochi Lightning",
+    "likes": ["Fashion", "Band activities"],
+    "dislikes": ["Unfashionable things", "Being ignored"],
+    "description": "Fashion designer and band member with hidden Orochi power",
+    "team": "New Faces Team",
+    "stats": {
+      "power": 82,
+      "speed": 85,
+      "defense": 75,
+      "technique": 88
+    }
+  },
+  "shingo_yabuki": {
+    "name": "矢吹真吾",
+    "origin": "日本",
+    "age": 17,
+    "height": "1.68m",
+    "weight": "55kg",
+    "blood_type": "O",
+    "fighting_style": "Self-taught Kyo Style",
+    "likes": ["Kyo Kusanagi", "Training"],
+    "dislikes": ["Giving up", "Being weak"],
+    "description": "High school student and devoted fan of Kyo Kusanagi",
+    "team": "Japan Team",
+    "stats": {
+      "power": 75,
+      "speed": 85,
+      "defense": 70,
+      "technique": 78
+    }
+  },
+  "shunei": {
+    "name": "Shun'ei",
+    "origin": "China",
+    "age": 17,
+    "height": "1.65m",
+    "weight": "51kg",
+    "blood_type": "AB",
+    "fighting_style": "Self-taught + Amplified Spectral Power",
+    "likes": ["Peace", "His friends"],
+    "dislikes": ["Those From the Past", "His powers"],
+    "description": "Young man with mysterious amplified spectral powers",
+    "team": "China Team",
+    "stats": {
+      "power": 88,
+      "speed": 82,
+      "defense": 76,
+      "technique": 85
+    }
+  },
+  "sie_kensou": {
+    "name": "椎拳崇",
+    "origin": "中国",
+    "age": 19,
+    "height": "1.72m",
+    "weight": "62kg",
+    "blood_type": "B",
+    "fighting_style": "Chinese Kenpo + Psycho Power",
+    "likes": ["Athena", "Meat buns"],
+    "dislikes": ["Studying", "Vegetables"],
+    "description": "Chinese martial artist with psychic powers and crush on Athena",
+    "team": "Psycho Soldier Team",
+    "stats": {
+      "power": 85,
+      "speed": 88,
+      "defense": 74,
+      "technique": 82
+    }
+  },
+  "terry_bogard": {
+    "name": "Terry Bogard",
+    "origin": "USA",
+    "age": 25,
+    "height": "1.82m",
+    "weight": "83kg",
+    "blood_type": "O",
+    "fighting_style": "Hakkyokuseiken + Street Fighting",
+    "likes": ["Fighting", "His hat"],
+    "dislikes": ["Geese Howard", "Injustice"],
+    "description": "Legendary street fighter seeking to avenge his father's death",
+    "team": "Fatal Fury Team",
+    "stats": {
+      "power": 90,
+      "speed": 85,
+      "defense": 80,
+      "technique": 88
+    }
+  },
+  "vanessa": {
+    "name": "Vanessa",
+    "origin": "USA",
+    "age": 28,
+    "height": "1.82m", 
+    "weight": "67kg",
+    "blood_type": "A",
+    "fighting_style": "Boxing + Military Combat",
+    "likes": ["Fighting", "Her family"],
+    "dislikes": ["Injustice", "Criminals"],
+    "description": "Secret agent and professional boxer with powerful punches",
+    "team": "Agents Team",
+    "stats": {
+      "power": 88,
+      "speed": 82,
+      "defense": 78,
+      "technique": 85
+    }
+  },
+  "vice": {
+    "name": "Vice",
+    "origin": "Unknown",
+    "age": "Unknown",
+    "height": "1.83m",
+    "weight": "69kg",
+    "blood_type": "Unknown",
+    "fighting_style": "Orochi Assassin Style",
+    "likes": ["Violence", "Orochi power"],
+    "dislikes": ["Peace", "Weakness"],
+    "description": "One of Orochi's secretaries, brutal and sadistic",
+    "team": "Orochi Team",
+    "stats": {
+      "power": 90,
+      "speed": 85,
+      "defense": 79,
+      "technique": 88
+    }
+  },
+  "whip": {
+    "name": "Whip",
+    "origin": "Unknown",
+    "age": 16,
+    "height": "1.67m",
+    "weight": "50kg",
+    "blood_type": "A",
+    "fighting_style": "Military + Whip Combat",
+    "likes": ["Military discipline", "K'"],
+    "dislikes": ["NESTS", "Chaos"],
+    "description": "Military operative with expertise in whip-based combat",
+    "team": "K' Team",
+    "stats": {
+      "power": 80,
+      "speed": 88,
+      "defense": 77,
+      "technique": 90
+    }
+  },
+  "wolfgang_krauser": {
+    "name": "Wolfgang Krauser",
+    "origin": "Germany",
+    "age": 42,
+    "height": "2.10m",
+    "weight": "140kg",
+    "blood_type": "A",
+    "fighting_style": "Hakkyokuseiken",
+    "likes": ["Power", "Classical music"],
+    "dislikes": ["Weakness", "Commoners"],
+    "description": "German nobleman and master of Hakkyokuseiken",
+    "team": "Boss Team",
+    "stats": {
+      "power": 98,
+      "speed": 70,
+      "defense": 90,
+      "technique": 92
+    }
+  },
+  "yuri_sakazaki": {
+    "name": "坂崎由莉",
+    "origin": "日本",
+    "age": 19,
+    "height": "1.59m",
+    "weight": "44kg",
+    "blood_type": "A",
+    "fighting_style": "Kyokugenryu Karate + Original Style",
+    "likes": ["Shopping", "Cute things"],
+    "dislikes": ["Ryo's overprotectiveness", "Vegetables"],
+    "description": "Energetic practitioner of Kyokugenryu with her own unique style",
+    "team": "Art of Fighting Team",
+    "stats": {
+      "power": 82,
+      "speed": 90,
+      "defense": 72,
+      "technique": 85
+    }
+  }
+}

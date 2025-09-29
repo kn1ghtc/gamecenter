@@ -1,0 +1,205 @@
+{
+  "default_stats": {
+    "max_health": 1000,
+    "health": 1000,
+    "attack_power": 50,
+    "defense": 10,
+    "speed": 100,
+    "jump_power": 150,
+    "special_power": 75
+  },
+  "skill_damage": {
+    "light_attack": 45,
+    "heavy_attack": 80,
+    "special_attack": 120,
+    "super_attack": 200,
+    "combo_attack": 95,
+    "air_attack": 65,
+    "projectile": 100,
+    "counter_attack": 110,
+    "grab": 75,
+    "dash_attack": 85
+  },
+  "character_stats": {
+    "kyo_kusanagi": {
+      "max_health": 1000,
+      "health": 1000,
+      "attack_power": 55,
+      "defense": 12,
+      "speed": 110,
+      "special_abilities": ["hadoken", "shoryuken", "flame_punch"],
+      "signature_moves": {
+        "orochinagi": 300,
+        "kototsuki_in": 150,
+        "oniyaki": 180
+      }
+    },
+    "iori_yagami": {
+      "max_health": 1000,
+      "health": 1000,
+      "attack_power": 60,
+      "defense": 10,
+      "speed": 115,
+      "special_abilities": ["dark_flame", "command_grab", "berserker"],
+      "signature_moves": {
+        "maiden_masher": 280,
+        "scum_gale": 160,
+        "eight_wine_cups": 220
+      }
+    },
+    "terry_bogard": {
+      "max_health": 1000,
+      "health": 1000,
+      "attack_power": 58,
+      "defense": 15,
+      "speed": 105,
+      "special_abilities": ["power_wave", "burn_knuckle", "power_geyser"],
+      "signature_moves": {
+        "power_geyser": 320,
+        "buster_wolf": 280,
+        "power_dunk": 190
+      }
+    },
+    "mai_shiranui": {
+      "max_health": 1000,
+      "health": 1000,
+      "attack_power": 52,
+      "defense": 8,
+      "speed": 120,
+      "special_abilities": ["fan_throw", "flame_dance", "ninja_bee"],
+      "signature_moves": {
+        "super_deadly_ninja_bees": 290,
+        "phoenix_dance": 240,
+        "deadly_ninja_bees": 170
+      }
+    },
+    "ryu": {
+      "max_health": 1000,
+      "health": 1000,
+      "attack_power": 54,
+      "defense": 13,
+      "speed": 100,
+      "special_abilities": ["hadoken", "shoryuken", "tatsumaki"],
+      "signature_moves": {
+        "shinku_hadoken": 310,
+        "shoryureppa": 270,
+        "shin_tatsumaki": 200
+      }
+    },
+    "chun_li": {
+      "max_health": 1000,
+      "health": 1000,
+      "attack_power": 48,
+      "defense": 11,
+      "speed": 125,
+      "special_abilities": ["kikoken", "spinning_bird_kick", "lightning_legs"],
+      "signature_moves": {
+        "kikosho": 295,
+        "senretsukyaku": 220,
+        "hazanshu": 160
+      }
+    },
+    "akuma": {
+      "max_health": 1000,
+      "health": 1000,
+      "attack_power": 65,
+      "defense": 8,
+      "speed": 108,
+      "special_abilities": ["gou_hadoken", "dragon_punch", "demon_flip"],
+      "signature_moves": {
+        "messatsu_gou_hadou": 350,
+        "shun_goku_satsu": 500,
+        "kongou_kokuretsuzan": 280
+      }
+    },
+    "geese_howard": {
+      "max_health": 1100,
+      "health": 1100,
+      "attack_power": 62,
+      "defense": 18,
+      "speed": 95,
+      "special_abilities": ["reppuken", "shippuken", "atemi"],
+      "signature_moves": {
+        "raging_storm": 380,
+        "deadly_rave": 320,
+        "thunder_break": 250
+      }
+    },
+    "rugal_bernstein": {
+      "max_health": 1200,
+      "health": 1200,
+      "attack_power": 70,
+      "defense": 20,
+      "speed": 90,
+      "special_abilities": ["kaiser_wave", "genocide_cutter", "god_press"],
+      "signature_moves": {
+        "gigantic_pressure": 400,
+        "omega_rugal": 450,
+        "dark_barrier": 300
+      }
+    },
+    "orochi": {
+      "max_health": 1500,
+      "health": 1500,
+      "attack_power": 80,
+      "defense": 25,
+      "speed": 85,
+      "special_abilities": ["orochi_power", "serpent_slash", "dark_energy"],
+      "signature_moves": {
+        "yamata_no_orochi": 600,
+        "serpent_wave": 350,
+        "dark_genocide": 480
+      }
+    }
+  },
+  "attack_frame_data": {
+    "light_attack": {
+      "startup_frames": 4,
+      "active_frames": 3,
+      "recovery_frames": 8,
+      "hitstun": 12,
+      "blockstun": 8
+    },
+    "heavy_attack": {
+      "startup_frames": 8,
+      "active_frames": 5,
+      "recovery_frames": 15,
+      "hitstun": 18,
+      "blockstun": 12
+    },
+    "special_attack": {
+      "startup_frames": 12,
+      "active_frames": 8,
+      "recovery_frames": 22,
+      "hitstun": 25,
+      "blockstun": 15
+    },
+    "super_attack": {
+      "startup_frames": 20,
+      "active_frames": 12,
+      "recovery_frames": 35,
+      "hitstun": 40,
+      "blockstun": 25
+    }
+  },
+  "animation_timing": {
+    "default_fps": 12,
+    "combat_fps": 15,
+    "special_fps": 18,
+    "frame_hold_duration": 0.083,
+    "animation_blend_time": 0.05
+  },
+  "balance_modifiers": {
+    "damage_scaling": {
+      "combo_2_hits": 0.95,
+      "combo_3_hits": 0.85,
+      "combo_4_hits": 0.75,
+      "combo_5_plus": 0.65
+    },
+    "defense_modifiers": {
+      "blocking": 0.25,
+      "counter_hit": 1.5,
+      "back_attack": 1.2
+    }
+  }
+}

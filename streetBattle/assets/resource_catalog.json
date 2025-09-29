@@ -106,8 +106,8 @@
   },
   "geese_howard": {
     "sketchfab": {
-      "uid": "c8bd202eee214ebe8740109942ea6a5d",
-      "query": "Geese Howard KOF 3D model"
+      "uid": "manual_download_geese_xiv",
+      "query": "Geese Howard KOF XIV 3D model (manually downloaded)"
     },
     "models_resource": {}
   },
@@ -162,8 +162,8 @@
   },
   "shingo_yabuki": {
     "sketchfab": {
-      "uid": "c228b332b3d84d88a326de971dc087da",
-      "query": "Shingo Yabuki KOF 3D model"
+      "uid": "manual_download_shingo_classic",
+      "query": "Shingo Yabuki Classic KOF 3D model (manually downloaded)"
     },
     "models_resource": {}
   },
@@ -199,13 +199,6 @@
     "sketchfab": {
       "uid": "bdcb58a02ea344c5ad94cca3f8d0eecd",
       "query": "Lin KOF 3D model"
-    },
-    "models_resource": {}
-  },
-  "seth": {
-    "sketchfab": {
-      "uid": "0d83ed0953d84b8b9e5945bab6b234c3",
-      "query": "Seth KOF 3D model"
     },
     "models_resource": {}
   },

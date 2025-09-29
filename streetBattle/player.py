@@ -4,12 +4,18 @@ from direct.actor.Actor import Actor
 
 class Player:
 	"""Player with simple state timings and cooldowns."""
-	def __init__(self, render, loader, name='Player', model_actor=None, pos=Vec3(0, 0, 0), character_data=None):
+	def __init__(self, render, loader, name='Player', model_actor=None, pos=Vec3(0, 0, 0), character_data=None, actor_instance=None):
 		self.name = name
 		self.render = render
 		self.loader = loader
-		self.health = 100
-		self.max_health = 100
+		
+		# Load character stats from config file
+		self._load_character_stats()
+		
+		# Set health from character stats or defaults
+		char_stats = self._get_character_stats(name)
+		self.max_health = char_stats.get('max_health', 1000)
+		self.health = char_stats.get('health', self.max_health)
 		self.state = 'idle'
 		self.facing = 1
 		self.speed = 6.0
@@ -29,37 +35,135 @@ class Player:
 		self.jump_strength = 8.0
 		self.gravity = -20.0
 		
+		# Initialize with empty node first
+		self.node = self.render.attachNewNode(f"{self.name}_root")
+		self.model = self.node
+		
 		# optional animation mapping
 		self.anims = model_actor.get('anims', {}) if model_actor else {}
 
-		# 1) Prefer asset-based Actor model if provided
-		if model_actor:
+		# 1) If a pre-created Actor instance is provided, use it directly
+		if actor_instance and isinstance(actor_instance, Actor):
 			try:
-				self.node = Actor(model_actor['model'], model_actor.get('anims', {}))
-				self.node.reparentTo(self.render)
-				self.model = self.node  # Keep reference
-				print(f"[PlayerModel] Using Actor model for {self.name}: {model_actor['model']}")
-			except Exception:
-				self.node = None
-
-		# 2) No procedural fallback: if no Actor model, keep a placeholder NodePath (no geometry)
-		if not self.node:
+				if not actor_instance.isEmpty():
+					# Remove placeholder safely and use provided Actor
+					old_node = self.node
+					self.node = actor_instance
+					self.model = actor_instance
+					self.node.reparentTo(self.render)
+					
+					# Cleanup old node after successful replacement
+					if old_node and not old_node.isEmpty():
+						if hasattr(old_node, 'cleanup') and isinstance(old_node, Actor):
+							old_node.cleanup()
+						old_node.removeNode()
+					
+					print(f"[PlayerModel] Using provided Actor instance for {self.name}")
+					
+					# List available animations
+					if hasattr(actor_instance, 'getAnimNames'):
+						anim_names = actor_instance.getAnimNames()
+						if anim_names:
+							print(f"[PlayerModel] Available animations for {self.name}: {list(anim_names)}")
+							# Update anims dict with available animations
+							self.anims.update({name: name for name in anim_names})
+				else:
+					print(f"[PlayerModel] Provided Actor instance is empty for {self.name}")
+			except Exception as e:
+				print(f"[PlayerModel] Failed to use provided Actor instance for {self.name}: {e}")
+		
+		# 2) Fallback: Prefer asset-based Actor model if provided
+		elif model_actor:
 			try:
-				self.node = self.render.attachNewNode(f"{self.name}_root")
-				self.model = self.node
-				print(f"[PlayerModel] No Actor model provided for {self.name}; using empty root node (no visual fallback)")
-			except Exception:
-				self.node = None
+				actor = Actor(model_actor['model'], model_actor.get('anims', {}))
+				if actor and not actor.isEmpty():
+					# Remove placeholder safely and use Actor directly
+					old_node = self.node
+					self.node = actor
+					self.model = actor
+					self.node.reparentTo(self.render)
+					
+					# Cleanup old node after successful replacement
+					if old_node and not old_node.isEmpty():
+						if hasattr(old_node, 'cleanup') and isinstance(old_node, Actor):
+							old_node.cleanup()
+						old_node.removeNode()
+					
+					print(f"[PlayerModel] Successfully loaded Actor model for {self.name}: {model_actor['model']}")
+					
+					# List available animations
+					if hasattr(actor, 'getAnimNames'):
+						anim_names = actor.getAnimNames()
+						if anim_names:
+							print(f"[PlayerModel] Available animations for {self.name}: {list(anim_names)}")
+				else:
+					print(f"[PlayerModel] Actor model is empty for {self.name}")
+			except Exception as e:
+				print(f"[PlayerModel] Failed to load Actor model for {self.name}: {e}")
 
+		# Set position
 		if self.node:
 			self.node.setPos(self.pos)
-			print(f"[PlayerModel] Model ready for {self.name}: node={type(self.node).__name__}")
+	
+	def _load_character_stats(self):
+		"""Load character statistics from config file"""
+		try:
+			import json
+			from pathlib import Path
+			
+			config_path = Path(__file__).parent / "config" / "character_stats.json"
+			if config_path.exists():
+				with open(config_path, 'r', encoding='utf-8') as f:
+					self.character_stats_config = json.load(f)
+				print(f"[Player] Loaded character stats configuration")
+			else:
+				print(f"[Player] Character stats config not found: {config_path}")
+				self.character_stats_config = None
+		except Exception as e:
+			print(f"[Player] Failed to load character stats: {e}")
+			self.character_stats_config = None
+	
+	def _get_character_stats(self, character_name: str) -> dict:
+		"""Get stats for specific character"""
+		if not self.character_stats_config:
+			return {"max_health": 1000, "health": 1000}
+		
+		# Normalize character name for lookup
+		normalized_name = character_name.lower().replace(' ', '_')
+		
+		# Try to find character-specific stats
+		character_stats = self.character_stats_config.get("character_stats", {})
+		if normalized_name in character_stats:
+			return character_stats[normalized_name]
+		
+		# Fall back to default stats
+		default_stats = self.character_stats_config.get("default_stats", {})
+		print(f"[Player] Using default stats for {character_name}: HP={default_stats.get('max_health', 1000)}")
+		return default_stats
+	
+	def get_skill_damage(self, skill_name: str) -> int:
+		"""Get damage value for a specific skill"""
+		if not self.character_stats_config:
+			return 50  # Default damage
+		
+		skill_damage = self.character_stats_config.get("skill_damage", {})
+		return skill_damage.get(skill_name, 50)
+	
+	def get_attack_frame_data(self, attack_type: str) -> dict:
+		"""Get frame data for attack type"""
+		if not self.character_stats_config:
+			return {"startup_frames": 4, "active_frames": 3, "recovery_frames": 8}
+		
+		frame_data = self.character_stats_config.get("attack_frame_data", {})
+		return frame_data.get(attack_type, {"startup_frames": 4, "active_frames": 3, "recovery_frames": 8})
+		
+		print(f"[PlayerModel] Model positioned for {self.name}: {self.pos}")
 
 		# apply character-specific customization if available
 		try:
 			self._apply_character_customization()
-		except Exception:
-			pass
+		except Exception as e:
+			print(f"[PlayerModel] Character customization failed for {self.name}: {e}")
 
 		# start idle animation if available (use animation key, not file path)
 		try:
@@ -68,10 +172,17 @@ class Player:
 				existing = set(self.node.getAnimNames()) if hasattr(self.node, 'getAnimNames') else set()
 				if 'idle' in self.anims and 'idle' in existing:
 					self.node.loop('idle')
+					print(f"[PlayerModel] Started idle animation for {self.name}")
 				elif 'walk' in self.anims and 'walk' in existing:
 					self.node.loop('walk')
-		except Exception:
-			pass
+					print(f"[PlayerModel] Started walk animation for {self.name}")
+				elif existing:
+					# Try the first available animation
+					first_anim = list(existing)[0]
+					self.node.loop(first_anim)
+					print(f"[PlayerModel] Started default animation '{first_anim}' for {self.name}")
+		except Exception as e:
+			print(f"[PlayerModel] Animation setup failed for {self.name}: {e}")
 
 		self.hit_radius = 1.0
 		# interpolation target (used by clients to smooth remote player)

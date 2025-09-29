@@ -1,0 +1,137 @@
+{
+  "locomotion": {
+    "name": "Locomotion",
+    "root_node": {
+      "type": "blend2d",
+      "parameter_x": "movement_speed",
+      "parameter_y": "movement_direction",
+      "animations": {
+        "idle": {
+          "position": [
+            0.0,
+            0.0
+          ],
+          "state": "idle"
+        },
+        "walk_forward": {
+          "position": [
+            1.0,
+            0.0
+          ],
+          "state": "walk"
+        },
+        "walk_back": {
+          "position": [
+            -1.0,
+            0.0
+          ],
+          "state": "walk"
+        },
+        "walk_left": {
+          "position": [
+            0.0,
+            -1.0
+          ],
+          "state": "walk"
+        },
+        "walk_right": {
+          "position": [
+            0.0,
+            1.0
+          ],
+          "state": "walk"
+        }
+      }
+    },
+    "blend_parameters": {
+      "movement_speed": 0.0,
+      "movement_direction": 0.0
+    },
+    "active_animations": [
+      "idle"
+    ]
+  },
+  "combat": {
+    "name": "Combat",
+    "root_node": {
+      "type": "state_machine",
+      "states": {
+        "neutral": {
+          "animation": "idle",
+          "transitions": [
+            "attack",
+            "defend"
+          ]
+        },
+        "attack": {
+          "animation": "attack",
+          "transitions": [
+            "neutral",
+            "hit"
+          ]
+        },
+        "defend": {
+          "animation": "defend",
+          "transitions": [
+            "neutral",
+            "hit"
+          ]
+        },
+        "hit": {
+          "animation": "hit",
+          "transitions": [
+            "neutral",
+            "victory"
+          ]
+        }
+      },
+      "current_state": "neutral"
+    },
+    "blend_parameters": {
+      "combat_intensity": 0.0,
+      "damage_taken": 0.0
+    },
+    "active_animations": [
+      "idle"
+    ]
+  },
+  "fullbody": {
+    "name": "FullBody",
+    "root_node": {
+      "type": "layered_blend",
+      "layers": [
+        {
+          "name": "lower_body",
+          "weight": 1.0,
+          "bone_mask": [
+            "pelvis",
+            "left_leg",
+            "right_leg",
+            "left_foot",
+            "right_foot"
+          ],
+          "source": "locomotion"
+        },
+        {
+          "name": "upper_body",
+          "weight": 1.0,
+          "bone_mask": [
+            "spine",
+            "chest",
+            "left_arm",
+            "right_arm",
+            "head"
+          ],
+          "source": "combat"
+        }
+      ]
+    },
+    "blend_parameters": {
+      "upper_body_override": 0.0
+    },
+    "active_animations": [
+      "idle",
+      "walk"
+    ]
+  }
+}

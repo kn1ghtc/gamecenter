@@ -1,15 +1,6 @@
 from __future__ import annotations
 
-"""Pygame-based 2.5D fighting experience for StreetBattle.
-
-The goal of this prototype is to emulate the snappy cadence of classic KOF
-sprites: distinct loops for idle/breathing, directional walk cycles, explosive
-multi-hit attacks, and responsive hit-stun feedback.  The implementation is
-fully self-contained and falls back to procedural sprites when high-fidelity
-assets are unavailable.  When real sprite sheets are provided (see
-``sprite_pipeline.py``), the same animation system can play them without code
-changes.
-"""
+"""Pygame-powered 2.5D fighting mode for StreetBattle."""
 
 import json
 import random
@@ -17,545 +8,159 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-try:  # Import lazily so the 3D mode can run without pygame installed.
+try:  # pragma: no cover - allow running 3D mode without pygame
     import pygame
-except ImportError:  # pragma: no cover - handled at runtime via launcher
+except ImportError:  # pragma: no cover - handled by launcher at runtime
     pygame = None  # type: ignore
-
 from ..config import SettingsManager
+from .fighter import Fighter, SimpleAIController, SkillDefinition
+from .sprites import _load_sprite_manifest, clone_animations_with_color, load_sprite_animations
+from .ui import HudRenderer, MatchSetupScreen
+
+DEFAULT_TIMER_SECONDS = 120.0
+DEFAULT_THEME = "arena"
+_SECONDARY_KEY_NAMES: Dict[str, List[str]] = {
+    "left": ["left", "a"],
+    "right": ["right", "d"],
+    "up": ["up", "w"],
+    "down": ["down", "s"],
+    "attack": ["j", "z", "lctrl"],
+    "special": ["k", "x", "lalt"],
+    "jump": ["space", "w", "up"],
+    "help": ["h", "f1"],
+}
+_PALETTE_VARIANTS: List[Dict[str, Iterable[float]]] = [
+    {"multiply": [1.08, 0.92, 1.0], "add": [12, 6, 18]},
+    {"multiply": [0.9, 1.05, 1.15], "add": [0, 12, 32]},
+    {"multiply": [1.02, 1.0, 0.88], "add": [18, 10, 6]},
+]
 
 
-Vector2 = Tuple[float, float]
-_THEME_DARK = (18, 24, 36)
-_THEME_ACCENT = (189, 68, 95)
-_FLOOR_COLOR = (40, 52, 78)
-SPRITE_ASSET_ROOT = Path(__file__).resolve().parents[1] / "assets" / "sprites"
-
-
-@dataclass
-class SpriteFrame:
-    surface: Any
-    duration: float  # seconds
+class _SkillProfile:
+    def __init__(self, skills: Dict[str, SkillDefinition], input_map: Dict[str, str], default_skill: str) -> None:
+        self.skills = skills
+        self.input_map = input_map
+        self.default_skill = default_skill
 
 
 @dataclass(frozen=True)
-class SkillDefinition:
-    name: str
-    animation: str
-    damage: int
-    hit_frames: Tuple[int, ...]
-    cooldown: float
-    hitstop: float
-    followups: Dict[str, str]
+class _HelpContent:
+    overlay: List[str]
+    hint: str
 
 
-class SpriteAnimation:
-    """Simple frame-based animation compatible with sprite sheets or procedural art."""
-
-    def __init__(self, name: str, frames: List[SpriteFrame], loop: bool = True) -> None:
-        if pygame is None:
-            raise RuntimeError("Pygame must be available to create animations")
-        self.name = name
-        self.frames = frames
-        self.loop = loop
-        self.index = 0
-        self.timer = 0.0
-        self.finished = False
-
-    def reset(self) -> None:
-        self.index = 0
-        self.timer = 0.0
-        self.finished = False
-
-    def update(self, dt: float) -> None:
-        if not self.frames:
-            return
-        if self.finished and not self.loop:
-            return
-        self.timer += dt
-        while self.timer >= self.frames[self.index].duration:
-            self.timer -= self.frames[self.index].duration
-            if self.index + 1 < len(self.frames):
-                self.index += 1
-            elif self.loop:
-                self.index = 0
-            else:
-                self.finished = True
-                self.index = len(self.frames) - 1
-                self.timer = 0.0
-                break
-
-    @property
-    def current_surface(self) -> Any:
-        return self.frames[self.index].surface
-
-    @property
-    def current_index(self) -> int:
-        return self.index
-
-    @property
-    def total_duration(self) -> float:
-        return sum(frame.duration for frame in self.frames)
+def _clamp(value: float, minimum: float, maximum: float) -> float:
+    return max(minimum, min(maximum, value))
 
 
-def _load_sprite_manifest(name: str) -> Optional[Dict[str, Any]]:
-    manifest_path = SPRITE_ASSET_ROOT / name / "manifest.json"
-    if not manifest_path.exists():
-        return None
+def _stat_multiplier(value: Any, *, step: float = 0.12) -> float:
+    if value is None:
+        return 1.0
     try:
-        with manifest_path.open("r", encoding="utf-8") as fh:
-            data = json.load(fh)
-            if isinstance(data, dict):
-                data["__manifest_path__"] = manifest_path  # type: ignore[index]
-                return data
-    except Exception:
+        numeric = float(value)
+    except (TypeError, ValueError):
+        return 1.0
+    normalized = _clamp(numeric, 1.0, 5.0)
+    return 1.0 + (normalized - 3.0) * step
+
+
+def _palette_for_index(entry: Dict[str, Any], variant_index: int) -> Optional[Dict[str, Iterable[float]]]:
+    palette_config = entry.get("palette")
+    if isinstance(palette_config, list) and palette_config:
+        return palette_config[variant_index % len(palette_config)]
+    if isinstance(palette_config, dict):
+        return palette_config
+    if not _PALETTE_VARIANTS:
         return None
-    return None
+    return _PALETTE_VARIANTS[variant_index % len(_PALETTE_VARIANTS)]
 
 
-def _apply_color_mod(surface: Any, color_mod: Optional[Dict[str, Any]]) -> Any:
-    if not color_mod:
-        return surface
-    result = surface.copy()
-    multiply = color_mod.get("multiply") if isinstance(color_mod, dict) else None
-    if multiply:
-        mul = [max(0.0, float(value)) for value in multiply[:3]]
-        multiplier = pygame.Surface(result.get_size(), pygame.SRCALPHA)
-        multiplier.fill(
-            (
-                min(255, int(mul[0] * 255)),
-                min(255, int((mul[1] if len(mul) > 1 else mul[0]) * 255)),
-                min(255, int((mul[2] if len(mul) > 2 else mul[0]) * 255)),
-                255,
-            )
-        )
-        result.blit(multiplier, (0, 0), special_flags=pygame.BLEND_RGBA_MULT)
-    add = color_mod.get("add") if isinstance(color_mod, dict) else None
-    if add:
-        add_values = [max(0.0, float(value)) for value in add[:3]]
-        additive = pygame.Surface(result.get_size(), pygame.SRCALPHA)
-        additive.fill(
-            (
-                min(255, int(add_values[0])),
-                min(255, int((add_values[1] if len(add_values) > 1 else add_values[0]))),
-                min(255, int((add_values[2] if len(add_values) > 2 else add_values[0]))),
-                0,
-            )
-        )
-        result.blit(additive, (0, 0), special_flags=pygame.BLEND_RGBA_ADD)
-    return result
-
-
-def _slice_sheet(
-    image: Any,
-    frame_size: Tuple[int, int],
-    sequence: List[int],
-    duration: float,
-    durations: Optional[List[float]] = None,
-    color_mod: Optional[Dict[str, Any]] = None,
-) -> List[SpriteFrame]:
-    frames: List[SpriteFrame] = []
-    width, height = image.get_size()
-    frame_w, frame_h = frame_size
-    columns = max(1, width // frame_w)
-    for idx, frame_index in enumerate(sequence):
-        row = frame_index // columns
-        col = frame_index % columns
-        rect = pygame.Rect(col * frame_w, row * frame_h, frame_w, frame_h)
-        surface = pygame.Surface((frame_w, frame_h), pygame.SRCALPHA)
-        surface.blit(image, (0, 0), rect)
-        if color_mod:
-            surface = _apply_color_mod(surface, color_mod)
-        frame_duration = durations[idx] if durations and idx < len(durations) else duration
-        frames.append(SpriteFrame(surface, frame_duration))
-    return frames
-
-
-def load_sprite_animations(name: str) -> Optional[Tuple[Dict[str, SpriteAnimation], Dict[str, Any]]]:
+def _format_keys(key_codes: Iterable[int]) -> str:
     if pygame is None:
-        return None
-    manifest = _load_sprite_manifest(name)
-    if not manifest:
-        return None
-    manifest_dir = manifest["__manifest_path__"].parent  # type: ignore[index]
-    states = manifest.get("states", {})
-    animations: Dict[str, SpriteAnimation] = {}
-    metadata: Dict[str, Any] = {}
-    top_color_mod = manifest.get("color_mod") if isinstance(manifest, dict) else None
-    hit_frame_map: Dict[str, Iterable[int]] = {}
-    for state, cfg in states.items():
-        sheet_name = cfg.get("sheet")
-        if not sheet_name:
-            continue
-        sheet_path = manifest_dir / sheet_name
-        if not sheet_path.exists():
-            continue
+        return ""
+    names: List[str] = []
+    for code in key_codes:
         try:
-            surface = pygame.image.load(sheet_path.as_posix()).convert_alpha()
-        except Exception:
+            names.append(pygame.key.name(code).upper())
+        except ValueError:
             continue
-        frame_size = cfg.get("frame_size") or [surface.get_width(), surface.get_height()]
-        if not isinstance(frame_size, (list, tuple)) or len(frame_size) != 2:
-            frame_size = [surface.get_width(), surface.get_height()]
-        frame_size_tuple = (int(frame_size[0]), int(frame_size[1]))
-        sequence = cfg.get("sequence") or list(range(cfg.get("frames", 1)))
-        if not sequence:
-            total_frames = (surface.get_width() // frame_size_tuple[0]) * (surface.get_height() // frame_size_tuple[1])
-            sequence = list(range(total_frames))
-        fps = cfg.get("fps", 8)
-        base_duration = 1.0 / max(1, fps)
-        durations = cfg.get("durations")
-        state_color_mod = cfg.get("color_mod") if isinstance(cfg, dict) else None
-        frames = _slice_sheet(
-            surface,
-            frame_size_tuple,
-            sequence,
-            base_duration,
-            durations,
-            color_mod=state_color_mod or top_color_mod,
-        )
-        loop = bool(cfg.get("loop", True))
-        animations[state] = SpriteAnimation(state, frames, loop=loop)
-        if "hit_frames" in cfg:
-            frames_value = cfg["hit_frames"]
-            if isinstance(frames_value, (list, tuple)):
-                hit_frame_map[state] = tuple(int(i) for i in frames_value)
-    metadata["source"] = manifest.get("source")
-    license_value = manifest.get("license")
-    if license_value:
-        metadata["license"] = license_value
-    if hit_frame_map:
-        metadata["hit_frames"] = hit_frame_map
-        if "attack" not in metadata and "attack_light" in hit_frame_map:
-            metadata["attack_frames"] = tuple(hit_frame_map["attack_light"])
-    if "attack" not in animations and "attack_light" in animations:
-        animations["attack"] = animations["attack_light"]
-    return animations, metadata
-
-
-class Fighter:
-    """State-driven combatant with configurable skill system."""
-
-    def __init__(
-        self,
-        name: str,
-        position: Vector2,
-        animations: Optional[Dict[str, SpriteAnimation]] = None,
-        skills: Optional[Dict[str, SkillDefinition]] = None,
-        input_map: Optional[Dict[str, str]] = None,
-        default_skill: Optional[str] = None,
-        facing: int = 1,
-        stage_width: int = 1280,
-    ) -> None:
-        if pygame is None:
-            raise RuntimeError("Pygame must be installed to use Fighter")
-        if not animations:
-            raise ValueError("Fighter animations must be provided; procedural fallbacks are no longer available")
-        if "idle" not in animations:
-            raise ValueError(f"Fighter '{name}' is missing an 'idle' animation state")
-        if not skills:
-            raise ValueError(f"Fighter '{name}' requires at least one configured skill")
-        normalized_map = {action: skill for action, skill in (input_map or {}).items() if skill in skills}
-        if not normalized_map:
-            raise ValueError(f"Fighter '{name}' needs an input map that references existing skills")
-        self.name = name
-        self.position = pygame.Vector2(position)
-        self.velocity = pygame.Vector2(0, 0)
-        self.facing = facing
-        self.stage_width = stage_width
-        self.health = 100
-        self.max_health = 100
-        self.walk_speed = 220.0
-        self.hitstop = 0.0
-        self.animations = animations
-        self.state = "idle"
-        self.current_anim = self.animations[self.state]
-        self.skills = skills
-        self.input_map = normalized_map
-        self.default_skill_name = default_skill if default_skill in self.skills else self.input_map.get("attack", next(iter(self.skills)))
-        self.skill_cooldowns: Dict[str, float] = {name: 0.0 for name in self.skills}
-        self.active_skill: Optional[SkillDefinition] = None
-        self.skill_queue: Optional[SkillDefinition] = None
-        self.attack_landed = False
-        self.active_attack_frames: set[int] = set()
-
-    def change_state(self, state: str) -> None:
-        if self.state == state:
-            return
-        if state not in self.animations:
-            raise KeyError(f"State '{state}' is not defined for fighter {self.name}")
-        self.state = state
-        self.current_anim = self.animations[state]
-        self.current_anim.reset()
-        if state in {"hurt", "ko"}:
-            self.hitstop = 0.28 if state == "hurt" else 0.0
-            self.active_skill = None
-            self.skill_queue = None
-            self.attack_landed = False
-
-    @property
-    def hurtbox(self) -> Any:
-        width, height = 86, 180
-        rect = pygame.Rect(0, 0, width, height)
-        rect.midbottom = (self.position.x, self.position.y)
-        return rect
-
-    def attack_hitbox(self) -> Any:
-        rect = pygame.Rect(0, 0, 110, 80)
-        offset_x = 58 * (1 if self.facing >= 0 else -1)
-        rect.midleft = (self.position.x + offset_x, self.position.y - 90)
-        if self.facing < 0:
-            rect.x -= rect.width
-        return rect
-
-    def apply_damage(self, value: int) -> None:
-        self.health = max(0, self.health - value)
-        self.active_skill = None
-        self.skill_queue = None
-        self.attack_landed = False
-        self.active_attack_frames.clear()
-        if self.health <= 0 and "ko" in self.animations:
-            self.change_state("ko")
-        else:
-            self.change_state("hurt")
-
-    def get_skill_for_action(self, action: str) -> Optional[SkillDefinition]:
-        skill_name = self.input_map.get(action)
-        if not skill_name:
-            return None
-        return self.skills.get(skill_name)
-
-    def can_use_action(self, action: str) -> bool:
-        skill = self.get_skill_for_action(action)
-        if not skill:
-            return False
-        return self.skill_cooldowns.get(skill.name, 0.0) <= 0.0
-
-    def _activate_skill(self, skill: SkillDefinition) -> None:
-        if skill.animation not in self.animations:
-            raise KeyError(f"Animation '{skill.animation}' is not defined for fighter {self.name}")
-        self.skill_cooldowns.setdefault(skill.name, 0.0)
-        self.skill_cooldowns[skill.name] = skill.cooldown
-        self.active_skill = skill
-        self.skill_queue = None
-        self.attack_landed = False
-        self.active_attack_frames = set(skill.hit_frames)
-        self.change_state(skill.animation)
-
-    def _queue_followup(self, inputs: Dict[str, bool]) -> None:
-        if not self.active_skill or not self.active_skill.followups or self.skill_queue:
-            return
-        for action, target in self.active_skill.followups.items():
-            if not inputs.get(action):
-                continue
-            next_skill = self.skills.get(target)
-            if not next_skill:
-                continue
-            if self.skill_cooldowns.get(next_skill.name, 0.0) > 0.0:
-                continue
-            self.skill_queue = next_skill
-            break
-
-    def _determine_skill_from_inputs(self, inputs: Dict[str, bool]) -> Optional[SkillDefinition]:
-        for action in ("special", "attack"):
-            if not inputs.get(action):
-                continue
-            skill = self.get_skill_for_action(action)
-            if not skill:
-                continue
-            if self.skill_cooldowns.get(skill.name, 0.0) <= 0.0:
-                return skill
-        return None
-
-    def update(self, dt: float, inputs: Dict[str, bool], opponent: "Fighter") -> Optional[str]:
-        if self.health <= 0:
-            if "ko" in self.animations:
-                if self.state != "ko":
-                    self.change_state("ko")
-                self.current_anim.update(dt)
-            return "ko"
-        if self.hitstop > 0:
-            self.hitstop = max(0.0, self.hitstop - dt)
-            self.current_anim.update(dt * 0.2)
-            return None
-
-        for name in self.skill_cooldowns:
-            self.skill_cooldowns[name] = max(0.0, self.skill_cooldowns[name] - dt)
-
-        # Automatically face opponent
-        if opponent.position.x < self.position.x - 6:
-            self.facing = -1
-        elif opponent.position.x > self.position.x + 6:
-            self.facing = 1
-
-        if self.state == "hurt":
-            self.current_anim.update(dt)
-            if self.current_anim.finished:
-                self.change_state("idle")
-            return None
-
-        if self.active_skill:
-            self._queue_followup(inputs)
-            self.current_anim.update(dt)
-            if self.current_anim.current_index in self.active_attack_frames and not self.attack_landed:
-                if self.attack_hitbox().colliderect(opponent.hurtbox):
-                    opponent.apply_damage(self.active_skill.damage)
-                    opponent.hitstop = self.active_skill.hitstop
-                    self.attack_landed = True
-            if self.current_anim.finished:
-                queued = self.skill_queue
-                self.skill_queue = None
-                self.active_skill = None
-                if queued:
-                    self._activate_skill(queued)
-                else:
-                    self.change_state("idle")
-            return None
-
-        move_left = inputs.get("left", False)
-        move_right = inputs.get("right", False)
-        movement = 0.0
-        if move_left and not move_right:
-            movement = -1.0
-        elif move_right and not move_left:
-            movement = 1.0
-        if movement != 0.0:
-            self.change_state("walk")
-            self.position.x += movement * self.walk_speed * dt
-            self.position.x = max(120, min(self.stage_width - 120, self.position.x))
-        else:
-            self.change_state("idle")
-
-        skill = self._determine_skill_from_inputs(inputs)
-        if skill:
-            self._activate_skill(skill)
-        self.current_anim.update(dt)
-        return None
-
-    def draw(self, surface: Any, floor_y: int) -> None:
-        frame = self.current_anim.current_surface
-        sprite = frame
-        if self.facing < 0:
-            sprite = pygame.transform.flip(frame, True, False)
-        rect = sprite.get_rect()
-        rect.midbottom = (self.position.x, floor_y)
-        surface.blit(sprite, rect)
-
-    @property
-    def is_hurt(self) -> bool:
-        return self.state == "hurt"
-
-
-class SimpleAIController:
-    """Heuristic opponent that mirrors classic arcade pressure strings."""
-
-    def __init__(self, fighter: Fighter) -> None:
-        self.fighter = fighter
-        self.attack_timer = 0.0
-        self.reposition_timer = 0.0
-
-    def compute_inputs(self, dt: float, opponent: Fighter) -> Dict[str, bool]:
-        self.attack_timer = max(0.0, self.attack_timer - dt)
-        self.reposition_timer = max(0.0, self.reposition_timer - dt)
-        distance = opponent.position.x - self.fighter.position.x
-        commands = {"left": False, "right": False, "attack": False, "special": False}
-        if abs(distance) > 260:
-            commands["right" if distance > 0 else "left"] = True
-        elif abs(distance) < 170:
-            commands["left" if distance > 0 else "right"] = True
-        else:
-            if self.reposition_timer <= 0:
-                jitter = random.choice([-1, 1])
-                commands["left" if jitter < 0 else "right"] = True
-                self.reposition_timer = 0.35
-        if abs(distance) < 220 and self.attack_timer <= 0.0 and not opponent.is_hurt:
-            action_choice = None
-            if self.fighter.can_use_action("special") and random.random() < 0.35:
-                action_choice = "special"
-            elif self.fighter.can_use_action("attack"):
-                action_choice = "attack"
-            elif self.fighter.can_use_action("special"):
-                action_choice = "special"
-            if action_choice:
-                commands[action_choice] = True
-                chosen_skill = self.fighter.get_skill_for_action(action_choice)
-                self.attack_timer = (chosen_skill.cooldown if chosen_skill else 1.0) + 0.2
-        return commands
+    if not names:
+        return ""
+    if len(names) == 1:
+        return names[0]
+    if len(names) == 2:
+        return f"{names[0]} / {names[1]}"
+    return ", ".join(names[:-1]) + f" / {names[-1]}"
 
 
 class SpriteBattleGame:
-    """Main entry point for the pygame-powered 2.5D mode."""
+    """Main coordinator for the StreetBattle 2.5D mode."""
 
     def __init__(self, settings_manager: Optional[SettingsManager] = None) -> None:
         if pygame is None:
-            raise RuntimeError("Pygame 未安装，无法启动 2.5D 模式。请通过 pip install pygame 安装。")
+            raise RuntimeError("Pygame 未安装，无法启动 2.5D 模式。请使用 `pip install pygame` 安装。")
+
         self.settings_manager = settings_manager or SettingsManager()
         graphics = self.settings_manager.get("graphics", {}) or {}
         resolution = graphics.get("resolution", [1280, 720])
         if not isinstance(resolution, (list, tuple)) or len(resolution) != 2:
             resolution = [1280, 720]
-        self.width = int(resolution[0])
-        self.height = int(resolution[1])
-        if self.width < 960:
-            self.width = 960
-        if self.height < 600:
-            self.height = 600
+        self.width = int(max(960, resolution[0]))
+        self.height = int(max(600, resolution[1]))
+        self.fullscreen = bool(graphics.get("fullscreen", False))
+        self.vsync = bool(graphics.get("vsync", True))
+
+        ui_config = self.settings_manager.get("ui", {}) or {}
+        self.theme_name = str(ui_config.get("theme", DEFAULT_THEME))
+        timer_value = ui_config.get("timer_seconds", DEFAULT_TIMER_SECONDS)
+        try:
+            self.match_time_limit = float(timer_value)
+        except (TypeError, ValueError):
+            self.match_time_limit = DEFAULT_TIMER_SECONDS
+        self.match_time_limit = _clamp(self.match_time_limit, 30.0, 300.0)
+        self.show_hints = bool(ui_config.get("show_hints", True))
 
         self.screen: Any = None
         self.clock: Any = None
-        self.running = False
+        self.hud: Optional[HudRenderer] = None
+        self.floor_y = int(self.height * 0.82)
+
+        self.keymap: Dict[str, List[int]] = {}
+        self.help_content: _HelpContent = _HelpContent([], "H: 显示帮助 / Show Help")
+        self.help_visible = False
+        self.sprite_sources: Dict[str, str] = {}
+
         self.player: Optional[Fighter] = None
         self.cpu: Optional[Fighter] = None
         self.ai: Optional[SimpleAIController] = None
-        self.floor_y = self.height - 110
-        self.background = self._build_background()
-        self.keymap = self._build_keymap()
+
         self.attack_buffer = False
         self.special_buffer = False
-        self.hud_font: Any = None
-        self.sprite_sources: Dict[str, str] = {}
+
+        self.time_remaining = self.match_time_limit
+        self.match_over = False
+        self.winner_name: Optional[str] = None
+        self.banner_message: Optional[str] = None
+        self.banner_timer = 0.0
+        self.slowmo_timer = 0.0
+        self.shake_timer = 0.0
+        self.shake_total = 0.0
+        self.shake_strength = 0.0
+        self.shake_offset = (0.0, 0.0)
+        self.last_player_health: Optional[int] = None
+        self.last_cpu_health: Optional[int] = None
+
+        self.running = False
+        self.keep_running = True
+
         self.skill_config = self._load_skill_config()
         self.roster_map, self.roster_order = self._load_roster_config()
+        self.current_player_key: Optional[str] = None
+        self.current_cpu_key: Optional[str] = None
 
-    def _build_background(self) -> Any:
-        surface = pygame.Surface((self.width, self.height))
-        gradient = pygame.Surface((self.width, self.height))
-        for y in range(self.height):
-            t = y / max(1, self.height - 1)
-            color = (
-                int(_THEME_DARK[0] * (1 - t) + 12 * t),
-                int(_THEME_DARK[1] * (1 - t) + 18 * t),
-                int(_THEME_DARK[2] * (1 - t) + 32 * t),
-            )
-            pygame.draw.line(gradient, color, (0, y), (self.width, y))
-        surface.blit(gradient, (0, 0))
-        pygame.draw.rect(surface, _FLOOR_COLOR, (0, self.floor_y, self.width, self.height - self.floor_y))
-        for x in range(0, self.width, 120):
-            pygame.draw.line(surface, (24, 30, 46), (x, self.floor_y), (x + 80, self.height), 2)
-        return surface
-
-    def _build_keymap(self) -> Dict[str, int]:
-        if pygame is None:
-            return {}
-        mapping = self.settings_manager.get("controls.keyboard", {}) or {}
-        default = {
-            "left": "a",
-            "right": "d",
-            "up": "w",
-            "down": "s",
-            "attack": "j",
-            "special": "k",
-            "jump": "space",
-        }
-        keymap: Dict[str, int] = {}
-        for action, fallback in default.items():
-            key_name = str(mapping.get(action, fallback)).lower()
-            try:
-                keymap[action] = pygame.key.key_code(key_name)
-            except (KeyError, ValueError):
-                keymap[action] = pygame.key.key_code(fallback)
-        return keymap
-
+    # ------------------------------------------------------------------
+    # Configuration loading helpers
+    # ------------------------------------------------------------------
     def _load_skill_config(self) -> Dict[str, Any]:
         skills_path = Path(__file__).resolve().parents[1] / "config" / "skills.json"
         if not skills_path.exists():
@@ -564,13 +169,13 @@ class SpriteBattleGame:
             with skills_path.open("r", encoding="utf-8") as handle:
                 payload = json.load(handle)
             return payload if isinstance(payload, dict) else {}
-        except Exception as exc:
+        except Exception as exc:  # pragma: no cover - configuration error surface
             raise RuntimeError(f"无法解析技能配置文件: {skills_path}") from exc
 
     def _load_roster_config(self) -> Tuple[Dict[str, Dict[str, Any]], List[str]]:
         roster_path = Path(__file__).resolve().parents[1] / "config" / "roster.json"
         roster_map: Dict[str, Dict[str, Any]] = {}
-        roster_order: List[str] = []
+        order: List[str] = []
         if roster_path.exists():
             try:
                 with roster_path.open("r", encoding="utf-8") as handle:
@@ -583,7 +188,7 @@ class SpriteBattleGame:
                         key = str(entry.get("key") or "").strip()
                         if not key:
                             continue
-                        normalized = {
+                        roster_map[key] = {
                             "key": key,
                             "display_name": str(entry.get("display_name") or key.replace("_", " ").title()),
                             "manifest": str(entry.get("manifest") or key),
@@ -593,67 +198,191 @@ class SpriteBattleGame:
                             "power": entry.get("power"),
                             "technique": entry.get("technique"),
                             "guard": entry.get("guard"),
+                            "palette": entry.get("palette"),
                         }
-                        roster_map[key] = normalized
-                        roster_order.append(key)
-            except Exception as exc:
+                        order.append(key)
+            except Exception as exc:  # pragma: no cover
                 raise RuntimeError(f"无法解析角色配置文件: {roster_path}") from exc
         if not roster_map:
-            fallback_entries = [
-                {
-                    "key": "hero",
-                    "display_name": "Martial Hero",
-                    "manifest": "hero",
-                    "skill_profile": "hero",
-                },
-                {
-                    "key": "shadow",
-                    "display_name": "Martial Shadow",
-                    "manifest": "shadow",
-                    "skill_profile": "shadow",
-                },
-            ]
-            for entry in fallback_entries:
-                roster_map[entry["key"]] = entry
-                roster_order.append(entry["key"])
-        return roster_map, roster_order
+            # Fallback removed - only use characters with high-quality portraits
+            print("Warning: No roster configuration found. Only characters with portraits will be available.")
+        return roster_map, order
 
-    def _resolve_player_key(self, requested: Optional[str]) -> str:
-        if requested and requested in self.roster_map:
-            return requested
+    # ------------------------------------------------------------------
+    # Lifecycle
+    # ------------------------------------------------------------------
+    def _boot_display(self) -> None:
+        if pygame is None:
+            return
+        if not pygame.get_init():
+            pygame.init()
+        flags = pygame.DOUBLEBUF | pygame.HWSURFACE
+        if self.fullscreen:
+            flags |= pygame.FULLSCREEN
+        self.screen = pygame.display.set_mode((self.width, self.height), flags)
+        pygame.display.set_caption("StreetBattle 2.5D")
+        if not self.vsync and hasattr(pygame.display, "gl_set_swap_interval"):
+            try:
+                pygame.display.gl_set_swap_interval(0)
+            except Exception:
+                pass
+        self.clock = pygame.time.Clock()
+        self.hud = HudRenderer(self.width, self.height, self.floor_y, theme_name=self.theme_name)
+        self.keymap = self._build_keymap()
+        self.help_content = self._build_help_content()
+
+    def run(self) -> None:
+        self._boot_display()
+        if self.screen is None or self.clock is None:
+            return
+        requested_player = self.settings_manager.get("gameplay.player_character")
+        requested_cpu = self.settings_manager.get("gameplay.cpu_character")
+        while self.keep_running:
+            selection = self._run_match_setup(
+                str(requested_player) if requested_player else None,
+                str(requested_cpu) if requested_cpu else None,
+            )
+            if selection is None:
+                break
+            self.current_player_key, self.current_cpu_key = selection
+            requested_player, requested_cpu = selection
+            if not self._battle_loop():
+                break
+        pygame.quit()
+
+    # ------------------------------------------------------------------
+    # Match setup
+    # ------------------------------------------------------------------
+    def _run_match_setup(self, player_key: Optional[str], cpu_key: Optional[str]) -> Optional[Tuple[str, str]]:
+        if self.screen is None or self.clock is None:
+            return None
+        if len(self.roster_order) <= 1:
+            base = self.roster_order[0]
+            return base, base
+        setup = MatchSetupScreen(
+            self.screen,
+            self.clock,
+            self.roster_map,
+            self.roster_order,
+            theme_name=self.theme_name,
+        )
+        selection = setup.run(player_key or self.roster_order[0], cpu_key or self._alternative_key(player_key))
+        if selection is None:
+            self.keep_running = False
+            return None
+        player_key, cpu_key = selection
+        self.settings_manager.set("gameplay.player_character", player_key, persist=False)
+        self.settings_manager.set("gameplay.cpu_character", cpu_key, persist=False)
+        return player_key, cpu_key
+
+    def _alternative_key(self, current: Optional[str]) -> str:
+        if not self.roster_order:
+            return ""
+        if current in self.roster_order and len(self.roster_order) > 1:
+            idx = (self.roster_order.index(current) + 1) % len(self.roster_order)
+            return self.roster_order[idx]
         return self.roster_order[0]
 
-    def _resolve_cpu_key(self, player_key: str, requested: Optional[str]) -> str:
-        if requested and requested in self.roster_map and requested != player_key:
-            return requested
-        candidates = [key for key in self.roster_order if key != player_key]
-        if not candidates:
-            return player_key
-        return random.choice(candidates)
+    def _battle_loop(self) -> bool:
+        self.running = True
+        self._initialise_match()
+        while self.running and self.keep_running:
+            dt = self.clock.tick(60) / 1000.0
+            self._handle_events()
+            self._update(dt)
+            self._render()
+        return self.keep_running
 
-    def _spawn_fighter(self, entry: Dict[str, Any], position: Tuple[float, float], facing: int) -> Fighter:
-        manifest_key = str(entry.get("manifest") or entry.get("key"))
-        display_name = str(entry.get("display_name") or manifest_key.replace("_", " ").title())
-        animations, metadata = self._load_fighter_assets(manifest_key, label=display_name)
-        skill_key = str(entry.get("skill_profile") or manifest_key)
-        skills, input_map, default_skill = self._build_skillset(skill_key, metadata or {}, animations)
-        return Fighter(
-            display_name,
-            position,
-            animations,
-            skills=skills,
-            input_map=input_map,
-            default_skill=default_skill,
+    def _initialise_match(self) -> None:
+        if pygame is None:
+            return
+        if not self.current_player_key:
+            self.current_player_key = self.roster_order[0]
+        if not self.current_cpu_key:
+            self.current_cpu_key = self._alternative_key(self.current_player_key)
+        self.sprite_sources = {}
+        self.player = self._spawn_fighter(
+            self.current_player_key,
+            (self.width * 0.32, self.floor_y),
+            facing=1,
+            palette_index=0,
+        )
+        cpu_palette = 0
+        if self.current_cpu_key == self.current_player_key:
+            cpu_palette = 1
+        self.cpu = self._spawn_fighter(
+            self.current_cpu_key,
+            (self.width * 0.68, self.floor_y),
+            facing=-1,
+            palette_index=cpu_palette,
+        )
+        self.ai = SimpleAIController(self.cpu)
+        self.time_remaining = self.match_time_limit
+        self.match_over = False
+        self.winner_name = None
+        self.attack_buffer = False
+        self.special_buffer = False
+        self.help_visible = False
+        self.banner_message = "准备！Fight!"
+        self.banner_timer = 1.6
+        self.slowmo_timer = 0.0
+        self.shake_timer = 0.0
+        self.shake_total = 0.0
+        self.shake_strength = 0.0
+        self.shake_offset = (0.0, 0.0)
+        self.last_player_health = self.player.health if self.player else None
+        self.last_cpu_health = self.cpu.health if self.cpu else None
+
+    # ------------------------------------------------------------------
+    # Fighter creation
+    # ------------------------------------------------------------------
+    def _spawn_fighter(self, key: str, position: Tuple[float, float], *, facing: int, palette_index: int) -> Fighter:
+        entry = self.roster_map.get(key)
+        if not entry:
+            raise RuntimeError(f"Roster entry '{key}' 不存在，无法创建角色")
+        animations, metadata = self._load_fighter_assets(entry, descriptor=entry.get("display_name", key))
+        color_mod = _palette_for_index(entry, palette_index)
+        if color_mod:
+            animations = clone_animations_with_color(animations, color_mod)
+        skill_key = str(entry.get("skill_profile") or key)
+        skill_profile = self._build_skill_profile(skill_key, metadata, animations)
+        fighter = Fighter(
+            name=str(entry.get("display_name", key.replace("_", " ").title())),
+            position=position,
+            animations=animations,
+            skills=skill_profile.skills,
+            input_map=skill_profile.input_map,
+            default_skill=skill_profile.default_skill,
             facing=facing,
             stage_width=self.width,
         )
+        self._apply_attribute_modifiers(fighter, entry)
+        return fighter
 
-    def _build_skillset(
+    def _load_fighter_assets(self, entry: Dict[str, Any], descriptor: str) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        manifest_key = str(entry.get("manifest") or entry.get("key"))
+        pack = load_sprite_animations(manifest_key)
+        if not pack:
+            raise RuntimeError(
+                f"Sprite manifest '{manifest_key}' 缺失或无效。请运行 tools/sync_sprites.py 同步资源。"
+            )
+        animations, metadata = pack
+        source_text = ""
+        if metadata and metadata.get("source"):
+            source_text = str(metadata["source"])
+        if metadata and metadata.get("license"):
+            license_text = str(metadata["license"])
+            source_text = f"{source_text} | {license_text}" if source_text else license_text
+        if source_text:
+            self.sprite_sources[descriptor] = source_text
+        return animations, metadata
+
+    def _build_skill_profile(
         self,
         key: str,
         metadata: Dict[str, Any],
-        animations: Dict[str, SpriteAnimation],
-    ) -> Tuple[Dict[str, SkillDefinition], Dict[str, str], Optional[str]]:
+        animations: Dict[str, Any],
+    ) -> _SkillProfile:
         spec = self.skill_config.get(key, {}) if isinstance(self.skill_config, dict) else {}
         raw_skills = spec.get("skills", []) if isinstance(spec, dict) else []
         hit_lookup: Dict[str, Iterable[int]] = metadata.get("hit_frames", {}) if metadata else {}
@@ -663,29 +392,27 @@ class SpriteBattleGame:
             anim = animations.get(animation_name)
             if not anim:
                 return (2, 3)
-            total_frames = len(anim.frames)
-            if total_frames <= 2:
-                return tuple(range(total_frames)) or (0,)
-            mid_start = max(1, total_frames // 2 - 1)
-            mid_end = min(total_frames, mid_start + 2)
+            frames = getattr(anim, "frames", [])
+            total = len(frames)
+            if total <= 2:
+                return tuple(range(total)) or (0,)
+            mid_start = max(1, total // 2 - 1)
+            mid_end = min(total, mid_start + 2)
             return tuple(range(mid_start, mid_end))
 
         for entry in raw_skills:
             if not isinstance(entry, dict):
                 continue
-            animation = entry.get("animation")
-            if not animation or animation not in animations:
+            animation_name = entry.get("animation")
+            if not animation_name or animation_name not in animations:
                 continue
-            name = str(entry.get("name") or animation)
+            name = str(entry.get("name") or animation_name)
             hit_frames_spec = entry.get("hit_frames")
             if isinstance(hit_frames_spec, (list, tuple)) and hit_frames_spec:
                 hit_frames = tuple(int(i) for i in hit_frames_spec)
             else:
-                fallback = hit_lookup.get(animation) or metadata.get("attack_frames") if metadata else None
-                if fallback:
-                    hit_frames = tuple(int(i) for i in fallback)
-                else:
-                    hit_frames = _default_hit_frames(animation)
+                fallback = hit_lookup.get(animation_name) or metadata.get("attack_frames") if metadata else None
+                hit_frames = tuple(int(i) for i in fallback) if fallback else _default_hit_frames(animation_name)
             damage = int(entry.get("damage", 12))
             cooldown = float(entry.get("cooldown", 0.8))
             hitstop = float(entry.get("hitstop", 0.18))
@@ -697,7 +424,7 @@ class SpriteBattleGame:
             }
             skills[name] = SkillDefinition(
                 name=name,
-                animation=animation,
+                animation=animation_name,
                 damage=damage,
                 hit_frames=hit_frames,
                 cooldown=cooldown,
@@ -740,7 +467,7 @@ class SpriteBattleGame:
         if not isinstance(default_skill, str) or default_skill not in skills:
             default_skill = input_map.get("attack", next(iter(skills)))
 
-        # Prune followups that reference unavailable skills
+        # Prune invalid follow-ups to avoid stale references.
         for name, definition in list(skills.items()):
             valid_followups = {
                 action: target
@@ -758,151 +485,215 @@ class SpriteBattleGame:
                     followups=valid_followups,
                 )
 
-        return skills, input_map, default_skill
+        return _SkillProfile(skills, input_map, default_skill)
 
-    def _initialise(self) -> None:
-        if pygame is None:
+    def _apply_attribute_modifiers(self, fighter: Fighter, entry: Dict[str, Any]) -> None:
+        tempo_mult = _stat_multiplier(entry.get("tempo"), step=0.14)
+        power_mult = _stat_multiplier(entry.get("power"), step=0.18)
+        technique_mult = _stat_multiplier(entry.get("technique"), step=0.15)
+        guard_mult = _stat_multiplier(entry.get("guard"), step=0.2)
+        stamina_mult = _stat_multiplier(entry.get("guard"), step=0.18)
+        cooldown_mult = _clamp(1.0 / technique_mult, 0.5, 1.2)
+        fighter.apply_tuning(
+            speed=_clamp(tempo_mult, 0.6, 1.5),
+            damage=_clamp(power_mult, 0.7, 1.8),
+            cooldown=cooldown_mult,
+            stamina=_clamp(stamina_mult, 0.6, 1.8),
+            guard=_clamp(guard_mult, 0.6, 1.8),
+            hitstop=1.0,
+            jump=_clamp(tempo_mult, 0.7, 1.4),
+        )
+
+    def _trigger_camera_shake(self, damage: int) -> None:
+        self.shake_timer = 0.25
+        self.shake_total = self.shake_timer
+        self.shake_strength = min(18.0, 6.0 + max(0, damage) * 1.6)
+
+    def _advance_camera_shake(self, dt: float) -> None:
+        if self.shake_timer <= 0.0:
+            self.shake_offset = (0.0, 0.0)
             return
-        pygame.init()
-        pygame.display.set_caption("StreetBattle 2.5D Prototype")
-        self.screen = pygame.display.set_mode((self.width, self.height))
-        self.clock = pygame.time.Clock()
-        self.sprite_sources.clear()
-        requested_player = self.settings_manager.get("gameplay.player_character")
-        requested_cpu = self.settings_manager.get("gameplay.cpu_character")
-        player_key = self._resolve_player_key(str(requested_player).strip() if isinstance(requested_player, str) else None)
-        cpu_key = self._resolve_cpu_key(player_key, str(requested_cpu).strip() if isinstance(requested_cpu, str) else None)
-        player_entry = self.roster_map.get(player_key)
-        cpu_entry = self.roster_map.get(cpu_key)
-        if not player_entry or not cpu_entry:
-            raise RuntimeError("Roster configuration 无法解析玩家或 CPU 角色。请检查 config/roster.json。")
-        self.player = self._spawn_fighter(player_entry, (self.width * 0.35, self.floor_y), facing=1)
-        self.cpu = self._spawn_fighter(cpu_entry, (self.width * 0.65, self.floor_y), facing=-1)
-        self.ai = SimpleAIController(self.cpu)
-        self.hud_font = pygame.font.SysFont("Segoe UI", 26)
+        self.shake_timer = max(0.0, self.shake_timer - dt)
+        duration = max(0.001, self.shake_total)
+        damping = self.shake_timer / duration
+        strength = self.shake_strength * damping
+        self.shake_offset = (
+            random.uniform(-1.0, 1.0) * strength,
+            random.uniform(-0.6, 0.6) * strength * 0.6,
+        )
+        if self.shake_timer <= 0.0:
+            self.shake_offset = (0.0, 0.0)
+
+    # ------------------------------------------------------------------
+    # Input handling
+    # ------------------------------------------------------------------
+    def _build_keymap(self) -> Dict[str, List[int]]:
+        mapping = self.settings_manager.get("controls.keyboard", {}) or {}
+        keymap: Dict[str, List[int]] = {}
+        for action, default_names in _SECONDARY_KEY_NAMES.items():
+            codes: List[int] = []
+            custom = mapping.get(action)
+            if custom:
+                codes.extend(self._to_key_codes([str(custom)]))
+            codes.extend(self._to_key_codes(default_names))
+            keymap[action] = list(dict.fromkeys(codes))
+        return keymap
+
+    def _to_key_codes(self, names: Iterable[str]) -> List[int]:
+        if pygame is None:
+            return []
+        codes: List[int] = []
+        for name in names:
+            try:
+                codes.append(pygame.key.key_code(str(name).lower()))
+            except (ValueError, KeyError):
+                continue
+        return codes
+
+    def _build_help_content(self) -> _HelpContent:
+        if pygame is None:
+            return _HelpContent([], "")
+
+        def _describe(action: str) -> str:
+            text = _format_keys(self.keymap.get(action, []))
+            return text or "未绑定"
+
+        overlay: List[str] = []
+        overlay.append("控制 / Controls")
+        overlay.append(f"移动 Move: {_describe('left')} / {_describe('right')}")
+        overlay.append(f"跳跃 Jump: {_describe('jump')}")
+        overlay.append(f"攻击 Attack: {_describe('attack')}")
+        overlay.append(f"必杀 Special: {_describe('special')}")
+        overlay.append("")
+        help_key = _format_keys(self.keymap.get("help", [])) or "H"
+        overlay.append("系统 / System")
+        overlay.append("Enter: 重新开战   Esc: 返回角色选择")
+        overlay.append(f"{help_key}: 隐藏帮助 / Hide Help")
+        return _HelpContent(overlay=overlay, hint=f"{help_key}: 显示帮助 / Show Help")
 
     def _handle_events(self) -> None:
+        if pygame is None:
+            return
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
-            elif event.type == pygame.KEYDOWN:
+                self.keep_running = False
+                return
+            if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
-                elif event.key == self.keymap.get("attack"):
+                    return
+                if event.key in self.keymap.get("attack", []):
                     self.attack_buffer = True
-                elif event.key == self.keymap.get("special"):
+                if event.key in self.keymap.get("special", []):
                     self.special_buffer = True
+                if event.key in self.keymap.get("help", []):
+                    self.help_visible = not self.help_visible
+                if self.match_over and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
+                    self._initialise_match()
 
     def _gather_player_inputs(self) -> Dict[str, bool]:
         pressed = pygame.key.get_pressed()
+
+        def _pressed(action: str) -> bool:
+            return any(pressed[code] for code in self.keymap.get(action, []) if code < len(pressed))
+
         inputs = {
-            "left": pressed[self.keymap.get("left", pygame.K_a)],
-            "right": pressed[self.keymap.get("right", pygame.K_d)],
-            "attack": self.attack_buffer,
-            "special": self.special_buffer,
+            "left": _pressed("left"),
+            "right": _pressed("right"),
+            "up": _pressed("up"),
+            "down": _pressed("down"),
+            "attack": self.attack_buffer or _pressed("attack"),
+            "special": self.special_buffer or _pressed("special"),
+            "jump": _pressed("jump"),
         }
         self.attack_buffer = False
         self.special_buffer = False
         return inputs
 
+    # ------------------------------------------------------------------
+    # Game loop
+    # ------------------------------------------------------------------
     def _update(self, dt: float) -> None:
         if not self.player or not self.cpu or not self.ai:
             return
-        player_inputs = self._gather_player_inputs()
-        self.player.update(dt, player_inputs, self.cpu)
-        ai_inputs = self.ai.compute_inputs(dt, self.player)
-        self.cpu.update(dt, ai_inputs, self.player)
+        if self.banner_timer > 0.0:
+            self.banner_timer = max(0.0, self.banner_timer - dt)
+            if self.banner_timer <= 0.0:
+                self.banner_message = None
 
-    def _render_health_bar(self, fighter: Fighter, position: Tuple[int, int], color: Tuple[int, int, int]) -> None:
-        x, y = position
-        width, height = 360, 24
-        ratio = fighter.health / fighter.max_health
-        pygame.draw.rect(self.screen, (20, 24, 32), (x, y, width, height), border_radius=8)
-        pygame.draw.rect(self.screen, color, (x + 2, y + 2, int((width - 4) * ratio), height - 4), border_radius=6)
-        font = self.hud_font or pygame.font.SysFont("Segoe UI", 24)
-        label = font.render(f"{fighter.name}  HP {fighter.health:03d}", True, (240, 240, 240))
-        self.screen.blit(label, (x + 6, y - 30))
+        if not self.match_over:
+            self.time_remaining = max(0.0, self.time_remaining - dt)
+            effective_dt = dt
+        else:
+            if self.slowmo_timer > 0.0:
+                self.slowmo_timer = max(0.0, self.slowmo_timer - dt)
+            effective_dt = dt * (0.35 if self.slowmo_timer > 0.0 else 1.0)
+
+        prev_player_health = self.player.health
+        prev_cpu_health = self.cpu.health
+
+        player_inputs = self._gather_player_inputs()
+        self.player.update(effective_dt, player_inputs, self.cpu)
+        ai_inputs = self.ai.compute_inputs(effective_dt, self.player)
+        self.cpu.update(effective_dt, ai_inputs, self.player)
+
+        player_damage = max(0, prev_player_health - self.player.health)
+        cpu_damage = max(0, prev_cpu_health - self.cpu.health)
+        if player_damage > 0:
+            self._trigger_camera_shake(player_damage)
+        elif cpu_damage > 0:
+            self._trigger_camera_shake(cpu_damage)
+        self._advance_camera_shake(dt)
+        self.last_player_health = self.player.health
+        self.last_cpu_health = self.cpu.health
+
+        if not self.match_over:
+            if self.player.health <= 0 or self.cpu.health <= 0:
+                winner = self.cpu.name if self.player.health <= 0 else self.player.name
+                self._end_match(winner)
+            elif self.time_remaining <= 0.0:
+                if self.player.health == self.cpu.health:
+                    self._end_match(None)
+                elif self.player.health > self.cpu.health:
+                    self._end_match(self.player.name)
+                else:
+                    self._end_match(self.cpu.name)
+
+    def _end_match(self, winner: Optional[str]) -> None:
+        self.match_over = True
+        self.winner_name = winner
+        self.banner_message = "时间到!" if winner is None else f"{winner} 胜利!"
+        self.banner_timer = 3.2
+        self.slowmo_timer = 1.2
 
     def _render(self) -> None:
-        if not self.player or not self.cpu:
+        if self.screen is None or self.hud is None or not self.player or not self.cpu:
             return
-        self.screen.blit(self.background, (0, 0))
-        self.player.draw(self.screen, self.floor_y)
-        self.cpu.draw(self.screen, self.floor_y)
-        self._render_health_bar(self.player, (80, 40), (230, 110, 120))
-        self._render_health_bar(self.cpu, (self.width - 80 - 360, 40), (110, 180, 240))
-        self._render_active_skill(self.player, (80, 90))
-        self._render_active_skill(self.cpu, (self.width - 80, 90), align_right=True)
-        if self.player.health <= 0 or self.cpu.health <= 0:
-            winner = self.cpu.name if self.player.health <= 0 else self.player.name
-            font = self.hud_font or pygame.font.SysFont("Segoe UI", 26)
-            text = font.render(f"{winner} Wins! Press ESC to return", True, (255, 236, 184))
-            rect = text.get_rect(center=(self.width // 2, self.height // 2))
-            pygame.draw.rect(self.screen, (20, 22, 30, 200), rect.inflate(40, 20), border_radius=12)
-            self.screen.blit(text, rect)
-        if self.sprite_sources:
-            attribution_font = pygame.font.SysFont("Segoe UI", 18)
-            y = self.height - 18
-            for key, src in self.sprite_sources.items():
-                label = attribution_font.render(f"{key} sprites: {src}", True, (195, 210, 230))
-                bg_rect = label.get_rect()
-                bg_rect.bottomleft = (20, y)
-                padded = bg_rect.inflate(12, 6)
-                overlay = pygame.Surface(padded.size, pygame.SRCALPHA)
-                overlay.fill((10, 12, 18, 160))
-                self.screen.blit(overlay, padded.topleft)
-                self.screen.blit(label, bg_rect)
-                y -= 24
+        offset = (int(self.shake_offset[0]), int(self.shake_offset[1]))
+        self.screen.fill((8, 10, 16))
+        self.hud.draw_background(self.screen, offset)
+        self.player.draw(self.screen, self.floor_y, offset)
+        self.cpu.draw(self.screen, self.floor_y, offset)
+        self.hud.draw(
+            self.screen,
+            player=self.player,
+            cpu=self.cpu,
+            time_remaining=self.time_remaining,
+            match_over=self.match_over,
+            winner=self.winner_name,
+            sprite_sources=self.sprite_sources,
+            help_overlay=self.help_content.overlay,
+            show_help=self.help_visible,
+            help_hint=self.help_content.hint,
+            banner_text=self.banner_message,
+        )
         pygame.display.flip()
 
-    def _render_active_skill(self, fighter: Fighter, anchor: Tuple[int, int], align_right: bool = False) -> None:
-        if not fighter.active_skill:
-            return
-        font = pygame.font.SysFont("Segoe UI", 18)
-        label = font.render(fighter.active_skill.name.replace("_", " ").title(), True, (250, 232, 200))
-        rect = label.get_rect()
-        if align_right:
-            rect.topright = anchor
-        else:
-            rect.topleft = anchor
-        padded = rect.inflate(16, 8)
-        background = pygame.Surface(padded.size, pygame.SRCALPHA)
-        background.fill((14, 16, 26, 180))
-        self.screen.blit(background, padded.topleft)
-        self.screen.blit(label, rect)
 
-    def _load_fighter_assets(self, key: str, label: Optional[str] = None) -> Tuple[Dict[str, SpriteAnimation], Dict[str, Any]]:
-        pack = load_sprite_animations(key)
-        if not pack:
-            raise RuntimeError(
-                f"Sprite manifest '{key}' is missing or invalid. "
-                "请运行 tools/sync_sprites.py 同步资源，或确认 assets/sprites/{key}/manifest.json 正确配置。"
-            )
-        animations, metadata = pack
-        if not animations:
-            raise RuntimeError(f"Sprite manifest '{key}' did not provide any animations")
-        descriptor = label or key
-        source_text = ""
-        if metadata and metadata.get("source"):
-            source_text = str(metadata["source"])
-        if metadata and metadata.get("license"):
-            license_text = str(metadata["license"])
-            source_text = f"{source_text} | {license_text}" if source_text else license_text
-        if source_text:
-            self.sprite_sources[descriptor] = source_text
-        return animations, metadata
-
-    def run(self) -> None:
-        if pygame is None:
-            raise RuntimeError("Pygame 未安装，无法运行 2.5D 模式。")
-        self._initialise()
-        self.running = True
-        while self.running:
-            dt = self.clock.tick(60) / 1000.0
-            self._handle_events()
-            self._update(dt)
-            self._render()
-        pygame.quit()
-
-
-__all__ = ["SpriteBattleGame"]
+__all__ = [
+    "SpriteBattleGame",
+    "SettingsManager",
+    "load_sprite_animations",
+    "_load_sprite_manifest",
+]

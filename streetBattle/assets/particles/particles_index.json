@@ -1,0 +1,457 @@
+{
+  "particles": {
+    "angel": {
+      "name": "Angel",
+      "path": "particles/angel.png",
+      "category": "NESTS",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "ash_crimson": {
+      "name": "Ash Crimson",
+      "path": "particles/ash_crimson.png",
+      "category": "Ash Saga",
+      "tier": "S",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "athena_asamiya": {
+      "name": "麻宫雅典娜",
+      "path": "particles/athena_asamiya.png",
+      "category": "Psycho Soldier",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "b_jenet": {
+      "name": "B. Jenet",
+      "path": "particles/b_jenet.png",
+      "category": "Garou",
+      "tier": "B",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "chizuru_kagura": {
+      "name": "神楽千鶴",
+      "path": "particles/chizuru_kagura.png",
+      "category": "Sacred Treasures",
+      "tier": "S",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "choi_bounge": {
+      "name": "蔡宝健",
+      "path": "particles/choi_bounge.png",
+      "category": "Kim Team",
+      "tier": "C",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "chris": {
+      "name": "Chris",
+      "path": "particles/chris.png",
+      "category": "Orochi",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "dolores": {
+      "name": "Dolores",
+      "path": "particles/dolores.png",
+      "category": "XV Saga",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "gato": {
+      "name": "Gato",
+      "path": "particles/gato.png",
+      "category": "Garou",
+      "tier": "B",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "geese_howard": {
+      "name": "Geese Howard",
+      "path": "particles/geese_howard.png",
+      "category": "Boss",
+      "tier": "S",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "goro_daimon": {
+      "name": "大门五郎",
+      "path": "particles/goro_daimon.png",
+      "category": "Japan",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "igniz": {
+      "name": "Igniz",
+      "path": "particles/igniz.png",
+      "category": "NESTS",
+      "tier": "S",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "iori_yagami": {
+      "name": "八神庵",
+      "path": "particles/iori_yagami.png",
+      "category": "Japan",
+      "tier": "S",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "isla": {
+      "name": "Isla",
+      "path": "particles/isla.png",
+      "category": "XV Saga",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "joe_higashi": {
+      "name": "东丈",
+      "path": "particles/joe_higashi.png",
+      "category": "Fatal Fury",
+      "tier": "B",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "k_dash": {
+      "name": "K'",
+      "path": "particles/k_dash.png",
+      "category": "NESTS",
+      "tier": "S",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "kula_diamond": {
+      "name": "Kula Diamond",
+      "path": "particles/kula_diamond.png",
+      "category": "NESTS",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "kyo_kusanagi": {
+      "name": "草薙京",
+      "path": "particles/kyo_kusanagi.png",
+      "category": "Japan",
+      "tier": "S",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "leona_heidern": {
+      "name": "蕾欧娜",
+      "path": "particles/leona_heidern.png",
+      "category": "Ikari Warriors",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "lin": {
+      "name": "Lin",
+      "path": "particles/lin.png",
+      "category": "Agents",
+      "tier": "B",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "magaki": {
+      "name": "Magaki",
+      "path": "particles/magaki.png",
+      "category": "Boss",
+      "tier": "S",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "mai_shiranui": {
+      "name": "不知火舞",
+      "path": "particles/mai_shiranui.png",
+      "category": "Fatal Fury",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "mature": {
+      "name": "Mature",
+      "path": "particles/mature.png",
+      "category": "Orochi",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "maxima": {
+      "name": "Maxima",
+      "path": "particles/maxima.png",
+      "category": "NESTS",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "mr_big": {
+      "name": "Mr. Big",
+      "path": "particles/mr_big.png",
+      "category": "AOF",
+      "tier": "B",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "nakoruru": {
+      "name": "Nakoruru",
+      "path": "particles/nakoruru.png",
+      "category": "Samurai Shodown",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "orochi": {
+      "name": "Orochi",
+      "path": "particles/orochi.png",
+      "category": "Boss",
+      "tier": "SS",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "ramon": {
+      "name": "Ramon",
+      "path": "particles/ramon.png",
+      "category": "Mexico",
+      "tier": "B",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "robert_garcia": {
+      "name": "Robert Garcia",
+      "path": "particles/robert_garcia.png",
+      "category": "AOF",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "ryo_sakazaki": {
+      "name": "坂崎良",
+      "path": "particles/ryo_sakazaki.png",
+      "category": "AOF",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "saisyu_kusanagi": {
+      "name": "草薙柴舟",
+      "path": "particles/saisyu_kusanagi.png",
+      "category": "Masters",
+      "tier": "S",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "shermie": {
+      "name": "Shermie",
+      "path": "particles/shermie.png",
+      "category": "Orochi",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "shingo_yabuki": {
+      "name": "矢吹真吾",
+      "path": "particles/shingo_yabuki.png",
+      "category": "Japan",
+      "tier": "C",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "shunei": {
+      "name": "Shun'ei",
+      "path": "particles/shunei.png",
+      "category": "XV Saga",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "sie_kensou": {
+      "name": "椎拳崇",
+      "path": "particles/sie_kensou.png",
+      "category": "Psycho Soldier",
+      "tier": "B",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "terry_bogard": {
+      "name": "Terry Bogard",
+      "path": "particles/terry_bogard.png",
+      "category": "Fatal Fury",
+      "tier": "S",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "vanessa": {
+      "name": "Vanessa",
+      "path": "particles/vanessa.png",
+      "category": "Agents",
+      "tier": "B",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "vice": {
+      "name": "Vice",
+      "path": "particles/vice.png",
+      "category": "Orochi",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "whip": {
+      "name": "Whip",
+      "path": "particles/whip.png",
+      "category": "NESTS",
+      "tier": "B",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "wolfgang_krauser": {
+      "name": "Wolfgang Krauser",
+      "path": "particles/wolfgang_krauser.png",
+      "category": "Boss",
+      "tier": "S",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    },
+    "yuri_sakazaki": {
+      "name": "坂崎由莉",
+      "path": "particles/yuri_sakazaki.png",
+      "category": "AOF",
+      "tier": "A",
+      "size": [
+        512,
+        512
+      ],
+      "format": "PNG"
+    }
+  },
+  "generated_at": "2025-09-28",
+  "total_count": 41
+}

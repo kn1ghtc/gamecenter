@@ -23,6 +23,29 @@ if "gamecenter" not in sys.modules:
 
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import AmbientLight, DirectionalLight, Vec4, Vec3, ClockObject, WindowProperties, CardMaker, NodePath, Texture, PNMImage
+
+
+def safe_node_check(node_path, operation_name="NodePath operation"):
+    """安全地检查NodePath的有效性，避免isEmpty()断言错误"""
+    if not node_path:
+        print(f"[DEBUG] {operation_name}: NodePath is None")
+        return False
+    
+    try:
+        # 首先尝试获取节点
+        if not node_path.getNode():
+            print(f"[DEBUG] {operation_name}: NodePath has no node")
+            return False
+        
+        # 然后安全地检查是否为空
+        if node_path.isEmpty():
+            print(f"[DEBUG] {operation_name}: NodePath is empty")
+            return False
+        
+        return True
+    except Exception as check_error:
+        print(f"[DEBUG] {operation_name}: NodePath check failed - {check_error}")
+        return False
 from direct.task import Task
 from direct.actor.Actor import Actor
 
@@ -36,10 +59,12 @@ from gamecenter.streetBattle.ui import HUD
 from gamecenter.streetBattle.enhanced_character_manager import EnhancedCharacterManager as CharacterManager
 from gamecenter.streetBattle.game_state import GameStateManager, GameState
 from gamecenter.streetBattle.character_animator import CharacterAnimator
+from gamecenter.streetBattle.kof_animation_system import KOFAnimationSystem
 from gamecenter.streetBattle.game_mode_selector import GameModeSelector
 from gamecenter.streetBattle.character_selector import CharacterSelector
 from gamecenter.streetBattle.special_moves import SpecialMovesSystem, enhance_player_with_special_moves
 from gamecenter.streetBattle.config import SettingsManager
+from gamecenter.streetBattle.sprite_system import SpriteSystem
 
 
 
@@ -83,10 +108,23 @@ class StreetBattleGame(ShowBase):
 		self.game_initialized = False
 		self.help_overlay = None
 		
-		# Initialize fixed character manager with simple model fallback
+		# Initialize character management system
 		from gamecenter.streetBattle.enhanced_character_manager import EnhancedCharacterManager as FixedEnhancedCharacterManager
 		self.char_manager = FixedEnhancedCharacterManager(self)
-		print("[StreetBattle] Using Fixed Character Manager with simple model fallback for placeholders")
+		
+		# Initialize 2.5D sprite system
+		self.sprite_system = SpriteSystem(self)
+		
+		# Display professional system information
+		total_chars = len(self.char_manager.comprehensive_characters)
+		print(f"\\n{'='*60}")  
+		print("🥊 STREET BATTLE - King of Fighters Engine")
+		print(f"{'='*60}")
+		print(f"✅ Character Database: {total_chars} fighters loaded")
+		print(f"🎮 Game Modes: Adventure • Versus • Network")
+		print(f"🎨 Enhanced Graphics: KOF Animation System Active")
+		print(f"🔊 Audio System: Premium Sound Effects Ready") 
+		print(f"{'='*60}\\n")
 		
 		# UI systems
 		self.mode_selector = GameModeSelector(self)
@@ -135,6 +173,14 @@ class StreetBattleGame(ShowBase):
 					self.vfx.cleanup()
 				except Exception as e:
 					print(f"VFX cleanup warning: {e}")
+			
+			# Clean up KOF animation system
+			if hasattr(self, 'kof_animator') and self.kof_animator:
+				try:
+					print("Cleaning up KOF animation system...")
+					self.kof_animator.cleanup()
+				except Exception as e:
+					print(f"KOF animator cleanup warning: {e}")
 			
 			# Clean up character models to release resources
 			if hasattr(self, 'char_manager') and self.char_manager:
@@ -371,7 +417,12 @@ class StreetBattleGame(ShowBase):
 	def _build_textured_arena(self):
 		"""Construct a lightweight arena using Panda3D default textures only."""
 		if getattr(self, 'ground', None):
-			self.ground.removeNode()
+			if safe_node_check(self.ground, "Ground node removal"):
+				try:
+					self.ground.removeNode()
+				except Exception as remove_error:
+					print(f"[DEBUG] Ground removal failed: {remove_error}")
+			self.ground = None
 		arena_root = NodePath('arena_root')
 
 		# Floor
@@ -436,10 +487,12 @@ class StreetBattleGame(ShowBase):
 	def _build_stage_backdrop(self):
 		"""Create a non-blocking scenic backdrop behind the arena."""
 		if getattr(self, 'stage_backdrop', None):
-			try:
-				self.stage_backdrop.removeNode()
-			except Exception:
-				pass
+			if safe_node_check(self.stage_backdrop, "Stage backdrop removal"):
+				try:
+					self.stage_backdrop.removeNode()
+				except Exception as backdrop_error:
+					print(f"[DEBUG] Stage backdrop removal failed: {backdrop_error}")
+
 			self.stage_backdrop = None
 
 		backdrop_root = NodePath('stage_backdrop')
@@ -530,8 +583,9 @@ class StreetBattleGame(ShowBase):
 		self.audio = AudioSystem(self)
 		self.hud = HUD(self)
 		
-		# Animation system
+		# Animation systems
 		self.animator = CharacterAnimator(self)
+		self.kof_animator = KOFAnimationSystem(self)
 		
 		# Game state management
 		self.game_state = GameStateManager(self)
@@ -540,64 +594,76 @@ class StreetBattleGame(ShowBase):
 		self.game_state.on_round_end = self._on_round_end
 		self.game_state.on_game_end = self._on_game_end
 
-		# Create players with selected characters
+		# Create players with 2.5D sprites
 		self.players = []
+		self.sprite_characters = []
 		
-		print(f"\\n=== CREATING GAME CHARACTERS ===")
-		print(f"Player: {self.selected_character}")
-		print(f"Opponent: {self.selected_opponent}")
+		print(f"\\n🎭 LOADING 2.5D BATTLE CHARACTERS")
+		print(f"   Player 1: {self.selected_character}")
+		print(f"   Player 2: {self.selected_opponent}")
+		print(f"   Mode: {self.current_game_mode.title()}")
+		print("   Initializing sprite characters...")
+		
+		# Create sprite characters
+		try:
+			# Player 1 sprite
+			char_id_p0 = self.selected_character.lower().replace(' ', '_')
+			sprite_p0 = self.sprite_system.create_sprite_character(
+				char_id_p0, self.selected_character, Vec3(-3, 0, 0)
+			)
+			
+			if sprite_p0:
+				print(f"Player 1 sprite created: {self.selected_character}")
+				self.sprite_characters.append(sprite_p0)
+			else:
+				print(f"Failed to create sprite for {self.selected_character}")
+				
+		except Exception as e:
+			print(f"Failed to create player 1 sprite: {e}")
 		
 		try:
-			p0 = self.char_manager.create_enhanced_player(self.selected_character, Vec3(-3, 0, 0))
-			print(f"Player 1 created as {self.selected_character}")
+			# Player 2 sprite
+			char_id_p1 = self.selected_opponent.lower().replace(' ', '_')
+			sprite_p1 = self.sprite_system.create_sprite_character(
+				char_id_p1, self.selected_opponent, Vec3(3, 0, 0)
+			)
+			
+			if sprite_p1:
+				print(f"Player 2 sprite created: {self.selected_opponent}")
+				# Make opponent face left
+				sprite_p1.set_facing(False)
+				self.sprite_characters.append(sprite_p1)
+			else:
+				print(f"Failed to create sprite for {self.selected_opponent}")
+				
 		except Exception as e:
-			print(f"Failed to create player character: {e}")
-			# Fallback: try enhanced character manager with legacy mode
-			try:
-				if hasattr(self.char_manager, 'create_enhanced_character_model'):
-					model = self.char_manager.create_enhanced_character_model(self.selected_character, Vec3(-3, 0, 0))
-					if model:
-						p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
-						if hasattr(p0, 'model') and p0.model:
-							p0.model.removeNode()
-						p0.model = model
-						p0.node = model
-					else:
-						p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
-				else:
-					p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
-			except Exception:
-				p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
+			print(f"Failed to create player 2 sprite: {e}")
+		
+		# Create basic Player objects for game logic (without 3D models)
+		try:
+			p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
+			p0.character_name = self.selected_character
+			p0.character_id = char_id_p0
+			p0.sprite_character = sprite_p0 if len(self.sprite_characters) > 0 else None
+			print(f"Player 1 logic created: {self.selected_character}")
+		except Exception as e:
+			print(f"Failed to create player 1 logic: {e}")
+			p0 = None
 		
 		try:
-			p1 = self.char_manager.create_enhanced_player(self.selected_opponent, Vec3(3, 0, 0))
-			print(f"Player 2 created as {self.selected_opponent}")
-			# Apply different color tint for opponent
-			if hasattr(p1, 'model') and p1.model:
-				p1.model.setColorScale(0.8, 0.9, 1.1, 1.0)  # Slightly bluish tint
+			p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
+			p1.character_name = self.selected_opponent
+			p1.character_id = char_id_p1
+			p1.sprite_character = sprite_p1 if len(self.sprite_characters) > 1 else None
+			print(f"Player 2 logic created: {self.selected_opponent}")
 		except Exception as e:
-			print(f"Failed to create opponent character: {e}")
-			# Fallback: try enhanced character manager with legacy mode
-			try:
-				if hasattr(self.char_manager, 'create_enhanced_character_model'):
-					model = self.char_manager.create_enhanced_character_model(self.selected_opponent, Vec3(3, 0, 0))
-					if model:
-						p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
-						if hasattr(p1, 'model') and p1.model:
-							p1.model.removeNode()
-						p1.model = model
-						p1.node = model
-						# Apply different color tint for opponent
-						p1.model.setColorScale(0.8, 0.9, 1.1, 1.0)
-					else:
-						p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
-				else:
-					p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
-			except Exception:
-				p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
+			print(f"Failed to create player 2 logic: {e}")
+			p1 = None
 		
-		self.players.append(p0)
-		self.players.append(p1)
+		if p0:
+			self.players.append(p0)
+		if p1:
+			self.players.append(p1)
 
 		# Initialize special moves system
 		self.special_moves = SpecialMovesSystem(self)
@@ -619,9 +685,18 @@ class StreetBattleGame(ShowBase):
 			p0_parts = self._extract_body_parts(p0)
 			p1_parts = self._extract_body_parts(p1)
 			
+			# Register with original animator
 			self.animator.register_character("player_0", p0.model if hasattr(p0, 'model') else p0.node, p0_parts)
 			self.animator.register_character("player_1", p1.model if hasattr(p1, 'model') else p1.node, p1_parts)
-			print("Players registered for animation")
+			
+			# Register with KOF animation system
+			p0_actor = p0.model if hasattr(p0, 'model') and isinstance(p0.model, Actor) else None
+			p1_actor = p1.model if hasattr(p1, 'model') and isinstance(p1.model, Actor) else None
+			
+			self.kof_animator.register_character(self.selected_character, p0.model if hasattr(p0, 'model') else p0.node, p0_actor)
+			self.kof_animator.register_character(self.selected_opponent, p1.model if hasattr(p1, 'model') else p1.node, p1_actor)
+			
+			print("Players registered for both animation systems")
 		except Exception as e:
 			print(f"Animation registration failed: {e}")
 
@@ -938,9 +1013,9 @@ Jump + Attack = Air Attack"""
 			# apply to local player inputs
 			local_inputs = {k: self.key_map.get(k, False) for k in ['left', 'right', 'up', 'down', 'light', 'heavy', 'jump']}
 			
-			# Debug: Print inputs when keys are pressed
+			# Only debug print inputs occasionally to avoid spam
 			active_keys = [k for k, v in local_inputs.items() if v]
-			if active_keys:
+			if active_keys and self.frame % 30 == 0:  # Print every 30 frames (0.5 seconds at 60fps)
 				print(f"Player input: {active_keys}")
 			
 			self.players[0].apply_input(local_inputs, dt)
@@ -1044,17 +1119,38 @@ Jump + Attack = Air Attack"""
 				except Exception as e:
 					print(f"Hit animation failed: {e}")
 
-		# Always update players for animations, but combat only during fighting
+		# Always update players and sprites
 		for i, p in enumerate(self.players):
 			p.update(dt)
 			
-			# Update character animations based on player state
+			# Update 2.5D sprite animations based on player state
+			if hasattr(p, 'sprite_character') and p.sprite_character:
+				self._update_sprite_animation(p, i)
+				# Update sprite position
+				p.sprite_character.set_position(p.pos)
+			
+			# Update character animations based on player state (only during fighting for performance)
 			if self.game_state.is_fighting():
 				player_inputs = None
 				if i == 0:  # Player 1 (local input)
 					player_inputs = {k: self.key_map.get(k, False) for k in ['left', 'right', 'up', 'down', 'light', 'heavy', 'jump']}
 				
-				self.animator.update_animation_state(f"player_{i}", p.state, player_inputs)
+				# Update original animation system (less frequently to improve performance)
+				if self.frame % 2 == 0:  # Update every other frame
+					try:
+						self.animator.update_animation_state(f"player_{i}", p.state, player_inputs)
+					except Exception as e:
+						if self.frame % 300 == 0:  # Only log every 5 seconds
+							print(f"Animation update error: {e}")
+				
+				# Update KOF animation system (primary animation system)
+				char_name = self.selected_character if i == 0 else self.selected_opponent
+				if hasattr(self, 'kof_animator') and char_name:
+					try:
+						self.kof_animator.update_animation(char_name, player_inputs, p.state)
+					except Exception as e:
+						if self.frame % 300 == 0:  # Only log every 5 seconds
+							print(f"KOF animation update error: {e}")
 
 		# camera shake for VFX
 		if hasattr(self.vfx, '_shake_timer') and self.vfx._shake_timer > 0 and self.cam:
@@ -1241,6 +1337,90 @@ Jump + Attack = Air Attack"""
 		self.game_state.change_state(GameState.ROUND_START)
 		return task.done
 	
+	def _update_sprite_animation(self, player, player_idx):
+		"""Update enhanced sprite animation based on player state with smooth transitions"""
+		try:
+			# Enhanced animation mapping with priority handling
+			animation_map = {
+				'idle': 'idle',
+				'walking': 'walk', 
+				'running': 'walk',
+				'move': 'walk',
+				'moving': 'walk',
+				'attacking': 'attack',
+				'attack': 'attack',
+				'hit': 'hit',
+				'hurt': 'hit',  # Map hurt to hit for consistency
+				'damaged': 'hit',
+				'jumping': 'jump',
+				'jump': 'jump',
+				'blocking': 'block',
+				'block': 'block',
+				'victory': 'victory',
+				'win': 'victory',
+				'defeat': 'hit',
+				'ko': 'hit'
+			}
+			
+			if not hasattr(player, 'sprite_character') or not player.sprite_character:
+				return
+			
+			sprite_char = player.sprite_character
+			current_state = getattr(player, 'state', 'idle')
+			sprite_anim = animation_map.get(current_state, 'idle')
+			
+			# Enhanced animation control based on player input and state
+			if player_idx == 0:  # Player 1 (local input)
+				inputs = {k: self.key_map.get(k, False) for k in ['left', 'right', 'up', 'down', 'light', 'heavy', 'jump']}
+				
+				# Movement animation logic
+				if inputs.get('left') or inputs.get('right'):
+					if sprite_anim == 'idle':
+						sprite_anim = 'walk'
+				
+				# Attack animation priority
+				if inputs.get('light') or inputs.get('heavy'):
+					if sprite_char.can_cancel_animation():
+						sprite_anim = 'attack'
+						# Play attack animation with high priority
+						sprite_char.play_animation(sprite_anim, force_restart=False, priority_override=True)
+						return
+				
+				# Jump animation
+				if inputs.get('jump'):
+					if sprite_char.can_cancel_animation():
+						sprite_anim = 'jump'
+						sprite_char.play_animation(sprite_anim, force_restart=False, priority_override=True)
+						return
+			
+			# State-based animation updates
+			if current_state == 'attacking':
+				# Force attack animation
+				sprite_char.play_animation('attack', force_restart=False, priority_override=True)
+			elif current_state in ['hit', 'hurt', 'damaged']:
+				# Force hit reaction
+				sprite_char.interrupt_animation('hit')
+			elif current_state == 'jumping':
+				# Jump animation
+				sprite_char.play_animation('jump', force_restart=False)
+			elif current_state == 'blocking':
+				# Block animation
+				sprite_char.play_animation('block', force_restart=False)
+			else:
+				# Regular state-based animation
+				sprite_char.play_animation(sprite_anim, force_restart=False)
+			
+			# Update facing direction based on player movement
+			if hasattr(player, 'velocity') and player.velocity:
+				if player.velocity.x > 0.1:
+					sprite_char.set_facing(True)
+				elif player.velocity.x < -0.1:
+					sprite_char.set_facing(False)
+				
+		except Exception as e:
+			if self.frame % 300 == 0:  # Only log every 5 seconds
+				print(f"Enhanced sprite animation update error for player {player_idx}: {e}")
+
 	def _extract_body_parts(self, player):
 		"""Extract body parts from player model for animation"""
 		body_parts = {}

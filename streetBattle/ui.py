@@ -124,6 +124,23 @@ class HUD:
         )
         self.name_p1.setBin("gui-popup", 30)
         
+        # Character portraits - positioned next to health bars
+        self.portrait_p0 = DirectFrame(
+            frameColor=(0, 0, 0, 0),
+            frameSize=(-0.08, 0.08, -0.08, 0.08),
+            pos=(-0.85, 0, 0.9),
+            parent=self.ui_root
+        )
+        self.portrait_p0.setBin("gui-popup", 35)
+        
+        self.portrait_p1 = DirectFrame(
+            frameColor=(0, 0, 0, 0),
+            frameSize=(-0.08, 0.08, -0.08, 0.08),
+            pos=(0.85, 0, 0.9),
+            parent=self.ui_root
+        )
+        self.portrait_p1.setBin("gui-popup", 35)
+        
         # Character info displays - positioned below health bars
         self.char_info_p0 = OnscreenText(
             text='', 
@@ -315,14 +332,83 @@ class HUD:
         except Exception:
             pass
     
+    def _load_character_portrait(self, character_name: str):
+        """Load character portrait image"""
+        if not character_name:
+            return None
+            
+        # Convert character name to ID format
+        char_id = character_name.lower().replace(' ', '_')
+        
+        # Try different portrait paths
+        import os
+        from pathlib import Path
+        
+        assets_dir = Path(__file__).parent / "assets"
+        portraits_dir = assets_dir / "images" / "portraits"
+        
+        portrait_candidates = [
+            portraits_dir / f"{char_id}.png",
+            portraits_dir / f"{char_id}_official.png",
+            portraits_dir / f"{character_name.replace(' ', '_')}.png",
+        ]
+        
+        for portrait_path in portrait_candidates:
+            if portrait_path.exists():
+                try:
+                    # Load texture using Panda3D
+                    from panda3d.core import Texture, PNMImage, Filename
+                    
+                    img = PNMImage()
+                    if img.read(Filename.fromOsSpecific(str(portrait_path))):
+                        tex = Texture()
+                        tex.load(img)
+                        tex.setMagfilter(Texture.FTLinear)
+                        tex.setMinfilter(Texture.FTLinearMipmapLinear)
+                        print(f"[HUD] Loaded portrait: {portrait_path}")
+                        return tex
+                except Exception as e:
+                    print(f"[HUD] Failed to load portrait {portrait_path}: {e}")
+                    continue
+        
+        print(f"[HUD] No portrait found for {character_name} ({char_id})")
+        return None
+    
+    def _set_portrait(self, portrait_frame, texture):
+        """Set portrait texture to frame"""
+        if not texture or not portrait_frame:
+            return
+            
+        try:
+            from panda3d.core import CardMaker
+            
+            # Clear existing portrait
+            for child in portrait_frame.getChildren():
+                child.removeNode()
+            
+            # Create card for portrait
+            cm = CardMaker('portrait_card')
+            cm.setFrame(-1, 1, -1, 1)  # Frame coordinates
+            
+            portrait_card = portrait_frame.attachNewNode(cm.generate())
+            portrait_card.setTexture(texture)
+            portrait_card.setTransparency(1)  # Enable transparency
+            
+            print(f"[HUD] Portrait texture applied successfully")
+            
+        except Exception as e:
+            print(f"[HUD] Failed to set portrait: {e}")
+    
     def update_character_info(self, players):
-        """Update character information display"""
+        """Update character information display and portraits"""
         try:
             if len(players) >= 2:
                 p0, p1 = players[0], players[1]
                 
-                # Update P1 character info
+                # Update P1 character info and portrait
                 char_data_p0 = getattr(p0, 'character_data', None)
+                char_name_p0 = getattr(p0, 'character_name', p0.name if hasattr(p0, 'name') else 'Player 1')
+                
                 if hasattr(p0, 'character_name') and isinstance(char_data_p0, dict):
                     fighting_style = char_data_p0.get('fighting_style', 'Unknown Style')
                     nationality = char_data_p0.get('nationality', 'Unknown')
@@ -331,8 +417,17 @@ class HUD:
                 else:
                     self.char_info_p0.setText("Street Fighter\nUnknown")
                 
-                # Update P2 character info
+                # Load and set P1 portrait
+                if not hasattr(self, '_p0_portrait_loaded') or self._p0_portrait_loaded != char_name_p0:
+                    portrait_tex_p0 = self._load_character_portrait(char_name_p0)
+                    if portrait_tex_p0:
+                        self._set_portrait(self.portrait_p0, portrait_tex_p0)
+                        self._p0_portrait_loaded = char_name_p0
+                
+                # Update P2 character info and portrait
                 char_data_p1 = getattr(p1, 'character_data', None)
+                char_name_p1 = getattr(p1, 'character_name', p1.name if hasattr(p1, 'name') else 'Player 2')
+                
                 if hasattr(p1, 'character_name') and isinstance(char_data_p1, dict):
                     fighting_style = char_data_p1.get('fighting_style', 'Unknown Style')
                     nationality = char_data_p1.get('nationality', 'Unknown')
@@ -340,6 +435,14 @@ class HUD:
                     self.char_info_p1.setText(info_text)
                 else:
                     self.char_info_p1.setText("Street Fighter\nUnknown")
+                
+                # Load and set P2 portrait
+                if not hasattr(self, '_p1_portrait_loaded') or self._p1_portrait_loaded != char_name_p1:
+                    portrait_tex_p1 = self._load_character_portrait(char_name_p1)
+                    if portrait_tex_p1:
+                        self._set_portrait(self.portrait_p1, portrait_tex_p1)
+                        self._p1_portrait_loaded = char_name_p1
+                        
         except Exception as e:
             print(f"Failed to update character info: {e}")
     

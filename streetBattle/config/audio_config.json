@@ -1,0 +1,74 @@
+{
+  "master_volume": 1.0,
+  "bgm_volume": 0.7,
+  "sfx_volume": 0.8,
+  "voice_volume": 0.9,
+  "ui_volume": 0.6,
+  "character_voices": {
+    "kyo": {
+      "attack_1": "kyo_attack_01.ogg",
+      "attack_2": "kyo_attack_02.ogg",
+      "special_move": "kyo_special.ogg",
+      "victory": "kyo_victory.ogg",
+      "defeat": "kyo_defeat.ogg"
+    },
+    "iori": {
+      "attack_1": "iori_attack_01.ogg",
+      "attack_2": "iori_attack_02.ogg",
+      "special_move": "iori_special.ogg",
+      "victory": "iori_victory.ogg",
+      "defeat": "iori_defeat.ogg"
+    },
+    "mr_big": {
+      "attack_1": "mr_big_attack_01.ogg",
+      "attack_2": "mr_big_attack_02.ogg",
+      "special_move": "mr_big_special.ogg",
+      "victory": "mr_big_victory.ogg",
+      "defeat": "mr_big_defeat.ogg"
+    },
+    "ramon": {
+      "attack_1": "ramon_attack_01.ogg",
+      "attack_2": "ramon_attack_02.ogg",
+      "special_move": "ramon_special.ogg",
+      "victory": "ramon_victory.ogg",
+      "defeat": "ramon_defeat.ogg"
+    },
+    "wolfgang": {
+      "attack_1": "wolfgang_attack_01.ogg",
+      "attack_2": "wolfgang_attack_02.ogg",
+      "special_move": "wolfgang_special.ogg",
+      "victory": "wolfgang_victory.ogg",
+      "defeat": "wolfgang_defeat.ogg"
+    }
+  },
+  "combat_sfx": {
+    "light_punch": "punch_light.ogg",
+    "heavy_punch": "punch_heavy.ogg",
+    "light_kick": "kick_light.ogg",
+    "heavy_kick": "kick_heavy.ogg",
+    "special_hit": "special_hit.ogg",
+    "block": "block.ogg",
+    "jump": "jump.ogg",
+    "land": "land.ogg",
+    "combo_hit": "combo_hit.ogg",
+    "super_move": "super_move.ogg"
+  },
+  "ui_sfx": {
+    "menu_select": "menu_select.ogg",
+    "menu_confirm": "menu_confirm.ogg",
+    "menu_cancel": "menu_cancel.ogg",
+    "game_start": "game_start.ogg",
+    "round_start": "round_start.ogg",
+    "round_end": "round_end.ogg",
+    "match_end": "match_end.ogg"
+  },
+  "bgm_tracks": {
+    "main_menu": "main_menu.ogg",
+    "character_select": "character_select.ogg",
+    "battle_stage_1": "battle_01.ogg",
+    "battle_stage_2": "battle_02.ogg",
+    "battle_stage_3": "battle_03.ogg",
+    "victory_theme": "victory.ogg",
+    "credits": "credits.ogg"
+  }
+}

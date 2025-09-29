@@ -8,6 +8,7 @@ streetBattle/assets/characters/
 streetBattle/assets/models/
 streetBattle/assets/textures/
 streetBattle/assets/audio/
+streetBattle/assets/downloads/
 
 # Resource reports and temporary files
 streetBattle/assets/*_report.json

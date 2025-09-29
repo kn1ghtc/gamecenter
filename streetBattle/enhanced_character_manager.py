@@ -96,23 +96,52 @@ class EnhancedCharacterManager:
                     return candidate
             return None
 
-        # Load comprehensive character database (43 characters with valid UIDs)
-        comprehensive_file = find_file("comprehensive_kof_characters.json")
-        if comprehensive_file:
+        # Load comprehensive character database - try complete files first
+        complete_manifest = find_file("characters_manifest_complete.json")
+        complete_animations = find_file("character_animations_complete.json")
+        complete_profiles = find_file("character_profiles_complete.json")
+        
+        # Use complete files if available, otherwise fallback to partial files
+        manifest_file = complete_manifest or find_file("characters_manifest.json") or find_file("comprehensive_kof_characters.json")
+        animations_file = complete_animations or find_file("character_animations.json")
+        profiles_file = complete_profiles or find_file("character_profiles.json")
+        
+        if manifest_file:
             try:
-                with open(comprehensive_file, 'r', encoding='utf-8') as f:
+                with open(manifest_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    self.comprehensive_characters = {char['id']: char for char in data['characters']}
-                print(f"Loaded comprehensive database: {len(self.comprehensive_characters)} characters from {comprehensive_file}")
+                    # Handle different file formats
+                    if 'characters' in data:
+                        if isinstance(data['characters'], list):
+                            # New manifest format
+                            self.comprehensive_characters = {char['id']: char for char in data['characters']}
+                        else:
+                            # Old format with character dict
+                            self.comprehensive_characters = data['characters']
+                    else:
+                        # Legacy format
+                        self.comprehensive_characters = data
+                print(f"Loaded character manifest: {len(self.comprehensive_characters)} characters from {manifest_file.name}")
             except Exception as e:
-                print(f"Failed to load comprehensive database: {e}")
+                print(f"Failed to load character manifest: {e}")
+                self.comprehensive_characters = {}
         else:
-            print("[ERROR] comprehensive_kof_characters.json not found in any known path!")
-            # Create empty comprehensive characters database as fallback
+            print("[ERROR] No character manifest file found!")
             self.comprehensive_characters = {}
+            
+        # Load animations configuration
+        if animations_file:
+            try:
+                with open(animations_file, 'r', encoding='utf-8') as f:
+                    self.character_animations = json.load(f)
+                print(f"Loaded animations for {len(self.character_animations)} characters from {animations_file.name}")
+            except Exception as e:
+                print(f"Failed to load animations: {e}")
+                self.character_animations = {}
+        else:
+            self.character_animations = {}
 
         # Load enhanced profiles
-        profiles_file = find_file("character_profiles.json")
         if profiles_file:
             try:
                 with open(profiles_file, 'r', encoding='utf-8') as f:
@@ -125,13 +154,16 @@ class EnhancedCharacterManager:
                                 'color_scheme': profile.get('color_scheme', {}),
                                 'fighting_style': profile.get('fighting_style', char_data.get('fighting_style', 'Mixed Martial Arts')),
                                 'difficulty': profile.get('difficulty', 3),
-                                'enhanced': True
+                                'enhanced': True,
+                                'origin': profile.get('origin', 'Unknown'),
+                                'stats': profile.get('stats', {}),
+                                'description': profile.get('description', '')
                             })
-                print(f"Merged enhanced profiles from {profiles_file}")
+                print(f"Merged enhanced profiles from {profiles_file.name}")
             except Exception as e:
                 print(f"Failed to load enhanced profiles: {e}")
         else:
-            print("[INFO] character_profiles.json not found, skipping profile merge.")
+            print("[INFO] No character profiles file found, skipping profile merge.")
 
         # Load premium resource configuration
         config_file = find_file("resource_configuration.json")
@@ -505,8 +537,23 @@ class EnhancedCharacterManager:
     
     def _has_renderable_geometry(self, model: Optional[NodePath]) -> bool:
         """Return True if the provided NodePath contains at least one Geom with vertices."""
-        if not model or model.isEmpty():
+        # 安全的空节点检查，避免isEmpty()断言错误
+        if not model:
             return False
+        
+        # 使用try-catch包装isEmpty()调用以防止断言错误
+        try:
+            if model.isEmpty():
+                return False
+        except Exception as empty_check_error:
+            print(f"[DEBUG] NodePath.isEmpty() 检查失败: {empty_check_error}")
+            # 如果isEmpty()失败，尝试通过其他方法检查
+            try:
+                # 尝试获取节点数量作为替代检查
+                if not model.getNode():
+                    return False
+            except Exception:
+                return False
 
         try:
             geom_matches = model.findAllMatches('**/+GeomNode')
@@ -549,7 +596,27 @@ class EnhancedCharacterManager:
             print(f"[EnhancedCharacterManager] Converting {source.name} to BAM for {char_id}")
             source_filename = Filename.fromOsSpecific(str(source))
             model = self.base_app.loader.loadModel(source_filename)
-            if not model or model.isEmpty():
+            # 安全的模型有效性检查
+            if not model:
+                print(f"[EnhancedCharacterManager] Conversion skipped: {source.name} returned None")
+                return None
+            
+            try:
+                if model.isEmpty():
+                    print(f"[EnhancedCharacterManager] Conversion skipped: {source.name} is empty")
+                    return None
+            except Exception as check_error:
+                print(f"[EnhancedCharacterManager] Model validity check failed for {source.name}: {check_error}")
+                # 尝试通过节点检查模型有效性
+                try:
+                    if not model.getNode():
+                        print(f"[EnhancedCharacterManager] Conversion skipped: {source.name} has no node")
+                        return None
+                except Exception:
+                    print(f"[EnhancedCharacterManager] Conversion skipped: {source.name} node check failed")
+                    return None
+            
+            if False:  # 占位符，原条件已处理
                 print(f"[EnhancedCharacterManager] Conversion skipped: {source.name} failed to load")
                 return None
 
@@ -639,6 +706,7 @@ class EnhancedCharacterManager:
                     print(f"[EnhancedCharacterManager] Failed to load local BAM {bam_path.name}: {load_err}")
                     continue
 
+                # 使用改进的几何体检查（已包含安全的isEmpty检查）
                 if not self._has_renderable_geometry(model_np):
                     print(f"[EnhancedCharacterManager] Local BAM has no geometry: {bam_path.name}")
                     model_np.removeNode()
@@ -690,6 +758,7 @@ class EnhancedCharacterManager:
                     print(f"[EnhancedCharacterManager] Sketchfab BAM load failed for {bam_path.name}: {exc}")
                     continue
 
+                # 使用改进的几何体检查（已包含安全的isEmpty检查）
                 if not self._has_renderable_geometry(model_np):
                     print(f"[EnhancedCharacterManager] Sketchfab BAM has no geometry: {bam_path.name}")
                     model_np.removeNode()
@@ -718,6 +787,7 @@ class EnhancedCharacterManager:
                     except Exception:
                         continue
 
+                    # 使用改进的几何体检查（已包含安全的isEmpty检查）
                     if not self._has_renderable_geometry(model_np):
                         model_np.removeNode()
                         continue
@@ -750,14 +820,28 @@ class EnhancedCharacterManager:
 
             char_id = char_data.get('id', character_name.lower().replace(' ', '_'))
 
+            # Try to create Actor from BAM files first
+            actor_model = self._create_actor_from_bam(character_name, char_id, char_data, pos)
+            if actor_model:
+                return actor_model
+
+            # Fallback to NodePath model if Actor creation fails
             local_bam_model = self._load_local_bam_model(character_name, char_id, char_data, pos)
             if local_bam_model:
+                # Convert NodePath to Actor if possible
+                converted_actor = self._convert_noderath_to_actor(local_bam_model, character_name, pos)
+                if converted_actor:
+                    return converted_actor
                 return local_bam_model
 
             sketchfab_dir = self.characters_dir / char_id / "sketchfab"
             if sketchfab_dir.exists():
                 model_np = self._load_sketchfab_resource(character_name, char_id, char_data, sketchfab_dir, pos)
                 if model_np:
+                    # Try to convert to Actor
+                    converted_actor = self._convert_noderath_to_actor(model_np, character_name, pos)
+                    if converted_actor:
+                        return converted_actor
                     return model_np
 
             placeholder = self._create_procedural_placeholder(character_name, char_data, pos)
@@ -770,6 +854,151 @@ class EnhancedCharacterManager:
             placeholder = self._create_procedural_placeholder(character_name, locals().get('char_data', {}), pos)
             if placeholder:
                 return placeholder
+            return None
+
+    def _create_actor_from_bam(self, character_name: str, char_id: str, char_data: Dict[str, Any], pos: Vec3) -> Optional[Actor]:
+        """Create Actor from BAM files with animations"""
+        try:
+            # Look for main character BAM file
+            character_dir = self.characters_dir / char_id
+            sketchfab_dir = character_dir / "sketchfab"
+            
+            # Try different BAM file locations
+            bam_candidates = []
+            
+            # Direct character directory BAM files
+            if character_dir.exists():
+                bam_candidates.extend([
+                    character_dir / f"{char_id}_working.bam",
+                    character_dir / f"{char_id}.bam",
+                ])
+                bam_candidates.extend(sorted(character_dir.glob("*.bam")))
+            
+            # Sketchfab directory BAM files
+            if sketchfab_dir.exists():
+                bam_candidates.extend([
+                    sketchfab_dir / f"{char_id}.bam",
+                    sketchfab_dir / f"{char_id}_converted.bam",
+                ])
+                bam_candidates.extend(sorted(sketchfab_dir.glob("*.bam")))
+            
+            # Remove duplicates while preserving order
+            seen = set()
+            unique_candidates = []
+            for bam_path in bam_candidates:
+                if bam_path not in seen and bam_path.exists():
+                    seen.add(bam_path)
+                    unique_candidates.append(bam_path)
+            
+            for bam_path in unique_candidates:
+                if not self._is_real_3d_resource(bam_path):
+                    continue
+                
+                try:
+                    # Check if this BAM has animation data
+                    animations_dir = bam_path.parent / "animations"
+                    animations = {}
+                    
+                    if animations_dir.exists():
+                        for anim_file in animations_dir.glob("*.bam"):
+                            anim_name = anim_file.stem
+                            animations[anim_name] = str(anim_file)
+                    
+                    # Create Actor with or without animations
+                    filename = Filename.fromOsSpecific(str(bam_path))
+                    
+                    if animations:
+                        # Convert absolute paths to relative paths for Panda3D
+                        norm_animations = {}
+                        script_root = os.path.dirname(os.path.abspath(__file__))
+                        for anim_name, anim_path in animations.items():
+                            try:
+                                rel_path = os.path.relpath(anim_path, script_root)
+                                norm_animations[anim_name] = rel_path.replace('\\', '/')
+                            except ValueError:
+                                norm_animations[anim_name] = anim_path.replace('\\', '/')
+                        
+                        actor = Actor(str(filename), norm_animations)
+                        print(f"[EnhancedCharacterManager] Created Actor with {len(animations)} animations for {character_name}")
+                    else:
+                        # Try to create Actor without animations first
+                        actor = Actor(str(filename))
+                        print(f"[EnhancedCharacterManager] Created Actor without animations for {character_name}")
+                    
+                    if actor and not actor.isEmpty():
+                        # Test Actor validity
+                        try:
+                            actor.getActorInfo()
+                            actor.setPos(pos)
+                            
+                            # Apply material fixes
+                            self._fix_bam_materials(actor, character_name)
+                            self._apply_texture_repair(actor, char_id, bam_path.parent)
+                            self._apply_character_enhancements(actor, char_data)
+                            
+                            self.character_models[character_name] = actor
+                            print(f"[EnhancedCharacterManager] ✅ Created Actor from BAM: {character_name} ({bam_path.name})")
+                            
+                            # List available animations
+                            anim_names = actor.getAnimNames()
+                            if anim_names:
+                                print(f"  Available animations: {list(anim_names)}")
+                            
+                            return actor
+                            
+                        except Exception as e:
+                            print(f"[EnhancedCharacterManager] Actor validation failed for {bam_path.name}: {e}")
+                            if hasattr(actor, 'cleanup'):
+                                actor.cleanup()
+                            actor.removeNode()
+                            continue
+                    else:
+                        print(f"[EnhancedCharacterManager] Empty Actor for {bam_path.name}")
+                        if actor:
+                            if hasattr(actor, 'cleanup'):
+                                actor.cleanup()
+                            actor.removeNode()
+                        continue
+                        
+                except Exception as e:
+                    print(f"[EnhancedCharacterManager] Failed to create Actor from {bam_path.name}: {e}")
+                    continue
+            
+            return None
+            
+        except Exception as e:
+            print(f"[EnhancedCharacterManager] Error in _create_actor_from_bam: {e}")
+            return None
+
+    def _convert_noderath_to_actor(self, node_path: NodePath, character_name: str, pos: Vec3) -> Optional[Actor]:
+        """Try to convert a NodePath to an Actor if it has animation data"""
+        try:
+            # This is a fallback - if we have a NodePath but need an Actor
+            # We'll create a simple Actor wrapper around the NodePath
+            if not node_path or node_path.isEmpty():
+                return None
+            
+            # Check if the NodePath has any character nodes that could be animated
+            char_nodes = node_path.findAllMatches("**/+Character")
+            if char_nodes:
+                # Try to create an Actor from this NodePath
+                # This is experimental and may not always work
+                try:
+                    # Create a temporary Actor and copy the geometry
+                    temp_actor = Actor()
+                    node_path.copyTo(temp_actor)
+                    temp_actor.setPos(pos)
+                    
+                    print(f"[EnhancedCharacterManager] Converted NodePath to Actor for {character_name}")
+                    return temp_actor
+                except Exception as e:
+                    print(f"[EnhancedCharacterManager] NodePath to Actor conversion failed: {e}")
+                    return None
+            
+            return None
+            
+        except Exception as e:
+            print(f"[EnhancedCharacterManager] Error converting NodePath to Actor: {e}")
             return None
 
     def _create_actor_from_path(self, model_path: str, animations: Dict[str, str], character_name: str, pos: Vec3) -> Optional[Actor]:
@@ -1080,25 +1309,22 @@ class EnhancedCharacterManager:
         actor_model = self.create_enhanced_character_model(character_name, pos, resource_tier)
         
         if actor_model:
-            # Create player with enhanced model - pass Actor directly
+            # Create player with enhanced model - pass Actor instance directly
             try:
-                # First create empty player
-                player = Player(self.base_app.render, self.base_app.loader, 
-                               name=character_name, pos=pos)
+                # Create player with the Actor instance
+                player = Player(
+                    render=self.base_app.render, 
+                    loader=self.base_app.loader,
+                    name=character_name, 
+                    pos=pos,
+                    character_data=char_data,
+                    actor_instance=actor_model  # Pass Actor directly
+                )
                 
-                # Remove the placeholder node
-                if hasattr(player, 'node') and player.node:
-                    player.node.removeNode()
+                print(f"[EnhancedCharacterManager] Successfully created player with Actor: {character_name}")
                 
-                # Set the Actor as the player's node and model
-                player.node = actor_model
-                player.model = actor_model
-                actor_model.reparentTo(self.base_app.render)
-                actor_model.setPos(pos)
-                
-                print(f"[EnhancedCharacterManager] Successfully attached Actor to player: {character_name}")
             except Exception as e:
-                print(f"[EnhancedCharacterManager] Error attaching Actor to player: {e}")
+                print(f"[EnhancedCharacterManager] Error creating player with Actor: {e}")
                 # Fallback to basic player
                 return Player(self.base_app.render, self.base_app.loader, 
                              name=character_name, pos=pos)

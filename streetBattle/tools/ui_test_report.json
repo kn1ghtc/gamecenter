@@ -1,0 +1,21 @@
+{
+  "test_time": "D:\\pyproject\\gamecenter\\streetBattle",
+  "results": {
+    "unified_character_list": {
+      "passed": true,
+      "error": null
+    },
+    "portrait_resources": {
+      "passed": true,
+      "error": null
+    },
+    "path_format_fixer": {
+      "passed": true,
+      "error": null
+    },
+    "character_selector_imports": {
+      "passed": true,
+      "error": null
+    }
+  }
+}
