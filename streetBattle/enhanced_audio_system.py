@@ -571,6 +571,9 @@ class EnhancedAudioSystem:
             print(f"⚠️  音频配置保存失败: {e}")
 
 
+AudioSystem = EnhancedAudioSystem
+
+
 def create_sample_audio_files():
     """创建示例音频文件占位符"""
     print("🎵 创建示例音频文件占位符...")

@@ -61,6 +61,7 @@ from gamecenter.streetBattle.game_state import GameStateManager, GameState
 from gamecenter.streetBattle.kof_animation_system import KOFAnimationSystem
 from gamecenter.streetBattle.game_mode_selector import GameModeSelector
 from gamecenter.streetBattle.character_selector import CharacterSelector
+from gamecenter.streetBattle.character_animator import CharacterAnimator
 from gamecenter.streetBattle.special_moves import SpecialMovesSystem, enhance_player_with_special_moves
 from gamecenter.streetBattle.config import SettingsManager
 from gamecenter.streetBattle.sprite_system import SpriteSystem

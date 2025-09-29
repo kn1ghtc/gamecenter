@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+from dotenv import load_dotenv
 
 try:  # pragma: no cover - optional dependency is validated at runtime
     from openai import OpenAI
@@ -26,6 +27,7 @@ except ImportError:  # pragma: no cover - handled gracefully in class
 
 from gamecenter.streetBattle.config import SettingsManager
 
+load_dotenv()
 
 @dataclass(slots=True)
 class CharacterSpec:
@@ -93,17 +95,9 @@ class CharacterImageGenerator:
     # OpenAI client utilities
     # ------------------------------------------------------------------
     def _create_openai_client(self, ai_config: Dict[str, object]) -> Optional[Any]:
-        if OpenAI is None:
-            print("[CharacterImageGenerator] ⚠️ 未安装 openai 包，请执行 `pip install openai` 后重试。")
-            return None
-
-        api_key = os.getenv("OPENAI_API_KEY") or ai_config.get("api_key")
-        if not api_key:
-            print("[CharacterImageGenerator] ⚠️ 未检测到 OPENAI_API_KEY，生成将退化为只写入提示词。")
-            return None
 
         try:
-            return OpenAI(api_key=str(api_key))
+            return OpenAI(api_key=os.environ.get("wildcard_api_key"), base_url=os.environ.get("wildcard_base_url"))
         except Exception as exc:  # pragma: no cover - network/auth errors handled gracefully
             print(f"[CharacterImageGenerator] ⚠️ OpenAI 客户端初始化失败: {exc}")
             return None

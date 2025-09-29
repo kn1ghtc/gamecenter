@@ -48,6 +48,9 @@ class EnhancedCharacterManager:
         script_root = os.path.dirname(os.path.abspath(__file__))
         self.assets_dir = Path(script_root) / "assets"
         self.characters_dir = self.assets_dir / "characters"
+        self.config_dir = Path(script_root) / "config"
+        self.characters_config_dir = self.config_dir / "characters"
+        self.resources_config_dir = self.config_dir / "resources"
         self._simple_model_generator = None
         
         # Initialize Panda3D search paths
@@ -86,29 +89,56 @@ class EnhancedCharacterManager:
     
     def _load_all_databases(self):
         """Load all character databases and resource configurations, supporting multi-path search for robustness."""
-        # 多路径查找顺序：项目根目录、assets、assets/characters
+        # 多路径查找顺序：配置目录优先，其次为 assets 旧结构
         search_paths = [
-            Path(__file__).parent.parent.parent,  # d:\pyproject
-            self.assets_dir,
-            self.assets_dir / "characters"
+            p for p in [
+                self.characters_config_dir,
+                self.resources_config_dir,
+                self.config_dir,
+                self.assets_dir,
+                self.assets_dir / "characters",
+                Path(__file__).parent.parent.parent,  # d:\pyproject
+            ]
+            if p is not None and p.exists()
         ]
 
         def find_file(filename):
+            filename_path = Path(filename)
             for p in search_paths:
-                candidate = p / filename
+                candidate = p / filename_path
                 if candidate.exists():
                     return candidate
             return None
 
-        # Load comprehensive character database - try complete files first
-        complete_manifest = find_file("characters_manifest_complete.json")
-        complete_animations = find_file("character_animations_complete.json")
-        complete_profiles = find_file("character_profiles_complete.json")
-        
-        # Use complete files if available, otherwise fallback to partial files
-        manifest_file = complete_manifest or find_file("characters_manifest.json") or find_file("comprehensive_kof_characters.json")
-        animations_file = complete_animations or find_file("character_animations.json")
-        profiles_file = complete_profiles or find_file("character_profiles.json")
+        def first_existing(*candidates):
+            for candidate in candidates:
+                if not candidate:
+                    continue
+                candidate_path = Path(candidate)
+                if candidate_path.exists():
+                    return candidate_path
+            return None
+
+        # Load comprehensive character database - prefer new config bundle
+        manifest_file = first_existing(
+            self.characters_config_dir / "manifest.json",
+            self.config_dir / "roster.json",
+            find_file("characters_manifest_complete.json"),
+            find_file("characters_manifest.json"),
+            find_file("comprehensive_kof_characters.json"),
+        )
+
+        animations_file = first_existing(
+            self.characters_config_dir / "animations.json",
+            find_file("character_animations_complete.json"),
+            find_file("character_animations.json"),
+        )
+
+        profiles_file = first_existing(
+            self.characters_config_dir / "profiles.json",
+            find_file("character_profiles_complete.json"),
+            find_file("character_profiles.json"),
+        )
         
         if manifest_file:
             try:
@@ -169,8 +199,11 @@ class EnhancedCharacterManager:
         else:
             print("[INFO] No character profiles file found, skipping profile merge.")
 
-        # Load premium resource configuration
-        config_file = find_file("resource_configuration.json")
+        # Load premium resource configuration (catalog + tier metadata)
+        config_file = first_existing(
+            self.resources_config_dir / "configuration.json",
+            find_file("resource_configuration.json"),
+        )
         if config_file:
             try:
                 with open(config_file, 'r', encoding='utf-8') as f:
@@ -209,7 +242,9 @@ class EnhancedCharacterManager:
     
     def _load_character_moves_index(self):
         """Load curated character move definitions from the shared asset bundle."""
-        moves_file = self.assets_dir / "character_moves.json"
+        moves_file = self.characters_config_dir / "moves.json"
+        if not moves_file.exists():
+            moves_file = self.assets_dir / "character_moves.json"
         if not moves_file.exists():
             self.character_moves_index = {}
             self.character_moves_lookup = {}
