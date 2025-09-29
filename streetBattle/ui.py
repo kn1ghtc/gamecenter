@@ -224,6 +224,25 @@ class HUD:
 
     def update(self, players, game_time=None, game_state=None):
         try:
+            # 安全检查players列表
+            if not players or len(players) < 2:
+                # 如果没有足够的玩家，暂时隐藏UI元素
+                if hasattr(self, 'bar_p0'):
+                    self.bar_p0.hide()
+                if hasattr(self, 'bar_p1'):
+                    self.bar_p1.hide()
+                if hasattr(self, 'name_p0'):
+                    self.name_p0.setText("WAITING...")
+                if hasattr(self, 'name_p1'):
+                    self.name_p1.setText("WAITING...")
+                return
+            
+            # 确保UI元素可见
+            if hasattr(self, 'bar_p0'):
+                self.bar_p0.show()
+            if hasattr(self, 'bar_p1'):
+                self.bar_p1.show()
+            
             p0 = players[0]
             p1 = players[1]
             

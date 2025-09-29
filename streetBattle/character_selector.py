@@ -757,14 +757,147 @@ class EnhancedCharacterSelector:
         self.player_number = max(1, int(player_number or 1))
         self.main_frame.show()
         self.visible = True
+        
+        # 启用键盘导航
+        self._setup_navigation()
+        
+        # 初始化选择高亮
+        self.current_selection_index = 0
+        self._update_selection_highlight()
+        
         mode_info = f" | mode: {self.mode}" if mode else ""
         print(f"✓ Character selector visible{mode_info}")
+        print(f"🎮 Navigation: Use WASD or arrow keys to navigate, Enter/Space to select, Escape to cancel")
+    
+    def _setup_navigation(self):
+        """设置键盘导航"""
+        # 清除之前的绑定
+        self._clear_navigation()
+        
+        # 绑定键盘事件
+        from direct.showbase.DirectObject import DirectObject
+        if not hasattr(self, '_event_handler'):
+            self._event_handler = DirectObject()
+        
+        # 方向键导航 (支持WASD和箭头键)
+        self._event_handler.accept('arrow_left', self._navigate_left)
+        self._event_handler.accept('arrow_right', self._navigate_right) 
+        self._event_handler.accept('arrow_up', self._navigate_up)
+        self._event_handler.accept('arrow_down', self._navigate_down)
+        
+        # WASD键导航
+        self._event_handler.accept('a', self._navigate_left)
+        self._event_handler.accept('d', self._navigate_right)
+        self._event_handler.accept('w', self._navigate_up)
+        self._event_handler.accept('s', self._navigate_down)
+        
+        # 确认选择
+        self._event_handler.accept('enter', self._confirm_selection)
+        self._event_handler.accept('space', self._confirm_selection)
+        
+        # 退出
+        self._event_handler.accept('escape', self._cancel_selection)
+        
+        print("🎮 Character selector navigation enabled")
+    
+    def _clear_navigation(self):
+        """清除键盘绑定"""
+        if hasattr(self, '_event_handler'):
+            self._event_handler.ignoreAll()
+    
+    def _navigate_left(self):
+        """左移选择"""
+        if not self.character_buttons:
+            return
+        
+        cols = 8  # 8列布局
+        current_row = self.current_selection_index // cols
+        current_col = self.current_selection_index % cols
+        
+        if current_col > 0:
+            self.current_selection_index -= 1
+            self._update_selection_highlight()
+    
+    def _navigate_right(self):
+        """右移选择"""
+        if not self.character_buttons:
+            return
+            
+        cols = 8  # 8列布局
+        current_row = self.current_selection_index // cols
+        current_col = self.current_selection_index % cols
+        
+        if current_col < cols - 1 and self.current_selection_index + 1 < len(self.character_buttons):
+            self.current_selection_index += 1
+            self._update_selection_highlight()
+    
+    def _navigate_up(self):
+        """上移选择"""
+        if not self.character_buttons:
+            return
+            
+        cols = 8  # 8列布局
+        if self.current_selection_index >= cols:
+            self.current_selection_index -= cols
+            self._update_selection_highlight()
+    
+    def _navigate_down(self):
+        """下移选择"""
+        if not self.character_buttons:
+            return
+            
+        cols = 8  # 8列布局
+        if self.current_selection_index + cols < len(self.character_buttons):
+            self.current_selection_index += cols
+            self._update_selection_highlight()
+    
+    def _update_selection_highlight(self):
+        """更新选择高亮"""
+        if not self.character_buttons or self.current_selection_index >= len(self.character_buttons):
+            return
+        
+        # 清除所有高亮
+        for btn_data in self.character_buttons:
+            btn_data['frame']['frameColor'] = self.colors['card_default']
+        
+        # 高亮当前选择
+        selected_btn = self.character_buttons[self.current_selection_index]
+        selected_btn['frame']['frameColor'] = self.colors['card_hover']
+        
+        # 更新预览
+        char_id = selected_btn['char_id']
+        char_data = self.unified_characters.get(char_id)
+        if char_data:
+            self._preview_character(char_data)
+    
+    def _confirm_selection(self):
+        """确认当前选择"""
+        if not self.character_buttons or self.current_selection_index >= len(self.character_buttons):
+            return
+        
+        selected_btn = self.character_buttons[self.current_selection_index]
+        char_id = selected_btn['char_id']
+        char_data = self.unified_characters.get(char_id)
+        
+        if char_data:
+            self._on_character_selected(char_data)
+    
+    def _cancel_selection(self):
+        """取消选择"""
+        if self.callback:
+            try:
+                self.callback(None)  # 传递None表示取消
+            except Exception as e:
+                print(f"Cancel callback error: {e}")
+        else:
+            self.hide()
     
     def hide(self):
         """隐藏角色选择界面"""
         self.main_frame.hide()
         self.visible = False
         self._clear_preview_model()
+        self._clear_navigation()  # 清除键盘绑定
         print("✓ Character selector hidden")
     
     def cleanup(self):

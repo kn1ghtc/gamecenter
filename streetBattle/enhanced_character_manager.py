@@ -1563,12 +1563,31 @@ class EnhancedCharacterManager:
                 except Exception:
                     pass
             
-            # Apply scaling based on character stats
+            # Apply scaling based on character stats and screen adaptation
             stats = char_data.get('stats', {})
             if stats:
                 speed = stats.get('speed', 5)
-                scale_factor = 0.8 + (speed / 10.0 * 0.4)
-                actor.setScale(scale_factor)
+                base_scale_factor = 0.8 + (speed / 10.0 * 0.4)
+            else:
+                base_scale_factor = 1.0
+            
+            # 为3D战斗模式应用屏幕适配缩放
+            # 由于许多3D模型可能过大，我们需要将其缩小到适合游戏屏幕的大小
+            screen_scale_factor = 0.3  # 基础屏幕缩放因子，使3D模型适配屏幕
+            final_scale = base_scale_factor * screen_scale_factor
+            
+            actor.setScale(final_scale)
+            print(f"✅ Applied 3D character scaling: {final_scale:.2f} (base: {base_scale_factor:.2f}, screen: {screen_scale_factor})")
+            
+            # 确保角色站在地面上，而不是漂浮
+            bounds = actor.getTightBounds()
+            if bounds and bounds[0] and bounds[1]:
+                min_z = bounds[0].getZ()
+                # 将角色的底部对齐到地面 (z=0)
+                if min_z < 0:
+                    current_pos = actor.getPos()
+                    actor.setPos(current_pos.getX(), current_pos.getY(), current_pos.getZ() - min_z)
+                    print(f"✅ Adjusted character ground position: z_offset = {-min_z:.2f}")
             
         except Exception as e:
             print(f"Failed to apply character enhancements: {e}")
@@ -1588,50 +1607,25 @@ class EnhancedCharacterManager:
         
         if actor_model:
             # Create player with enhanced model - pass Actor instance directly
-            try:
-                # Create player with the Actor instance
-                player = Player(
-                    render=self.base_app.render, 
-                    loader=self.base_app.loader,
-                    name=character_name, 
-                    pos=pos,
-                    character_data=char_data,
-                    actor_instance=actor_model  # Pass Actor directly
-                )
-                
-                print(f"[EnhancedCharacterManager] Successfully created player with Actor: {character_name}")
-                
-            except Exception as e:
-                print(f"[EnhancedCharacterManager] Error creating player with Actor: {e}")
-                # Fallback to basic player
-                return Player(self.base_app.render, self.base_app.loader, 
-                             name=character_name, pos=pos)
-            
-            # Set character-specific attributes
-            player.character_name = character_name
-            player.character_id = char_data.get('id', character_name.lower().replace(' ', '_'))
-            player.fighting_style = char_data.get('fighting_style', 'Mixed Martial Arts')
-            
-            # Apply enhanced stats if available
-            stats = char_data.get('stats', {})
-            if stats:
-                player.max_health = stats.get('health', 100)
-                player.health = player.max_health
-                player.speed = stats.get('speed', 5)
-                player.power = stats.get('power', 5)
-            
-            print(f"[EnhancedCharacterManager] Created enhanced player: {character_name}")
-            if hasattr(actor_model, 'getAnimNames'):
-                anims = actor_model.getAnimNames()
-                if anims:
-                    print(f"  Available animations: {list(anims)}")
-            
-            return player
+            enhanced_player = Player(self.base_app.render, self.base_app.loader,
+                                   name=character_name, actor_instance=actor_model, pos=pos)
+            enhanced_player.character_name = character_name
+            enhanced_player.character_id = char_data.get('id', character_name.lower().replace(' ', '_'))
+            enhanced_player.render_mode = "3d"
+            enhanced_player.model_3d = actor_model
+            return enhanced_player
         else:
             # Fallback to basic player
-            print(f"[EnhancedCharacterManager] Falling back to basic player for {character_name}")
-            return Player(self.base_app.render, self.base_app.loader, 
-                         name=character_name, pos=pos)
+            fallback_player = Player(self.base_app.render, self.base_app.loader,
+                                   name=character_name, pos=pos)
+            fallback_player.character_name = character_name
+            fallback_player.character_id = char_data.get('id', character_name.lower().replace(' ', '_'))
+            fallback_player.render_mode = "fallback"
+            return fallback_player
+
+    def create_character_model(self, character_name: str, pos: Vec3 = Vec3(0, 0, 0)) -> Optional[Actor]:
+        """Create 3D character model - compatibility wrapper for main.py"""
+        return self.create_enhanced_character_model(character_name, pos, "auto")
     
     def get_random_character(self) -> str:
         """Get random character name from comprehensive database"""

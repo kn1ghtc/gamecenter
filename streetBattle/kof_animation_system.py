@@ -366,12 +366,23 @@ class KOFAnimationSystem:
                     print(f"🎭 Playing animation '{actual_anim_name}' for {char_id} (requested: {animation_name})")
                     return True
                 else:
-                    print(f"⚠️  Animation '{animation_name}' not found for {char_id}, using procedural")
+                    # Only print warning once per character per animation
+                    warn_key = f"{char_id}_{animation_name}_not_found"
+                    if not hasattr(self, '_warned_animations'):
+                        self._warned_animations = set()
+                    if warn_key not in self._warned_animations:
+                        print(f"⚠️  Animation '{animation_name}' not found for {char_id}, using procedural")
+                        self._warned_animations.add(warn_key)
                     # Fallback to procedural animation
                     return self._play_procedural_animation(char_id, animation_name, loop, speed)
             else:
-                # Use procedural animation for non-Actor models
-                print(f"🤖 Using procedural animation for {char_id} ({animation_name})")
+                # Use procedural animation for non-Actor models (only log once per character)
+                proc_key = f"{char_id}_procedural"
+                if not hasattr(self, '_procedural_logged'):
+                    self._procedural_logged = set()
+                if proc_key not in self._procedural_logged:
+                    print(f"🤖 Using procedural animation for {char_id} (3D model without BAM animations)")
+                    self._procedural_logged.add(proc_key)
                 return self._play_procedural_animation(char_id, animation_name, loop, speed)
                 
         except Exception as e:
@@ -553,6 +564,45 @@ class KOFAnimationSystem:
         sway_sequence = Sequence(sway_left, sway_right)
         
         return Parallel(step_sequence, sway_sequence)
+    
+    def update_animation(self, char_id, player_inputs, player_state):
+        """Update character animation based on input and state"""
+        if char_id not in self.characters:
+            return
+        
+        character = self.characters[char_id]
+        
+        # Determine the appropriate animation based on player state and inputs
+        target_animation = self._determine_animation(player_inputs, player_state)
+        
+        # Only change animation if it's different from current
+        if character['current_animation'] != target_animation:
+            self.play_animation(char_id, target_animation)
+    
+    def _determine_animation(self, player_inputs, player_state):
+        """Determine which animation to play based on inputs and state"""
+        if not player_inputs:
+            return 'idle'
+        
+        # State-based animations take priority
+        if player_state in ['hurt', 'knockdown']:
+            return 'hit'
+        elif player_state in ['light_atk', 'heavy_atk']:
+            return 'attack'
+        elif player_state in ['jump', 'jump_atk', 'jump_heavy_atk']:
+            return 'jump'
+        
+        # Input-based animations
+        movement_keys = ['left', 'right', 'up', 'down']
+        if any(player_inputs.get(key, False) for key in movement_keys):
+            return 'walk'
+        
+        # Attack inputs
+        if player_inputs.get('light', False) or player_inputs.get('heavy', False):
+            return 'attack'
+        
+        # Default to idle
+        return 'idle'
     
     def _create_attack_animation(self, model, attack_type, speed):
         """Create KOF-style attack animation"""

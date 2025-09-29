@@ -334,6 +334,12 @@ class StreetBattleGame(ShowBase):
 	
 	def _on_character_selected(self, character_name):
 		"""Handle character selection and initialize game"""
+		# 检查是否取消选择
+		if character_name is None:
+			print("Character selection cancelled")
+			self._return_to_mode_selection()
+			return
+		
 		self.selected_character = character_name
 		self.character_selector.hide()
 		
@@ -572,6 +578,10 @@ class StreetBattleGame(ShowBase):
 
 	def _finalize_scene_setup(self):
 		"""Finish initializing gameplay systems once the arena exists."""
+		# Get preferred rendering mode from settings
+		preferred_mode = self.settings_manager.get("preferred_version", "3d")
+		print(f"🎮 Initializing in {preferred_mode.upper()} mode")
+		
 		# Gameplay systems
 		self.mode = 'local'  # Will be updated based on game mode
 		self.netpeer = None
@@ -591,76 +601,19 @@ class StreetBattleGame(ShowBase):
 		self.game_state.on_round_end = self._on_round_end
 		self.game_state.on_game_end = self._on_game_end
 
-		# Create players with 2.5D sprites
+		# Create players based on preferred mode
 		self.players = []
 		self.sprite_characters = []
 		
-		print(f"\\n🎭 LOADING 2.5D BATTLE CHARACTERS")
+		print(f"\\n🎭 LOADING {preferred_mode.upper()} BATTLE CHARACTERS")
 		print(f"   Player 1: {self.selected_character}")
 		print(f"   Player 2: {self.selected_opponent}")
 		print(f"   Mode: {self.current_game_mode.title()}")
-		print("   Initializing sprite characters...")
 		
-		# Create sprite characters
-		try:
-			# Player 1 sprite
-			char_id_p0 = self.selected_character.lower().replace(' ', '_')
-			sprite_p0 = self.sprite_system.create_sprite_character(
-				char_id_p0, self.selected_character, Vec3(-3, 0, 0)
-			)
-			
-			if sprite_p0:
-				print(f"Player 1 sprite created: {self.selected_character}")
-				self.sprite_characters.append(sprite_p0)
-			else:
-				print(f"Failed to create sprite for {self.selected_character}")
-				
-		except Exception as e:
-			print(f"Failed to create player 1 sprite: {e}")
-		
-		try:
-			# Player 2 sprite
-			char_id_p1 = self.selected_opponent.lower().replace(' ', '_')
-			sprite_p1 = self.sprite_system.create_sprite_character(
-				char_id_p1, self.selected_opponent, Vec3(3, 0, 0)
-			)
-			
-			if sprite_p1:
-				print(f"Player 2 sprite created: {self.selected_opponent}")
-				# Make opponent face left
-				sprite_p1.set_facing(False)
-				self.sprite_characters.append(sprite_p1)
-			else:
-				print(f"Failed to create sprite for {self.selected_opponent}")
-				
-		except Exception as e:
-			print(f"Failed to create player 2 sprite: {e}")
-		
-		# Create basic Player objects for game logic (without 3D models)
-		try:
-			p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
-			p0.character_name = self.selected_character
-			p0.character_id = char_id_p0
-			p0.sprite_character = sprite_p0 if len(self.sprite_characters) > 0 else None
-			print(f"Player 1 logic created: {self.selected_character}")
-		except Exception as e:
-			print(f"Failed to create player 1 logic: {e}")
-			p0 = None
-		
-		try:
-			p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
-			p1.character_name = self.selected_opponent
-			p1.character_id = char_id_p1
-			p1.sprite_character = sprite_p1 if len(self.sprite_characters) > 1 else None
-			print(f"Player 2 logic created: {self.selected_opponent}")
-		except Exception as e:
-			print(f"Failed to create player 2 logic: {e}")
-			p1 = None
-		
-		if p0:
-			self.players.append(p0)
-		if p1:
-			self.players.append(p1)
+		if preferred_mode == "2.5d":
+			self._initialize_2_5d_mode()
+		else:
+			self._initialize_3d_mode()
 
 		# Initialize special moves system
 		self.special_moves = SpecialMovesSystem(self)
@@ -675,27 +628,6 @@ class StreetBattleGame(ShowBase):
 			except Exception:
 				pass
 			print(f"Player {i+1} enhanced with special moves system")
-
-		# Register players for animation
-		try:
-			# Extract body parts from cartoon characters if available
-			p0_parts = self._extract_body_parts(p0)
-			p1_parts = self._extract_body_parts(p1)
-			
-			# Register with original animator
-			self.animator.register_character("player_0", p0.model if hasattr(p0, 'model') else p0.node, p0_parts)
-			self.animator.register_character("player_1", p1.model if hasattr(p1, 'model') else p1.node, p1_parts)
-			
-			# Register with KOF animation system
-			p0_actor = p0.model if hasattr(p0, 'model') and isinstance(p0.model, Actor) else None
-			p1_actor = p1.model if hasattr(p1, 'model') and isinstance(p1.model, Actor) else None
-			
-			self.kof_animator.register_character(self.selected_character, p0.model if hasattr(p0, 'model') else p0.node, p0_actor)
-			self.kof_animator.register_character(self.selected_opponent, p1.model if hasattr(p1, 'model') else p1.node, p1_actor)
-			
-			print("Players registered for both animation systems")
-		except Exception as e:
-			print(f"Animation registration failed: {e}")
 
 		self.combat = CombatSystem(self.players)
 
@@ -753,10 +685,14 @@ class StreetBattleGame(ShowBase):
 				Path('assets/audio/bgm_loop.wav'),
 			]
 			bgm_loaded = False
+			bgm_track_name = None
 			for bgm_path in audio_candidates:
 				if bgm_path.exists():
-					self.audio.load_bgm(str(bgm_path))
+					# 使用文件名作为track名称
+					bgm_track_name = bgm_path.stem  # 获取不含扩展名的文件名
+					self.audio.load_bgm(str(bgm_path), name=bgm_track_name)
 					bgm_loaded = True
+					print(f"Loaded background music: {bgm_path}")
 					break
 			if not bgm_loaded:
 				print("No background music available")
@@ -787,13 +723,229 @@ class StreetBattleGame(ShowBase):
 				print("No combo sound available")
 
 			# play bgm in local mode
-			if self.mode == 'local' and bgm_loaded:
-				self.audio.play_bgm(loop=True)
+			if self.mode == 'local' and bgm_loaded and bgm_track_name:
+				self.audio.play_bgm(bgm_track_name, loop=True)
 		except Exception as e:
 			print(f"Audio loading failed: {e}")
 		
 		self.game_initialized = True
-		print("Game initialized successfully!")
+		print(f"✅ {preferred_mode.upper()} Game mode initialized successfully!")
+	
+	def _initialize_2_5d_mode(self):
+		"""Initialize 2.5D sprite-based rendering mode"""
+		print("   Initializing 2.5D sprite characters...")
+		
+		# Create sprite characters
+		try:
+			# Player 1 sprite
+			char_id_p0 = self.selected_character.lower().replace(' ', '_')
+			sprite_p0 = self.sprite_system.create_sprite_character(
+				char_id_p0, self.selected_character, Vec3(-3, 0, 0)
+			)
+			
+			if sprite_p0:
+				print(f"Player 1 sprite created: {self.selected_character}")
+				self.sprite_characters.append(sprite_p0)
+			else:
+				print(f"Failed to create sprite for {self.selected_character}")
+				
+		except Exception as e:
+			print(f"Failed to create player 1 sprite: {e}")
+		
+		try:
+			# Player 2 sprite
+			char_id_p1 = self.selected_opponent.lower().replace(' ', '_')
+			sprite_p1 = self.sprite_system.create_sprite_character(
+				char_id_p1, self.selected_opponent, Vec3(3, 0, 0)
+			)
+			
+			if sprite_p1:
+				print(f"Player 2 sprite created: {self.selected_opponent}")
+				# Make opponent face left
+				sprite_p1.set_facing(False)
+				self.sprite_characters.append(sprite_p1)
+			else:
+				print(f"Failed to create sprite for {self.selected_opponent}")
+				
+		except Exception as e:
+			print(f"Failed to create player 2 sprite: {e}")
+		
+		# Create basic Player objects for game logic (without 3D models)
+		try:
+			p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
+			p0.character_name = self.selected_character
+			p0.character_id = char_id_p0
+			p0.sprite_character = sprite_p0 if len(self.sprite_characters) > 0 else None
+			p0.render_mode = "2.5d"
+			self.players.append(p0)
+			print(f"Player 1 logic created: {self.selected_character}")
+		except Exception as e:
+			print(f"Failed to create player 1 logic: {e}")
+		
+		try:
+			p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
+			p1.character_name = self.selected_opponent
+			p1.character_id = char_id_p1
+			p1.sprite_character = sprite_p1 if len(self.sprite_characters) > 1 else None
+			p1.render_mode = "2.5d"
+			self.players.append(p1)
+			print(f"Player 2 logic created: {self.selected_opponent}")
+		except Exception as e:
+			print(f"Failed to create player 2 logic: {e}")
+			
+		print(f"🎮 2.5D Mode: {len(self.players)} players, {len(self.sprite_characters)} sprites")
+		
+		# Register players for sprite animation system only
+		try:
+			for i, player in enumerate(self.players):
+				# Only register with 2.5D systems
+				if hasattr(player, 'sprite_character') and player.sprite_character:
+					print(f"Registered Player {i+1} for 2.5D sprite animations")
+		except Exception as e:
+			print(f"2.5D animation registration failed: {e}")
+	
+	def _initialize_3d_mode(self):
+		"""Initialize 3D model-based rendering mode"""
+		print("   Initializing 3D model characters...")
+		
+		# 确保有默认角色
+		if not self.selected_character:
+			self.selected_character = "Kyo Kusanagi"
+			print(f"⚠️  No character selected, using default: {self.selected_character}")
+			
+		if not self.selected_opponent:
+			self.selected_opponent = "Iori Yagami"
+			print(f"⚠️  No opponent selected, using default: {self.selected_opponent}")
+		
+		# Create 3D characters using character manager
+		try:
+			# Player 1 - 3D model only
+			char_id_p0 = self.selected_character.lower().replace(' ', '_')
+			model_p0 = self.char_manager.create_character_model(
+				self.selected_character, Vec3(-3, 0, 0)
+			)
+			
+			if model_p0:
+				# Create Player object with 3D model
+				try:
+					p0 = Player(self.render, self.loader, name=self.selected_character, 
+							   actor_instance=model_p0, pos=Vec3(-3, 0, 0))
+					p0.character_name = self.selected_character
+					p0.character_id = char_id_p0
+					p0.render_mode = "3d"
+					p0.model_3d = model_p0
+					self.players.append(p0)
+					print(f"✅ Player 1 3D model created: {self.selected_character}")
+				except Exception as e:
+					print(f"❌ Failed to create Player 1 with 3D model: {e}")
+					# Fallback to basic player without 3D model
+					p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
+					p0.character_name = self.selected_character
+					p0.character_id = char_id_p0
+					p0.render_mode = "fallback"
+					self.players.append(p0)
+					print(f"✅ Player 1 fallback created: {self.selected_character}")
+			else:
+				print(f"⚠️  Player 1 3D model creation failed: {self.selected_character}")
+				# 创建一个基础的Player对象作为fallback
+				p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
+				p0.character_name = self.selected_character
+				p0.character_id = char_id_p0
+				p0.render_mode = "fallback"
+				self.players.append(p0)
+				print(f"✅ Player 1 fallback created: {self.selected_character}")
+				
+		except Exception as e:
+			print(f"❌ Failed to create player 1 3D model: {e}")
+			# 作为最后的fallback - 确保至少有一个Player对象
+			try:
+				p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
+				p0.character_name = self.selected_character
+				p0.character_id = self.selected_character.lower().replace(' ', '_')
+				p0.render_mode = "emergency"
+				self.players.append(p0)
+				print(f"✅ Player 1 emergency fallback created")
+			except Exception as fallback_e:
+				print(f"❌ Complete failure creating player 1: {fallback_e}")
+				# 创建最基础的Player对象，不能让players列表为空
+				p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
+				self.players.append(p0)
+		
+		try:
+			# Player 2 - 3D model only  
+			char_id_p1 = self.selected_opponent.lower().replace(' ', '_')
+			model_p1 = self.char_manager.create_character_model(
+				self.selected_opponent, Vec3(3, 0, 0)
+			)
+			
+			if model_p1:
+				# Create Player object with 3D model
+				try:
+					p1 = Player(self.render, self.loader, name=self.selected_opponent,
+							   actor_instance=model_p1, pos=Vec3(3, 0, 0))
+					p1.character_name = self.selected_opponent
+					p1.character_id = char_id_p1
+					p1.render_mode = "3d"
+					p1.model_3d = model_p1
+					self.players.append(p1)
+					print(f"✅ Player 2 3D model created: {self.selected_opponent}")
+				except Exception as e:
+					print(f"❌ Failed to create Player 2 with 3D model: {e}")
+					# Fallback to basic player without 3D model
+					p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
+					p1.character_name = self.selected_opponent
+					p1.character_id = char_id_p1
+					p1.render_mode = "fallback"
+					self.players.append(p1)
+					print(f"✅ Player 2 fallback created: {self.selected_opponent}")
+			else:
+				print(f"⚠️  Player 2 3D model creation failed: {self.selected_opponent}")
+				# 创建一个基础的Player对象作为fallback
+				p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
+				p1.character_name = self.selected_opponent
+				p1.character_id = char_id_p1
+				p1.render_mode = "fallback"
+				self.players.append(p1)
+				print(f"✅ Player 2 fallback created: {self.selected_opponent}")
+				
+		except Exception as e:
+			print(f"❌ Failed to create player 2 3D model: {e}")
+			# 作为最后的fallback - 确保至少有两个Player对象
+			try:
+				p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
+				p1.character_name = self.selected_opponent
+				p1.character_id = self.selected_opponent.lower().replace(' ', '_')
+				p1.render_mode = "emergency"
+				self.players.append(p1)
+				print(f"✅ Player 2 emergency fallback created")
+			except Exception as fallback_e:
+				print(f"❌ Complete failure creating player 2: {fallback_e}")
+				# 创建最基础的Player对象，不能让players列表只有一个
+				p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
+				self.players.append(p1)
+			
+		print(f"🎮 3D Mode: {len(self.players)} players with 3D models")
+		
+		# Register players for 3D animation systems only
+		try:
+			for i, player in enumerate(self.players):
+				char_name = player.character_name
+				char_id = player.character_id
+				
+				if hasattr(player, 'model_3d') and player.model_3d:
+					# Extract body parts for original animator
+					body_parts = self._extract_body_parts(player)
+					
+					# Register with original animator
+					self.animator.register_character(f"player_{i}", player.model_3d, body_parts)
+					
+					# Register with KOF animation system
+					actor_instance = player.model_3d if isinstance(player.model_3d, Actor) else None
+					self.kof_animator.register_character(char_id, player.model_3d, actor_instance)
+					
+					print(f"✅ Registered Player {i+1} for 3D animations: {char_name}")
+		except Exception as e:
+			print(f"❌ 3D animation registration failed: {e}")
 
 	def start_network(self, mode='local', host_ip=None, port=12000):
 		self.mode = mode
@@ -996,6 +1148,7 @@ Jump + Attack = Air Attack"""
 		
 		# Only process input and combat during fighting state
 		if self.game_state.is_fighting():
+			# Debug input handling
 			speed = 6.0
 			move = Vec3(0, 0, 0)
 			if self.key_map['left']:
@@ -1013,16 +1166,27 @@ Jump + Attack = Air Attack"""
 			# Only debug print inputs occasionally to avoid spam
 			active_keys = [k for k, v in local_inputs.items() if v]
 			if active_keys and self.frame % 30 == 0:  # Print every 30 frames (0.5 seconds at 60fps)
-				print(f"Player input: {active_keys}")
+				print(f"🎮 Player input detected: {active_keys}")
 			
-			self.players[0].apply_input(local_inputs, dt)
-			# send inputs to host if client
-			self.send_local_input(local_inputs)
+			# Ensure we have players before applying input
+			if len(self.players) > 0:
+				try:
+					self.players[0].apply_input(local_inputs, dt)
+					if active_keys and self.frame % 30 == 0:
+						print(f"🚀 Applied input to player 0: pos={self.players[0].pos}")
+				except Exception as e:
+					print(f"❌ Error applying input to player 0: {e}")
+				
+				# send inputs to host if client
+				self.send_local_input(local_inputs)
 
 			# AI or network-driven opponent
-			if self.mode == 'local' and hasattr(self, 'ai'):
-				opp_inputs = self.ai.decide(self.players[1], self.players[0])
-				self.players[1].apply_input(opp_inputs, dt)
+			if self.mode == 'local' and hasattr(self, 'ai') and len(self.players) > 1:
+				try:
+					opp_inputs = self.ai.decide(self.players[1], self.players[0])
+					self.players[1].apply_input(opp_inputs, dt)
+				except Exception as e:
+					print(f"❌ Error applying AI input: {e}")
 		elif self.mode == 'host' and self.netpeer:
 			# consume buffered inputs from clients (we may need rollback if inputs are late)
 			for addr, buf in list(self._client_input_buffer.items()):
@@ -1075,12 +1239,19 @@ Jump + Attack = Air Attack"""
 				# play VFX / audio based on hit type
 				hit_type = h.get('type', 'normal')
 				pos = h.get('pos')
+				damage = h.get('damage', 0)
 				
-				if hit_type == 'combo' or h.get('damage', 0) > 15:
+				if hit_type == 'combo' or damage > 15:
 					# Enhanced combo effect
 					self.vfx.play_combo_effect(pos) 
 					self.audio.play_sfx('combo')
-					print("Combo hit!")
+					print("💥 Combo hit!")
+				elif hit_type == 'special':
+					# Special move effect
+					move_name = h.get('move_name', 'fireball')
+					self.vfx.play_special_move_effect(pos, move_name)
+					self.audio.play_sfx('combo')
+					print(f"🔥 Special move: {move_name}")
 				else:
 					# Normal hit effect
 					self.vfx.play_hit(pos)
@@ -1120,34 +1291,40 @@ Jump + Attack = Air Attack"""
 		for i, p in enumerate(self.players):
 			p.update(dt)
 			
-			# Update 2.5D sprite animations based on player state
-			if hasattr(p, 'sprite_character') and p.sprite_character:
-				self._update_sprite_animation(p, i)
-				# Update sprite position
-				p.sprite_character.set_position(p.pos)
+			# Get current preferred rendering mode
+			preferred_mode = self.settings_manager.get("preferred_version", "3d")
 			
-			# Update character animations based on player state (only during fighting for performance)
-			if self.game_state.is_fighting():
-				player_inputs = None
-				if i == 0:  # Player 1 (local input)
-					player_inputs = {k: self.key_map.get(k, False) for k in ['left', 'right', 'up', 'down', 'light', 'heavy', 'jump']}
-				
-				# Update original animation system (less frequently to improve performance)
-				if self.frame % 2 == 0:  # Update every other frame
-					try:
-						self.animator.update_animation_state(f"player_{i}", p.state, player_inputs)
-					except Exception as e:
-						if self.frame % 300 == 0:  # Only log every 5 seconds
-							print(f"Animation update error: {e}")
-				
-				# Update KOF animation system (primary animation system)
-				char_name = self.selected_character if i == 0 else self.selected_opponent
-				if hasattr(self, 'kof_animator') and char_name:
-					try:
-						self.kof_animator.update_animation(char_name, player_inputs, p.state)
-					except Exception as e:
-						if self.frame % 300 == 0:  # Only log every 5 seconds
-							print(f"KOF animation update error: {e}")
+			# Update rendering based on mode
+			if preferred_mode == "2.5d":
+				# Update 2.5D sprite animations based on player state
+				if hasattr(p, 'sprite_character') and p.sprite_character:
+					self._update_sprite_animation(p, i)
+					# Update sprite position
+					p.sprite_character.set_position(p.pos)
+			else:
+				# Update 3D model animations during fighting for performance
+				if self.game_state.is_fighting():
+					player_inputs = None
+					if i == 0:  # Player 1 (local input)
+						player_inputs = {k: self.key_map.get(k, False) for k in ['left', 'right', 'up', 'down', 'light', 'heavy', 'jump']}
+					
+					# Update original animation system (less frequently to improve performance)
+					if self.frame % 2 == 0:  # Update every other frame
+						try:
+							self.animator.update_animation_state(f"player_{i}", p.state, player_inputs)
+						except Exception as e:
+							if self.frame % 300 == 0:  # Only log every 5 seconds
+								print(f"Animation update error: {e}")
+					
+					# Update KOF animation system (primary animation system for 3D)
+					char_name = self.selected_character if i == 0 else self.selected_opponent
+					if hasattr(self, 'kof_animator') and char_name:
+						try:
+							char_id = char_name.lower().replace(' ', '_')
+							self.kof_animator.update_animation(char_id, player_inputs, p.state)
+						except Exception as e:
+							if self.frame % 300 == 0:  # Only log every 5 seconds
+								print(f"KOF animation update error: {e}")
 
 		# camera shake for VFX
 		if hasattr(self.vfx, '_shake_timer') and self.vfx._shake_timer > 0 and self.cam:
@@ -1304,6 +1481,11 @@ Jump + Attack = Air Attack"""
 	def _reset_round(self):
 		"""Reset players for new round"""
 		try:
+			# 确保有足够的玩家
+			if len(self.players) < 2:
+				print(f"⚠️ Warning: Only {len(self.players)} players available, cannot reset round properly")
+				return
+			
 			# Reset positions
 			self.players[0].pos = Vec3(-3, 0, 0)
 			self.players[1].pos = Vec3(3, 0, 0)

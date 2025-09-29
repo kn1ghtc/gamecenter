@@ -420,6 +420,7 @@ class EnhancedAudioSystem:
         """增强的音效加载"""
         key = name or path
         resolved_path = self._resolve_audio_file(path)
+        # 使用适合Panda3D的路径格式（Unix风格）
         resolved_str = resolved_path.as_posix()
 
         if not self.base:
@@ -428,7 +429,9 @@ class EnhancedAudioSystem:
             return exists
         
         try:
-            sound = self.base.loader.loadSfx(resolved_str)
+            # 在Windows上，确保路径使用正斜杠
+            panda_path = resolved_str.replace('\\', '/')
+            sound = self.base.loader.loadSfx(panda_path)
             if sound:
                 self.sounds[key] = {
                     "sound": sound,
@@ -437,6 +440,7 @@ class EnhancedAudioSystem:
                     "category": AudioCategory.SFX,
                     "priority": AudioPriority.NORMAL
                 }
+                print(f"✅ 成功加载音效: {key} -> {panda_path}")
                 return True
         except Exception as e:
             print(f"⚠️  音效加载失败 {resolved_str}: {e}")
@@ -509,6 +513,7 @@ class EnhancedAudioSystem:
         """增强的背景音乐加载"""
         key = name or path
         resolved_path = self._resolve_audio_file(path)
+        # 使用适合Panda3D的路径格式（Unix风格）
         resolved_str = resolved_path.as_posix()
         if not self.base:
             exists = resolved_path.exists()
@@ -516,13 +521,16 @@ class EnhancedAudioSystem:
             return exists
         
         try:
-            music = self.base.loader.loadMusic(resolved_str)
+            # 在Windows上，确保路径使用正斜杠
+            panda_path = resolved_str.replace('\\', '/')
+            music = self.base.loader.loadMusic(panda_path)
             if music:
                 self.music_tracks[key] = {
                     "music": music,
                     "path": resolved_str,
                     "loaded": True
                 }
+                print(f"✅ 成功加载背景音乐: {key} -> {panda_path}")
                 return True
         except Exception as e:
             print(f"⚠️  背景音乐加载失败 {resolved_str}: {e}")

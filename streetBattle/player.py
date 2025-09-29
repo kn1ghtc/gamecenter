@@ -26,6 +26,9 @@ class Player:
 		self.facing = 1
 		self.speed = 6.0
 		
+		# Combat attributes
+		self.hit_radius = char_stats.get('hit_radius', 1.5)  # Default hit radius
+		
 		# 处理pos参数，支持tuple和Vec3
 		if isinstance(pos, tuple):
 			self.pos = Vec3(pos[0], pos[1], pos[2])
@@ -119,6 +122,13 @@ class Player:
 		# Set position - 只在真实Panda3D环境中调用setPos
 		if self.node and hasattr(self.node, 'setPos'):
 			self.node.setPos(self.pos)
+			# 确保3D模型被正确父化到render节点
+			if hasattr(self.node, 'reparentTo') and render:
+				self.node.reparentTo(render)
+				print(f"[Player] Reparented {self.name} 3D model to render node")
+			
+			# 确保模型在地面上，而不是漂浮
+			self._ensure_ground_contact()
 	
 	def _load_character_stats(self):
 		"""Load character statistics from config file"""
@@ -202,7 +212,29 @@ class Player:
 		self.hit_radius = 1.0
 		# interpolation target (used by clients to smooth remote player)
 		self.target_pos = None
-		self.interpolate_speed = 12.0
+
+	def _ensure_ground_contact(self):
+		"""确保3D角色模型正确站在地面上"""
+		if not self.node or not hasattr(self.node, 'getTightBounds'):
+			return
+		
+		try:
+			# 获取模型的边界框
+			bounds = self.node.getTightBounds()
+			if bounds and bounds[0] and bounds[1]:
+				min_point = bounds[0]
+				max_point = bounds[1]
+				model_bottom_y = min_point.getZ()
+				
+				# 如果模型底部不在地面上，调整位置
+				if model_bottom_y != self.ground_y:
+					adjustment = self.ground_y - model_bottom_y
+					current_pos = self.node.getPos()
+					self.node.setPos(current_pos.getX(), current_pos.getY(), current_pos.getZ() + adjustment)
+					self.pos.z = current_pos.getZ() + adjustment
+					print(f"[Player] Adjusted {self.name} ground contact: y_offset = {adjustment:.2f}")
+		except Exception as e:
+			print(f"[Player] Ground contact adjustment failed for {self.name}: {e}")
 
 	# Removed programmatic cartoon character creation: Actor-only pipeline
 	
@@ -262,7 +294,24 @@ class Player:
 
 		# Apply horizontal movement
 		if move.lengthSquared() > 0 and self.attack_cooldown <= 0:
+			old_pos = Vec3(self.pos)
 			self.pos += move
+			
+			# Immediately update 3D model position
+			if self.node and hasattr(self.node, 'setPos'):
+				try:
+					self.node.setPos(self.pos)
+					# Debug output for position changes (reduced frequency)
+					if not hasattr(self, '_debug_counter'):
+						self._debug_counter = 0
+					self._debug_counter += 1
+					if self._debug_counter % 60 == 0:  # Print every 60 frames (1 second at 60fps)
+						print(f"🎮 {self.name} position: {self.pos}")
+				except Exception as e:
+					print(f"❌ Error updating {self.name} position: {e}")
+			
+			# Clear any target position to avoid interpolation conflicts
+			self.target_pos = None
 
 		# attacks are edge-triggered
 		if inputs.get('light') and self.attack_cooldown <= 0:
@@ -314,10 +363,14 @@ class Player:
 				if self.state == 'jump':
 					self.state = 'idle'
 		
-		# Update model position
+		# Update model position only if no input movement is happening
+		# This prevents conflicts between input-driven movement and interpolation
 		if self.node:
 			try:
-				self.node.setPos(self.pos)
+				# Always ensure the 3D model position matches logical position
+				current_model_pos = self.node.getPos() if hasattr(self.node, 'getPos') else None
+				if current_model_pos is None or (current_model_pos - self.pos).length() > 0.01:
+					self.node.setPos(self.pos)
 			except Exception:
 				pass
 		
@@ -365,8 +418,8 @@ class Player:
 					except Exception:
 						pass
 		# ensure node follows pos
-		# client-side interpolation: if a target_pos exists, move smoothly
-		if self.target_pos is not None:
+		# client-side interpolation: only use if no direct input movement is happening
+		if self.target_pos is not None and not hasattr(self, '_direct_movement_frame'):
 			# move towards target position
 			delta = self.target_pos - self.pos
 			step = delta * min(1.0, dt * self.interpolate_speed)
@@ -375,7 +428,9 @@ class Player:
 				# snap if very close
 				if (self.target_pos - self.pos).length() < 0.01:
 					self.pos = Vec3(self.target_pos)
+					self.target_pos = None
 
+		# Final position sync to ensure 3D model is always in sync
 		if self.node:
 			try:
 				self.node.setPos(self.pos)
@@ -387,6 +442,29 @@ class Player:
 			self.target_pos = Vec3(pos)
 		except Exception:
 			self.target_pos = None
+
+	def debug_status(self):
+		"""Debug method to check player status"""
+		status = {
+			'name': self.name,
+			'pos': f"({self.pos.x:.2f}, {self.pos.y:.2f}, {self.pos.z:.2f})",
+			'node_exists': self.node is not None,
+			'node_type': type(self.node).__name__ if self.node else None,
+			'node_empty': self.node.isEmpty() if self.node and hasattr(self.node, 'isEmpty') else "N/A",
+			'state': self.state,
+			'speed': self.speed
+		}
+		
+		if self.node and hasattr(self.node, 'getPos'):
+			try:
+				model_pos = self.node.getPos()
+				status['model_pos'] = f"({model_pos.x:.2f}, {model_pos.y:.2f}, {model_pos.z:.2f})"
+			except:
+				status['model_pos'] = "Error getting position"
+		else:
+			status['model_pos'] = "No getPos method"
+			
+		return status
 
 	def serialize_state(self):
 		# Return a JSON-serializable snapshot of the player's state
