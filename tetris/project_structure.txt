@@ -1,0 +1,20 @@
+tetris_game/
+│
+├── src/
+│   ├── __init__.py
+│   ├── game.py           # 主游戏逻辑
+│   ├── tetromino.py      # 方块类定义
+│   ├── board.py          # 游戏板类定义
+│   ├── settings.py       # 游戏配置和常量
+│   └── utils.py          # 工具函数
+│
+├── assets/
+│   ├── fonts/           # 字体文件
+│   └── sounds/          # 音效文件
+│
+├── docs/
+│   └── user_manual.md   # 用户手册
+│
+├── requirements.txt     # 项目依赖
+├── README.md           # 项目说明
+└── main.py             # 入口文件
