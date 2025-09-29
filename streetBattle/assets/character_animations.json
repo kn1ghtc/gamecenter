@@ -1,0 +1,4264 @@
+{
+  "kyo_kusanagi": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "fireball": {
+        "file": "kyo_fireball.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "dp_punch": {
+        "file": "kyo_dp.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "rekka_ken": {
+        "file": "kyo_rekka.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_fireball": {
+        "file": "kyo_super.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.1,
+      "jump_height": 1.0,
+      "attack_speed": 1.1,
+      "defense": 1.0,
+      "special_meter_gain": 1.2
+    }
+  },
+  "iori_yagami": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "fireball": {
+        "file": "iori_fireball.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "dp_punch": {
+        "file": "iori_dp.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "command_grab": {
+        "file": "iori_grab.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "super_grab": {
+        "file": "iori_super.bam",
+        "loop": false,
+        "speed": 0.8
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.1,
+      "jump_height": 1.0,
+      "attack_speed": 1.1,
+      "defense": 1.0,
+      "special_meter_gain": 1.2
+    }
+  },
+  "terry_bogard": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "power_wave": {
+        "file": "terry_wave.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "burn_knuckle": {
+        "file": "terry_knuckle.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "crack_shoot": {
+        "file": "terry_crack.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "power_geyser": {
+        "file": "terry_geyser.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.1,
+      "jump_height": 1.0,
+      "attack_speed": 1.1,
+      "defense": 1.0,
+      "special_meter_gain": 1.2
+    }
+  },
+  "mai_shiranui": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "fan_throw": {
+        "file": "mai_fan.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "phoenix_dance": {
+        "file": "mai_phoenix.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "butterfly_fan": {
+        "file": "mai_butterfly.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "super_phoenix": {
+        "file": "mai_super.bam",
+        "loop": false,
+        "speed": 0.8
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "ryo_sakazaki": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "robert_garcia": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "leona_heidern": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "athena_asamiya": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "sie_kensou": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "joe_higashi": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "andy_bogard": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "goro_daimon": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 0.8,
+      "jump_height": 0.7,
+      "attack_speed": 0.9,
+      "defense": 1.3,
+      "special_meter_gain": 1.0
+    }
+  },
+  "yuri_sakazaki": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.3,
+      "jump_height": 1.2,
+      "attack_speed": 1.2,
+      "defense": 0.8,
+      "special_meter_gain": 1.0
+    }
+  },
+  "choi_bounge": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.3,
+      "jump_height": 1.2,
+      "attack_speed": 1.2,
+      "defense": 0.8,
+      "special_meter_gain": 1.0
+    }
+  },
+  "saisyu_kusanagi": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "geese_howard": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "wolfgang_krauser": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 0.8,
+      "jump_height": 0.7,
+      "attack_speed": 0.9,
+      "defense": 1.3,
+      "special_meter_gain": 1.0
+    }
+  },
+  "mr_big": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "chizuru_kagura": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "mature": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "vice": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "shermie": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "chris": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "shingo_yabuki": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "orochi": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "k_dash": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "maxima": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 0.8,
+      "jump_height": 0.7,
+      "attack_speed": 0.9,
+      "defense": 1.3,
+      "special_meter_gain": 1.0
+    }
+  },
+  "whip": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "lin": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "vanessa": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "ramon": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "kula_diamond": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.3,
+      "jump_height": 1.2,
+      "attack_speed": 1.2,
+      "defense": 0.8,
+      "special_meter_gain": 1.0
+    }
+  },
+  "angel": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "igniz": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "ash_crimson": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "b_jenet": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "gato": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "magaki": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "shunei": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "nakoruru": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "isla": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  },
+  "dolores": {
+    "animations": {
+      "idle": {
+        "file": "idle.bam",
+        "loop": true,
+        "speed": 1.0
+      },
+      "walk": {
+        "file": "walk.bam",
+        "loop": true,
+        "speed": 1.2
+      },
+      "run": {
+        "file": "run.bam",
+        "loop": true,
+        "speed": 1.5
+      },
+      "jump": {
+        "file": "jump.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "crouch": {
+        "file": "crouch.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "block": {
+        "file": "block.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "light_attack": {
+        "file": "light_punch.bam",
+        "loop": false,
+        "speed": 1.3
+      },
+      "heavy_attack": {
+        "file": "heavy_punch.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "light_kick": {
+        "file": "light_kick.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "heavy_kick": {
+        "file": "heavy_kick.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "hit_light": {
+        "file": "hit_light.bam",
+        "loop": false,
+        "speed": 1.5
+      },
+      "hit_heavy": {
+        "file": "hit_heavy.bam",
+        "loop": false,
+        "speed": 1.2
+      },
+      "knockdown": {
+        "file": "knockdown.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "victory": {
+        "file": "victory.bam",
+        "loop": false,
+        "speed": 0.8
+      },
+      "defeat": {
+        "file": "defeat.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_1": {
+        "file": "special_1.bam",
+        "loop": false,
+        "speed": 1.0
+      },
+      "special_2": {
+        "file": "special_2.bam",
+        "loop": false,
+        "speed": 1.1
+      },
+      "super_move": {
+        "file": "super_move.bam",
+        "loop": false,
+        "speed": 0.9
+      }
+    },
+    "special_properties": {
+      "walk_speed": 1.0,
+      "jump_height": 1.0,
+      "attack_speed": 1.0,
+      "defense": 1.0,
+      "special_meter_gain": 1.0
+    }
+  }
+}

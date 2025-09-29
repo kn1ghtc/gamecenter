@@ -6,69 +6,69 @@
   "ui_volume": 0.6,
   "character_voices": {
     "kyo": {
-      "attack_1": "kyo_attack_01.ogg",
-      "attack_2": "kyo_attack_02.ogg",
-      "special_move": "kyo_special.ogg",
-      "victory": "kyo_victory.ogg",
-      "defeat": "kyo_defeat.ogg"
+      "attack_1": "assets/audio/combo.wav",
+      "attack_2": "assets/audio/combo_enhanced.wav",
+      "special_move": "assets/audio/victory_enhanced.wav",
+      "victory": "assets/audio/victory_enhanced.wav",
+      "defeat": "assets/audio/defeat_enhanced.wav"
     },
     "iori": {
-      "attack_1": "iori_attack_01.ogg",
-      "attack_2": "iori_attack_02.ogg",
-      "special_move": "iori_special.ogg",
-      "victory": "iori_victory.ogg",
-      "defeat": "iori_defeat.ogg"
+      "attack_1": "assets/audio/combo.wav",
+      "attack_2": "assets/audio/combo_enhanced.wav",
+      "special_move": "assets/audio/victory_enhanced.wav",
+      "victory": "assets/audio/victory_enhanced.wav",
+      "defeat": "assets/audio/defeat_enhanced.wav"
     },
     "mr_big": {
-      "attack_1": "mr_big_attack_01.ogg",
-      "attack_2": "mr_big_attack_02.ogg",
-      "special_move": "mr_big_special.ogg",
-      "victory": "mr_big_victory.ogg",
-      "defeat": "mr_big_defeat.ogg"
+      "attack_1": "assets/audio/combo.wav",
+      "attack_2": "assets/audio/combo_enhanced.wav",
+      "special_move": "assets/audio/victory_enhanced.wav",
+      "victory": "assets/audio/victory_enhanced.wav",
+      "defeat": "assets/audio/defeat_enhanced.wav"
     },
     "ramon": {
-      "attack_1": "ramon_attack_01.ogg",
-      "attack_2": "ramon_attack_02.ogg",
-      "special_move": "ramon_special.ogg",
-      "victory": "ramon_victory.ogg",
-      "defeat": "ramon_defeat.ogg"
+      "attack_1": "assets/audio/combo.wav",
+      "attack_2": "assets/audio/combo_enhanced.wav",
+      "special_move": "assets/audio/victory_enhanced.wav",
+      "victory": "assets/audio/victory_enhanced.wav",
+      "defeat": "assets/audio/defeat_enhanced.wav"
     },
     "wolfgang": {
-      "attack_1": "wolfgang_attack_01.ogg",
-      "attack_2": "wolfgang_attack_02.ogg",
-      "special_move": "wolfgang_special.ogg",
-      "victory": "wolfgang_victory.ogg",
-      "defeat": "wolfgang_defeat.ogg"
+      "attack_1": "assets/audio/combo.wav",
+      "attack_2": "assets/audio/combo_enhanced.wav",
+      "special_move": "assets/audio/victory_enhanced.wav",
+      "victory": "assets/audio/victory_enhanced.wav",
+      "defeat": "assets/audio/defeat_enhanced.wav"
     }
   },
   "combat_sfx": {
-    "light_punch": "punch_light.ogg",
-    "heavy_punch": "punch_heavy.ogg",
-    "light_kick": "kick_light.ogg",
-    "heavy_kick": "kick_heavy.ogg",
-    "special_hit": "special_hit.ogg",
-    "block": "block.ogg",
-    "jump": "jump.ogg",
-    "land": "land.ogg",
-    "combo_hit": "combo_hit.ogg",
-    "super_move": "super_move.ogg"
+    "light_punch": "assets/audio/hit.wav",
+    "heavy_punch": "assets/audio/combo_enhanced.wav",
+    "light_kick": "assets/audio/combo_generated.wav",
+    "heavy_kick": "assets/audio/combo.wav",
+    "special_hit": "assets/audio/victory_enhanced.wav",
+    "block": "assets/audio/defeat_enhanced.wav",
+    "jump": "assets/audio/combo_generated.wav",
+    "land": "assets/audio/hit.wav",
+    "combo_hit": "assets/audio/combo.wav",
+    "super_move": "assets/audio/victory_enhanced.wav"
   },
   "ui_sfx": {
-    "menu_select": "menu_select.ogg",
-    "menu_confirm": "menu_confirm.ogg",
-    "menu_cancel": "menu_cancel.ogg",
-    "game_start": "game_start.ogg",
-    "round_start": "round_start.ogg",
-    "round_end": "round_end.ogg",
-    "match_end": "match_end.ogg"
+    "menu_select": "assets/audio/combo_generated.wav",
+    "menu_confirm": "assets/audio/combo_enhanced.wav",
+    "menu_cancel": "assets/audio/hit.wav",
+    "game_start": "assets/audio/victory_enhanced.wav",
+    "round_start": "assets/audio/combo.wav",
+    "round_end": "assets/audio/defeat_enhanced.wav",
+    "match_end": "assets/audio/victory_enhanced.wav"
   },
   "bgm_tracks": {
-    "main_menu": "main_menu.ogg",
-    "character_select": "character_select.ogg",
-    "battle_stage_1": "battle_01.ogg",
-    "battle_stage_2": "battle_02.ogg",
-    "battle_stage_3": "battle_03.ogg",
-    "victory_theme": "victory.ogg",
-    "credits": "credits.ogg"
+    "main_menu": "assets/audio/bgm_loop.ogg",
+    "character_select": "assets/audio/music/win.ogg",
+    "battle_stage_1": "assets/audio/bgm_loop.wav",
+    "battle_stage_2": "assets/audio/music/lose.ogg",
+    "battle_stage_3": "assets/audio/bgm_loop.ogg",
+    "victory_theme": "assets/audio/victory_enhanced.wav",
+    "credits": "assets/audio/bgm_loop.wav"
   }
 }

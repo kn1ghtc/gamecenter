@@ -43,6 +43,7 @@ class EnhancedCharacterManager:
         self.character_moves_index = {}
         self.character_moves_lookup = {}
         self.move_metadata = {}
+        self.unified_roster = {}
         
         # Setup paths
         script_root = os.path.dirname(os.path.abspath(__file__))
@@ -162,6 +163,9 @@ class EnhancedCharacterManager:
         else:
             print("[ERROR] No character manifest file found!")
             self.comprehensive_characters = {}
+
+        # Load roster metadata (display names, portraits, sprite info)
+        self._load_unified_roster()
             
         # Load animations configuration
         if animations_file:
@@ -240,6 +244,92 @@ class EnhancedCharacterManager:
 
         # premium resource configuration 已由 find_file 逻辑处理，无需 project_root 相关残留
     
+    def _load_unified_roster(self) -> None:
+        """Load roster metadata (portraits, display names, sprite flags) and merge it into character records."""
+        roster_candidates = [
+            self.characters_config_dir / "unified_roster.json",
+            self.characters_config_dir / "manifest.json",
+            self.assets_dir / "unified_character_list.json",
+        ]
+
+        roster_payload: Dict[str, Dict[str, Any]] = {}
+        loaded_from: Optional[Path] = None
+
+        for roster_path in roster_candidates:
+            if not roster_path or not roster_path.exists():
+                continue
+            try:
+                with roster_path.open('r', encoding='utf-8') as handle:
+                    data = json.load(handle)
+                if isinstance(data, dict) and 'characters' in data:
+                    data = data['characters']
+
+                if isinstance(data, list):
+                    for entry in data:
+                        if not isinstance(entry, dict):
+                            continue
+                        char_id = entry.get('id') or entry.get('name')
+                        if not char_id:
+                            continue
+                        roster_payload[char_id] = entry
+                elif isinstance(data, dict):
+                    roster_payload.update({k: v for k, v in data.items() if isinstance(v, dict)})
+                else:
+                    continue
+
+                if roster_payload:
+                    loaded_from = roster_path
+                    break
+            except Exception as exc:
+                print(f"[EnhancedCharacterManager] Failed to load roster metadata from {roster_path.name}: {exc}")
+
+        self.unified_roster = roster_payload
+
+        if not roster_payload:
+            print("[EnhancedCharacterManager] No unified roster metadata found")
+            return
+
+        if loaded_from:
+            print(f"[EnhancedCharacterManager] Loaded roster metadata for {len(roster_payload)} characters from {loaded_from.name}")
+
+        for char_id, roster_entry in roster_payload.items():
+            merged_id = roster_entry.get('id') or char_id
+            canonical_key = self._normalise_character_key(merged_id) or merged_id
+
+            # Locate existing entry or create a new shell
+            existing_key = None
+            for key in list(self.comprehensive_characters.keys()):
+                if self._normalise_character_key(key) == canonical_key:
+                    existing_key = key
+                    break
+
+            if existing_key is None:
+                existing = {'id': merged_id}
+                existing_key = merged_id
+            else:
+                existing = dict(self.comprehensive_characters.get(existing_key, {}))
+
+            existing.setdefault('id', merged_id)
+
+            display_name = roster_entry.get('display_name') or roster_entry.get('name')
+            if display_name:
+                existing['display_name'] = display_name
+            if not existing.get('name') and display_name:
+                existing['name'] = display_name
+            if not existing.get('name'):
+                existing['name'] = merged_id.replace('_', ' ').title()
+
+            # Merge commonly used metadata fields
+            for field in (
+                'portrait_path', 'sprite_path', 'has_portrait', 'has_sprite',
+                'model_path', 'texture_path', 'animation_available', 'voice_available',
+                'category', 'tier'
+            ):
+                if field in roster_entry and roster_entry[field] not in (None, ''):
+                    existing[field] = roster_entry[field]
+
+            self.comprehensive_characters[existing_key] = existing
+
     def _load_character_moves_index(self):
         """Load curated character move definitions from the shared asset bundle."""
         moves_file = self.characters_config_dir / "moves.json"
@@ -329,27 +419,64 @@ class EnhancedCharacterManager:
         return str(value).strip().lower().replace(' ', '_')
 
     def get_all_character_names(self) -> List[str]:
-        """Get all available character names from comprehensive database"""
-        all_names = set()
-        
-        # Add comprehensive character names
+        """Get all available character display names from comprehensive database"""
+        names: set[str] = set()
+
         for char_id, char_data in self.comprehensive_characters.items():
-            all_names.add(char_data['name'])
-        
-        return sorted(list(all_names))
-    
+            display = (
+                char_data.get('display_name')
+                or char_data.get('name')
+                or char_id.replace('_', ' ').title()
+            )
+            names.add(display)
+
+        return sorted(names)
+
     def get_character_by_name(self, name: str) -> Optional[Dict[str, Any]]:
-        """Get character data by name from comprehensive database"""
-        # Search comprehensive database
-        for char_id, char_data in self.comprehensive_characters.items():
-            if char_data['name'].lower() == name.lower():
+        """Retrieve character data by name, display name, alias, or identifier."""
+        if not name:
+            return None
+
+        target = self._normalise_character_key(name)
+        if not target:
+            return None
+
+        for key, char_data in self.comprehensive_characters.items():
+            candidates = {
+                self._normalise_character_key(key),
+                self._normalise_character_key(char_data.get('id')),
+                self._normalise_character_key(char_data.get('name')),
+                self._normalise_character_key(char_data.get('display_name')),
+            }
+
+            for alias_field in ('aliases', 'alt_names', 'nicknames'):
+                aliases = char_data.get(alias_field, []) or []
+                if isinstance(aliases, str):
+                    aliases = [aliases]
+                for alias in aliases:
+                    candidates.add(self._normalise_character_key(alias))
+
+            if target in candidates and target is not None:
                 return char_data
-        
+
         return None
-    
+
     def get_character_by_id(self, char_id: str) -> Optional[Dict[str, Any]]:
-        """Get character data by ID"""
-        return self.comprehensive_characters.get(char_id)
+        """Get character data by canonical identifier."""
+        if not char_id:
+            return None
+
+        target = self._normalise_character_key(char_id)
+        if not target:
+            return None
+
+        for key, char_data in self.comprehensive_characters.items():
+            if self._normalise_character_key(key) == target:
+                return char_data
+            if self._normalise_character_key(char_data.get('id')) == target:
+                return char_data
+
+        return None
     
     def _get_premium_resource_path(self, character_name: str, resource_tier: str = "auto") -> Tuple[Optional[str], Optional[Dict[str, str]]]:
         """Get premium resource path and animations based on tier selection"""
@@ -648,8 +775,22 @@ class EnhancedCharacterManager:
                 if script_dir not in sys.path:
                     sys.path.append(script_dir)
                 
-                from kyo_texture_manager import KyoTextureManager
-                
+                KyoTextureManager = None
+                try:
+                    import importlib
+                    module = importlib.import_module('gamecenter.streetBattle.kyo_texture_manager')
+                    KyoTextureManager = getattr(module, 'KyoTextureManager', None)
+                except ModuleNotFoundError:
+                    try:
+                        module = importlib.import_module('kyo_texture_manager')
+                        KyoTextureManager = getattr(module, 'KyoTextureManager', None)
+                    except ModuleNotFoundError:
+                        KyoTextureManager = None
+
+                if not KyoTextureManager:
+                    print("⚠️ 未找到KyoTextureManager模块，跳过纹理修复")
+                    return
+
                 # 创建纹理管理器实例
                 texture_manager = KyoTextureManager(self.base_app.loader)
                 
@@ -1035,23 +1176,20 @@ class EnhancedCharacterManager:
                     
                     # Create Actor with or without animations
                     filename = Filename.fromOsSpecific(str(bam_path))
-                    
+                    filename.makeCanonical()
+
                     if animations:
-                        # Convert absolute paths to relative paths for Panda3D
-                        norm_animations = {}
-                        script_root = os.path.dirname(os.path.abspath(__file__))
+                        norm_animations: Dict[str, Filename] = {}
                         for anim_name, anim_path in animations.items():
-                            try:
-                                rel_path = os.path.relpath(anim_path, script_root)
-                                norm_animations[anim_name] = rel_path.replace('\\', '/')
-                            except ValueError:
-                                norm_animations[anim_name] = anim_path.replace('\\', '/')
-                        
-                        actor = Actor(str(filename), norm_animations)
+                            panda_anim = Filename.fromOsSpecific(anim_path)
+                            panda_anim.makeCanonical()
+                            norm_animations[anim_name] = panda_anim
+
+                        actor = Actor(filename, norm_animations)
                         print(f"[EnhancedCharacterManager] Created Actor with {len(animations)} animations for {character_name}")
                     else:
                         # Try to create Actor without animations first
-                        actor = Actor(str(filename))
+                        actor = Actor(filename)
                         print(f"[EnhancedCharacterManager] Created Actor without animations for {character_name}")
                     
                     if actor and not actor.isEmpty():
@@ -1133,35 +1271,34 @@ class EnhancedCharacterManager:
     def _create_actor_from_path(self, model_path: str, animations: Dict[str, str], character_name: str, pos: Vec3) -> Optional[Actor]:
         """Create Actor from specific model path and animations"""
         try:
-            # Pre-check: only attempt Actor if the model looks like a character (has skin/animations)
-            if not self._is_actor_candidate(Path(model_path)):
+            script_root = Path(__file__).resolve().parent
+
+            def _resolve_path(raw_path: str) -> Path:
+                candidate = Path(raw_path)
+                if not candidate.is_absolute():
+                    candidate = (script_root / candidate).resolve()
+                return candidate
+
+            model_candidate = _resolve_path(model_path)
+
+            if not self._is_actor_candidate(model_candidate):
                 return None
-            # Normalize paths for Panda3D (convert Windows paths to relative paths)
-            def norm_path(p):
-                # Convert absolute Windows path to relative path from script root
-                if os.path.isabs(p):
-                    script_root = os.path.dirname(os.path.abspath(__file__))
-                    try:
-                        relative_path = os.path.relpath(p, script_root)
-                        return relative_path.replace('\\', '/')
-                    except ValueError:
-                        # If relpath fails, try to make it relative to assets
-                        if 'assets' in p:
-                            assets_index = p.find('assets')
-                            relative_path = p[assets_index:]
-                            return relative_path.replace('\\', '/')
-                        return p.replace('\\', '/')
-                return p.replace('\\', '/')
-            
-            model_path = norm_path(model_path)
-            norm_animations = {k: norm_path(v) for k, v in animations.items()} if animations else {}
-            
+
+            def _to_panda_filename(path_value: str) -> Filename:
+                path_obj = _resolve_path(path_value)
+                panda_name = Filename.fromOsSpecific(str(path_obj))
+                panda_name.makeCanonical()
+                return panda_name
+
+            model_filename = _to_panda_filename(str(model_candidate))
+            norm_animations = {key: _to_panda_filename(value) for key, value in (animations or {}).items()}
+
             # Create Actor
             if norm_animations:
-                actor = Actor(model_path, norm_animations)
+                actor = Actor(model_filename, norm_animations)
             else:
-                actor = Actor(model_path)
-            
+                actor = Actor(model_filename)
+
             # Check if Actor is valid (has LOD info and is not empty)
             if actor and not actor.isEmpty():
                 try:
@@ -1205,25 +1342,32 @@ class EnhancedCharacterManager:
             char_id = character_name.lower().replace(" ", "_")
             
             # Try legacy character-specific models
+            base_dir = Path(__file__).resolve().parent
             candidate_models = [
-                f"assets/characters/{char_id}/{char_id}.egg.pz",
-                f"assets/characters/{char_id}/{char_id}.egg",
-                f"assets/characters/{char_id}/{char_id}.bam.pz",
-                f"assets/characters/{char_id}/{char_id}.bam",
-                f"assets/characters/{char_id}/{char_id}.gltf",
-                f"assets/characters/{char_id}/{char_id}.glb",
+                base_dir / "assets" / "characters" / char_id / f"{char_id}.egg.pz",
+                base_dir / "assets" / "characters" / char_id / f"{char_id}.egg",
+                base_dir / "assets" / "characters" / char_id / f"{char_id}.bam.pz",
+                base_dir / "assets" / "characters" / char_id / f"{char_id}.bam",
+                base_dir / "assets" / "characters" / char_id / f"{char_id}.gltf",
+                base_dir / "assets" / "characters" / char_id / f"{char_id}.glb",
             ]
             
             for model_path in candidate_models:
-                if os.path.exists(model_path) and self._validate_legacy_model(model_path):
+                if model_path.exists() and self._validate_legacy_model(str(model_path)):
                     try:
                         animations = self._discover_legacy_animations(char_id)
-                        norm_path = model_path.replace('\\\\', '/')
-                        
+                        panda_model = Filename.fromOsSpecific(str(model_path))
+                        panda_model.makeCanonical()
+
                         if animations:
-                            actor = Actor(norm_path, animations)
+                            panda_anims = {}
+                            for anim_name, anim_path in animations.items():
+                                panda_anim = Filename.fromOsSpecific(anim_path)
+                                panda_anim.makeCanonical()
+                                panda_anims[anim_name] = panda_anim
+                            actor = Actor(panda_model, panda_anims)
                         else:
-                            actor = Actor(norm_path)
+                            actor = Actor(panda_model)
                         
                         if actor and not actor.isEmpty():
                             self._apply_character_enhancements(actor, char_data)
@@ -1278,18 +1422,18 @@ class EnhancedCharacterManager:
         
         for f in files:
             name = os.path.splitext(os.path.basename(f))[0].lower()
-            norm_path = f.replace('\\\\', '/')
-            
+            absolute_path = Path(f).resolve()
+
             if 'idle' in name or 'stand' in name:
-                animations['idle'] = norm_path
+                animations['idle'] = str(absolute_path)
             elif 'walk' in name or 'run' in name:
-                animations['walk'] = norm_path
+                animations['walk'] = str(absolute_path)
             elif 'light' in name or 'jab' in name:
-                animations['light'] = norm_path
+                animations['light'] = str(absolute_path)
             elif 'heavy' in name or 'strong' in name:
-                animations['heavy'] = norm_path
+                animations['heavy'] = str(absolute_path)
             elif 'attack' in name:
-                animations['attack'] = norm_path
+                animations['attack'] = str(absolute_path)
         
         # Fill missing with generic attack
         if 'attack' in animations:
@@ -1303,26 +1447,31 @@ class EnhancedCharacterManager:
         try:
             # Use relative path for Panda3D (Panda3D has its own model path system)
             fallback_model = 'assets/models/npc_1.bam'
-            
+            script_dir = Path(__file__).resolve().parent
+            panda_model = Filename.fromOsSpecific(str(script_dir / fallback_model))
+            panda_model.makeCanonical()
+
             print(f"[EnhancedCharacterManager] Trying Arena FPS fallback: {fallback_model}")
-            
+
             # Check if file exists in filesystem (for debugging)
-            abs_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), fallback_model)
-            print(f"[EnhancedCharacterManager] File exists: {os.path.exists(abs_path)}")
-            
+            abs_path = script_dir / fallback_model
+            print(f"[EnhancedCharacterManager] File exists: {abs_path.exists()}")
+
             # Try to include walk animation
             walk_anim = 'assets/models/npc_1_ArmatureAction.bam'
             animations = {}
-            walk_abs_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), walk_anim) 
-            if os.path.exists(walk_abs_path):
-                animations['walk'] = walk_anim
+            walk_abs_path = script_dir / walk_anim
+            if walk_abs_path.exists():
+                panda_walk = Filename.fromOsSpecific(str(walk_abs_path))
+                panda_walk.makeCanonical()
+                animations['walk'] = panda_walk
                 print(f"[EnhancedCharacterManager] Found walk animation: {walk_anim}")
-            
+
             try:
                 if animations:
-                    actor = Actor(fallback_model, animations)
+                    actor = Actor(panda_model, animations)
                 else:
-                    actor = Actor(fallback_model)
+                    actor = Actor(panda_model)
                 
                 if actor and not actor.isEmpty():
                     # Test LOD validation like before

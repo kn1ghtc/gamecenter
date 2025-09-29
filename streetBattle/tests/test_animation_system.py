@@ -59,24 +59,24 @@ def test_animation_system():
             print(f"  {requested} -> {expected}")
         
         print("✅ All animation system tests passed!")
-        return True
         
     except Exception as e:
         print(f"❌ Animation system test failed: {e}")
         import traceback
         traceback.print_exc()
-        return False
+        raise AssertionError(f"Animation system test failed: {e}")
 
 def test_character_resources():
     """Test if character resources are available"""
     print("\nTesting Character Resources...")
     
     script_dir = Path(__file__).parent
-    assets_dir = script_dir / "assets" / "characters"
+    # 使用正确的assets目录路径
+    assets_dir = script_dir.parent / "assets" / "characters"
     
     if not assets_dir.exists():
         print(f"❌ Assets directory not found: {assets_dir}")
-        return False
+        raise AssertionError(f"Assets directory not found: {assets_dir}")
     
     characters_with_resources = []
     characters_with_bam = []
@@ -123,10 +123,22 @@ def main():
     print("=" * 50)
     
     # Test 1: Animation System
-    test1_passed = test_animation_system()
+    try:
+        test_animation_system()
+        print("✅ Animation System: PASS")
+        test1_passed = True
+    except Exception as e:
+        print(f"❌ Animation System: FAIL - {e}")
+        test1_passed = False
     
     # Test 2: Character Resources
-    test2_passed = test_character_resources()
+    try:
+        test_character_resources()
+        print("✅ Character Resources: PASS")
+        test2_passed = True
+    except Exception as e:
+        print(f"❌ Character Resources: FAIL - {e}")
+        test2_passed = False
     
     # Summary
     print("\n" + "=" * 50)

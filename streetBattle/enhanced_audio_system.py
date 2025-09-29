@@ -43,6 +43,11 @@ class EnhancedAudioSystem:
         self.sfx_volume = 0.8
         self.voice_volume = 0.9
         self.master_volume = 1.0
+
+        # 项目目录结构
+        self.project_root = Path(__file__).resolve().parent
+        self.audio_root = self.project_root / "assets" / "audio"
+        self.config_root = self.project_root / "config"
         
         # 音频配置
         self.audio_config = {
@@ -69,16 +74,17 @@ class EnhancedAudioSystem:
         try:
             # 创建音频目录结构
             audio_dirs = [
-                "assets/audio/bgm",
-                "assets/audio/sfx/combat",
-                "assets/audio/sfx/ui",
-                "assets/audio/voice/characters",
-                "assets/audio/voice/announcer",
-                "assets/audio/ambient"
+                self.audio_root / "bgm",
+                self.audio_root / "sfx" / "combat",
+                self.audio_root / "sfx" / "ui",
+                self.audio_root / "voice" / "characters",
+                self.audio_root / "voice" / "announcer",
+                self.audio_root / "ambient",
+                self.audio_root / "music",
             ]
-            
+
             for audio_dir in audio_dirs:
-                Path(audio_dir).mkdir(parents=True, exist_ok=True)
+                audio_dir.mkdir(parents=True, exist_ok=True)
             
             print("✅ 音频目录结构已创建")
             
@@ -87,132 +93,181 @@ class EnhancedAudioSystem:
     
     def _load_audio_configuration(self):
         """加载音频配置文件"""
-        config_file = Path("config/audio_config.json")
-        
+        config_file = self.config_root / "audio_config.json"
+
         if config_file.exists():
             try:
                 with open(config_file, 'r', encoding='utf-8') as f:
                     loaded_config = json.load(f)
                     self.audio_config.update(loaded_config)
                 print("✅ 音频配置已加载")
+                self._ensure_real_audio_config()
             except Exception as e:
                 print(f"⚠️  音频配置加载失败: {e}")
+                self._create_default_audio_config()
         else:
             # 创建默认配置
             self._create_default_audio_config()
     
+    def _resolve_audio_file(self, reference: str | Path) -> Path:
+        """将音频资源引用解析为绝对路径"""
+        path = Path(reference)
+        if path.is_absolute():
+            return path
+        if path.parts:
+            first = path.parts[0]
+            if first == 'assets':
+                return self.project_root / path
+            if first == 'audio':
+                return self.audio_root / Path(*path.parts[1:])
+        return self.audio_root / path
+
+    def _ensure_real_audio_config(self):
+        """如果检测到仍然使用占位符，则重建音频配置"""
+        def _has_real_audio(mapping: Dict[str, str]) -> bool:
+            for value in mapping.values():
+                if not value:
+                    continue
+                try:
+                    audio_path = self._resolve_audio_file(value)
+                except Exception:
+                    continue
+                if audio_path.exists() and audio_path.stat().st_size > 2048:
+                    return True
+            return False
+
+        sections = {
+            "bgm_tracks": "背景音乐",
+            "combat_sfx": "战斗音效",
+            "ui_sfx": "界面音效",
+        }
+
+        for key, label in sections.items():
+            if not _has_real_audio(self.audio_config.get(key, {})):
+                print(f"⚠️ 音频配置缺少真实的{label}资源，正在重新生成...")
+                self._create_default_audio_config()
+                return
+
+        for character_id, voice_map in self.audio_config.get("character_voices", {}).items():
+            if not _has_real_audio(voice_map):
+                print(f"⚠️ 角色 {character_id} 的语音资源缺失，将重建音频配置...")
+                self._create_default_audio_config()
+                return
+
+    def _lookup_audio_reference(self, key: str) -> Optional[str]:
+        """根据配置查找音频引用"""
+        combat = self.audio_config.get("combat_sfx", {})
+        if key in combat:
+            return combat[key]
+
+        ui_sfx = self.audio_config.get("ui_sfx", {})
+        if key in ui_sfx:
+            return ui_sfx[key]
+
+        if "_" in key:
+            character_id, voice_type = key.split("_", 1)
+            character_voice_map = self.audio_config.get("character_voices", {}).get(character_id, {})
+            if voice_type in character_voice_map:
+                return character_voice_map[voice_type]
+
+        return None
+
     def _create_default_audio_config(self):
-        """创建默认音频配置"""
+        """创建基于真实资源的默认音频配置"""
+
+        def rel(path: Path) -> str:
+            try:
+                return path.relative_to(self.project_root).as_posix()
+            except ValueError:
+                return path.as_posix()
+
+        def ensure(path: Path, label: str) -> str:
+            if not path.exists():
+                print(f"⚠️ 音频资源缺失: {label} -> {path}")
+            return rel(path)
+
+        bgm_defaults = {
+            "main_menu": ensure(self.audio_root / "bgm_loop.ogg", "main_menu"),
+            "character_select": ensure(self.audio_root / "music" / "win.ogg", "character_select"),
+            "battle_stage_1": ensure(self.audio_root / "bgm_loop.wav", "battle_stage_1"),
+            "battle_stage_2": ensure(self.audio_root / "music" / "lose.ogg", "battle_stage_2"),
+            "battle_stage_3": ensure(self.audio_root / "bgm_loop.ogg", "battle_stage_3"),
+            "victory_theme": ensure(self.audio_root / "victory_enhanced.wav", "victory_theme"),
+            "credits": ensure(self.audio_root / "bgm_loop.wav", "credits"),
+        }
+
+        combat_sfx_defaults = {
+            "light_punch": ensure(self.audio_root / "hit.wav", "light_punch"),
+            "heavy_punch": ensure(self.audio_root / "combo_enhanced.wav", "heavy_punch"),
+            "light_kick": ensure(self.audio_root / "combo_generated.wav", "light_kick"),
+            "heavy_kick": ensure(self.audio_root / "combo.wav", "heavy_kick"),
+            "special_hit": ensure(self.audio_root / "victory_enhanced.wav", "special_hit"),
+            "block": ensure(self.audio_root / "defeat_enhanced.wav", "block"),
+            "jump": ensure(self.audio_root / "combo_generated.wav", "jump"),
+            "land": ensure(self.audio_root / "hit.wav", "land"),
+            "combo_hit": ensure(self.audio_root / "combo.wav", "combo_hit"),
+            "super_move": ensure(self.audio_root / "victory_enhanced.wav", "super_move"),
+        }
+
+        ui_sfx_defaults = {
+            "menu_select": ensure(self.audio_root / "combo_generated.wav", "menu_select"),
+            "menu_confirm": ensure(self.audio_root / "combo_enhanced.wav", "menu_confirm"),
+            "menu_cancel": ensure(self.audio_root / "hit.wav", "menu_cancel"),
+            "game_start": ensure(self.audio_root / "victory_enhanced.wav", "game_start"),
+            "round_start": ensure(self.audio_root / "combo.wav", "round_start"),
+            "round_end": ensure(self.audio_root / "defeat_enhanced.wav", "round_end"),
+            "match_end": ensure(self.audio_root / "victory_enhanced.wav", "match_end"),
+        }
+
+        voice_template = {
+            "attack_1": ensure(self.audio_root / "combo.wav", "voice_attack_1"),
+            "attack_2": ensure(self.audio_root / "combo_enhanced.wav", "voice_attack_2"),
+            "special_move": ensure(self.audio_root / "victory_enhanced.wav", "voice_special"),
+            "victory": ensure(self.audio_root / "victory_enhanced.wav", "voice_victory"),
+            "defeat": ensure(self.audio_root / "defeat_enhanced.wav", "voice_defeat"),
+        }
+
+        character_ids = ["kyo", "iori", "mr_big", "ramon", "wolfgang"]
+        character_voices = {char: dict(voice_template) for char in character_ids}
+
         default_config = {
             "master_volume": 1.0,
             "bgm_volume": 0.7,
             "sfx_volume": 0.8,
             "voice_volume": 0.9,
             "ui_volume": 0.6,
-            
-            # 格斗游戏音频映射
-            "character_voices": {
-                "kyo": {
-                    "attack_1": "kyo_attack_01.ogg",
-                    "attack_2": "kyo_attack_02.ogg",
-                    "special_move": "kyo_special.ogg",
-                    "victory": "kyo_victory.ogg",
-                    "defeat": "kyo_defeat.ogg"
-                },
-                "iori": {
-                    "attack_1": "iori_attack_01.ogg",
-                    "attack_2": "iori_attack_02.ogg",
-                    "special_move": "iori_special.ogg",
-                    "victory": "iori_victory.ogg",
-                    "defeat": "iori_defeat.ogg"
-                },
-                "mr_big": {
-                    "attack_1": "mr_big_attack_01.ogg",
-                    "attack_2": "mr_big_attack_02.ogg",
-                    "special_move": "mr_big_special.ogg",
-                    "victory": "mr_big_victory.ogg",
-                    "defeat": "mr_big_defeat.ogg"
-                },
-                "ramon": {
-                    "attack_1": "ramon_attack_01.ogg",
-                    "attack_2": "ramon_attack_02.ogg",
-                    "special_move": "ramon_special.ogg",
-                    "victory": "ramon_victory.ogg",
-                    "defeat": "ramon_defeat.ogg"
-                },
-                "wolfgang": {
-                    "attack_1": "wolfgang_attack_01.ogg",
-                    "attack_2": "wolfgang_attack_02.ogg",
-                    "special_move": "wolfgang_special.ogg",
-                    "victory": "wolfgang_victory.ogg",
-                    "defeat": "wolfgang_defeat.ogg"
-                }
-            },
-            
-            # 战斗音效
-            "combat_sfx": {
-                "light_punch": "punch_light.ogg",
-                "heavy_punch": "punch_heavy.ogg",
-                "light_kick": "kick_light.ogg",
-                "heavy_kick": "kick_heavy.ogg",
-                "special_hit": "special_hit.ogg",
-                "block": "block.ogg",
-                "jump": "jump.ogg",
-                "land": "land.ogg",
-                "combo_hit": "combo_hit.ogg",
-                "super_move": "super_move.ogg"
-            },
-            
-            # 界面音效
-            "ui_sfx": {
-                "menu_select": "menu_select.ogg",
-                "menu_confirm": "menu_confirm.ogg",
-                "menu_cancel": "menu_cancel.ogg",
-                "game_start": "game_start.ogg",
-                "round_start": "round_start.ogg",
-                "round_end": "round_end.ogg",
-                "match_end": "match_end.ogg"
-            },
-            
-            # 背景音乐
-            "bgm_tracks": {
-                "main_menu": "main_menu.ogg",
-                "character_select": "character_select.ogg",
-                "battle_stage_1": "battle_01.ogg",
-                "battle_stage_2": "battle_02.ogg",
-                "battle_stage_3": "battle_03.ogg",
-                "victory_theme": "victory.ogg",
-                "credits": "credits.ogg"
-            }
+            "character_voices": character_voices,
+            "combat_sfx": combat_sfx_defaults,
+            "ui_sfx": ui_sfx_defaults,
+            "bgm_tracks": bgm_defaults,
         }
-        
-        # 保存配置
-        config_dir = Path("config")
-        config_dir.mkdir(exist_ok=True)
-        
-        with open(config_dir / "audio_config.json", 'w', encoding='utf-8') as f:
+
+        self.config_root.mkdir(exist_ok=True)
+        config_path = self.config_root / "audio_config.json"
+        with config_path.open('w', encoding='utf-8') as f:
             json.dump(default_config, f, indent=2, ensure_ascii=False)
-        
+
         self.audio_config.update(default_config)
-        print("✅ 默认音频配置已创建")
+        print("✅ 基于真实资源的默认音频配置已创建")
     
     def load_character_voice_pack(self, character_id: str) -> bool:
         """加载角色语音包"""
         try:
-            voice_dir = Path(f"assets/audio/voice/characters/{character_id}")
-            if not voice_dir.exists():
-                print(f"⚠️  角色语音目录不存在: {character_id}")
-                return False
-            
             # 获取角色语音配置
             char_voices = self.audio_config.get("character_voices", {}).get(character_id, {})
+            if not char_voices:
+                print(f"⚠️  未在配置中找到角色语音映射: {character_id}")
+                return False
             
             loaded_count = 0
             for voice_type, filename in char_voices.items():
-                voice_path = voice_dir / filename
+                voice_path = self._resolve_audio_file(filename)
+                if not voice_path.exists():
+                    print(f"⚠️  角色语音缺失 {character_id} - {voice_type}: {voice_path}")
+                    continue
                 sound_key = f"{character_id}_{voice_type}"
                 
-                if self.load_sfx(str(voice_path), sound_key):
+                if self.load_sfx(voice_path.as_posix(), sound_key):
                     loaded_count += 1
             
             print(f"✅ 已加载 {character_id} 语音包: {loaded_count} 个音频文件")
@@ -230,13 +285,16 @@ class EnhancedAudioSystem:
     def load_combat_sfx_pack(self) -> bool:
         """加载战斗音效包"""
         try:
-            combat_dir = Path("assets/audio/sfx/combat")
             combat_sfx = self.audio_config.get("combat_sfx", {})
             
             loaded_count = 0
             for sfx_type, filename in combat_sfx.items():
-                sfx_path = combat_dir / filename
-                if self.load_sfx(str(sfx_path), sfx_type):
+                sfx_path = self._resolve_audio_file(filename)
+                if not sfx_path.exists():
+                    print(f"⚠️  战斗音效缺失 {sfx_type}: {sfx_path}")
+                    continue
+
+                if self.load_sfx(sfx_path.as_posix(), sfx_type):
                     loaded_count += 1
             
             print(f"✅ 已加载战斗音效包: {loaded_count} 个音频文件")
@@ -253,13 +311,16 @@ class EnhancedAudioSystem:
     def load_ui_sfx_pack(self) -> bool:
         """加载界面音效包"""
         try:
-            ui_dir = Path("assets/audio/sfx/ui")
             ui_sfx = self.audio_config.get("ui_sfx", {})
             
             loaded_count = 0
             for sfx_type, filename in ui_sfx.items():
-                sfx_path = ui_dir / filename
-                if self.load_sfx(str(sfx_path), sfx_type):
+                sfx_path = self._resolve_audio_file(filename)
+                if not sfx_path.exists():
+                    print(f"⚠️  界面音效缺失 {sfx_type}: {sfx_path}")
+                    continue
+
+                if self.load_sfx(sfx_path.as_posix(), sfx_type):
                     loaded_count += 1
             
             print(f"✅ 已加载界面音效包: {loaded_count} 个音频文件")
@@ -277,13 +338,16 @@ class EnhancedAudioSystem:
     def load_bgm_library(self) -> bool:
         """加载背景音乐库"""
         try:
-            bgm_dir = Path("assets/audio/bgm")
             bgm_tracks = self.audio_config.get("bgm_tracks", {})
             
             loaded_count = 0
             for track_name, filename in bgm_tracks.items():
-                bgm_path = bgm_dir / filename
-                if self.load_bgm(str(bgm_path), track_name):
+                bgm_path = self._resolve_audio_file(filename)
+                if not bgm_path.exists():
+                    print(f"⚠️  背景音乐缺失 {track_name}: {bgm_path}")
+                    continue
+
+                if self.load_bgm(bgm_path.as_posix(), track_name):
                     loaded_count += 1
             
             print(f"✅ 已加载背景音乐库: {loaded_count} 个音乐文件")
@@ -343,7 +407,8 @@ class EnhancedAudioSystem:
             }
         }
         
-        config_file = Path("config/audio_mixer.json")
+        config_file = self.config_root / "audio_mixer.json"
+        self.config_root.mkdir(exist_ok=True)
         with open(config_file, 'w', encoding='utf-8') as f:
             json.dump(mixer_config, f, indent=2, ensure_ascii=False)
         
@@ -354,26 +419,29 @@ class EnhancedAudioSystem:
     def load_sfx(self, path: str, name: Optional[str] = None) -> bool:
         """增强的音效加载"""
         key = name or path
+        resolved_path = self._resolve_audio_file(path)
+        resolved_str = resolved_path.as_posix()
+
         if not self.base:
-            # 注册占位符用于测试
-            self.sounds[key] = {"path": path, "loaded": False}
-            return True
+            exists = resolved_path.exists()
+            self.sounds[key] = {"path": resolved_str, "loaded": False, "exists": exists}
+            return exists
         
         try:
-            sound = self.base.loader.loadSfx(path)
+            sound = self.base.loader.loadSfx(resolved_str)
             if sound:
                 self.sounds[key] = {
                     "sound": sound,
-                    "path": path,
+                    "path": resolved_str,
                     "loaded": True,
                     "category": AudioCategory.SFX,
                     "priority": AudioPriority.NORMAL
                 }
                 return True
         except Exception as e:
-            print(f"⚠️  音效加载失败 {path}: {e}")
+            print(f"⚠️  音效加载失败 {resolved_str}: {e}")
         
-        self.sounds[key] = {"path": path, "loaded": False}
+        self.sounds[key] = {"path": resolved_str, "loaded": False}
         return False
     
     def play_sfx(self, name_or_path: str, volume: float = 1.0, priority: AudioPriority = AudioPriority.NORMAL):
@@ -394,16 +462,44 @@ class EnhancedAudioSystem:
             except Exception as e:
                 print(f"⚠️  音效播放失败 {name_or_path}: {e}")
         
-        # 回退: 如果有base，尝试即时加载播放
+        # 回退: 如果有base，尝试解析路径即时加载
         if self.base:
-            try:
-                sound = self.base.loader.loadSfx(name_or_path)
-                if sound:
-                    sound.setVolume(volume * self.sfx_volume * self.master_volume)
-                    sound.play()
-                    return True
-            except Exception as e:
-                print(f"⚠️  即时音效播放失败 {name_or_path}: {e}")
+            attempted: set[str] = set()
+            candidate_refs: List[str] = []
+
+            if sound_data and sound_data.get("path"):
+                candidate_refs.append(sound_data["path"])
+
+            candidate_refs.append(name_or_path)
+
+            lookup_ref = self._lookup_audio_reference(name_or_path)
+            if lookup_ref:
+                candidate_refs.append(lookup_ref)
+
+            for reference in candidate_refs:
+                if not reference:
+                    continue
+                resolved_candidate = self._resolve_audio_file(reference)
+                candidate_str = resolved_candidate.as_posix()
+                if candidate_str in attempted:
+                    continue
+                attempted.add(candidate_str)
+
+                try:
+                    sound = self.base.loader.loadSfx(candidate_str)
+                    if sound:
+                        sound.setVolume(volume * self.sfx_volume * self.master_volume)
+                        sound.play()
+                        self.sounds[name_or_path] = {
+                            "sound": sound,
+                            "path": candidate_str,
+                            "loaded": True,
+                            "category": AudioCategory.SFX,
+                            "priority": priority
+                        }
+                        return True
+                except Exception as e:
+                    print(f"⚠️  即时音效播放失败 {candidate_str}: {e}")
         
         # 最终回退: 控制台输出
         print(f'🔊 SFX播放 (占位): {name_or_path} (音量: {volume:.2f})')
@@ -412,23 +508,26 @@ class EnhancedAudioSystem:
     def load_bgm(self, path: str, name: Optional[str] = None) -> bool:
         """增强的背景音乐加载"""
         key = name or path
+        resolved_path = self._resolve_audio_file(path)
+        resolved_str = resolved_path.as_posix()
         if not self.base:
-            self.music_tracks[key] = {"path": path, "loaded": False}
-            return True
+            exists = resolved_path.exists()
+            self.music_tracks[key] = {"path": resolved_str, "loaded": False, "exists": exists}
+            return exists
         
         try:
-            music = self.base.loader.loadMusic(path)
+            music = self.base.loader.loadMusic(resolved_str)
             if music:
                 self.music_tracks[key] = {
                     "music": music,
-                    "path": path,
+                    "path": resolved_str,
                     "loaded": True
                 }
                 return True
         except Exception as e:
-            print(f"⚠️  背景音乐加载失败 {path}: {e}")
+            print(f"⚠️  背景音乐加载失败 {resolved_str}: {e}")
         
-        self.music_tracks[key] = {"path": path, "loaded": False}
+        self.music_tracks[key] = {"path": resolved_str, "loaded": False}
         return False
     
     def play_bgm(self, track_name: str, loop: bool = True, volume: float = None) -> bool:
@@ -449,6 +548,11 @@ class EnhancedAudioSystem:
             except Exception as e:
                 print(f"⚠️  背景音乐播放失败 {track_name}: {e}")
         
+        # 尝试在需要时即时加载背景音乐
+        bgm_reference = self.audio_config.get("bgm_tracks", {}).get(track_name)
+        if bgm_reference and self.load_bgm(bgm_reference, track_name):
+            return self.play_bgm(track_name, loop=loop, volume=volume)
+
         print(f'🎵 BGM播放 (占位): {track_name} (循环: {loop}, 音量: {volume:.2f})')
         return False
     
@@ -553,7 +657,8 @@ class EnhancedAudioSystem:
     def _save_audio_configuration(self):
         """保存音频配置"""
         try:
-            config_file = Path("config/audio_runtime.json")
+            self.config_root.mkdir(exist_ok=True)
+            config_file = self.config_root / "audio_runtime.json"
             runtime_config = {
                 "master_volume": self.master_volume,
                 "bgm_volume": self.bgm_volume,
@@ -574,61 +679,34 @@ class EnhancedAudioSystem:
 AudioSystem = EnhancedAudioSystem
 
 
-def create_sample_audio_files():
-    """创建示例音频文件占位符"""
-    print("🎵 创建示例音频文件占位符...")
-    
-    # 音频文件结构
-    audio_structure = {
-        "assets/audio/bgm": [
-            "main_menu.ogg", "character_select.ogg", "battle_01.ogg", 
-            "battle_02.ogg", "battle_03.ogg", "victory.ogg", "credits.ogg"
-        ],
-        "assets/audio/sfx/combat": [
-            "punch_light.ogg", "punch_heavy.ogg", "kick_light.ogg", 
-            "kick_heavy.ogg", "special_hit.ogg", "block.ogg", "jump.ogg", 
-            "land.ogg", "combo_hit.ogg", "super_move.ogg"
-        ],
-        "assets/audio/sfx/ui": [
-            "menu_select.ogg", "menu_confirm.ogg", "menu_cancel.ogg", 
-            "game_start.ogg", "round_start.ogg", "round_end.ogg", "match_end.ogg"
-        ]
-    }
-    
-    # 角色语音文件
-    characters = ["kyo", "iori", "mr_big", "ramon", "wolfgang"]
-    voice_types = ["attack_01.ogg", "attack_02.ogg", "special.ogg", "victory.ogg", "defeat.ogg"]
-    
-    for char in characters:
-        char_dir = f"assets/audio/voice/characters/{char}"
-        audio_structure[char_dir] = voice_types
-    
-    # 创建占位符文件
-    created_count = 0
-    for directory, files in audio_structure.items():
-        dir_path = Path(directory)
-        dir_path.mkdir(parents=True, exist_ok=True)
-        
-        for filename in files:
-            placeholder_file = dir_path / filename
-            if not placeholder_file.exists():
-                # 创建音频元数据占位符
-                metadata = {
-                    "type": "audio_placeholder",
-                    "format": "ogg",
-                    "sample_rate": 44100,
-                    "channels": 2,
-                    "duration": 2.0,
-                    "description": f"Audio placeholder for {filename}",
-                    "ready_for_recording": True
-                }
-                
-                with open(placeholder_file.with_suffix('.json'), 'w', encoding='utf-8') as f:
-                    json.dump(metadata, f, indent=2, ensure_ascii=False)
-                
-                created_count += 1
-    
-    print(f"✅ 创建了 {created_count} 个音频占位符")
+def verify_audio_assets(audio_system: EnhancedAudioSystem) -> Dict[str, List[str]]:
+    """验证音频资源是否落实为真实文件"""
+    report: Dict[str, List[str]] = {"available": [], "missing": []}
+
+    def collect(category: str, mapping: Dict[str, str]):
+        for key, reference in mapping.items():
+            path = audio_system._resolve_audio_file(reference)
+            entry = f"{category}:{key} -> {path.as_posix()}"
+            if path.exists() and path.stat().st_size > 1024:
+                report["available"].append(entry)
+            else:
+                report["missing"].append(entry)
+
+    collect("BGM", audio_system.audio_config.get("bgm_tracks", {}))
+    collect("SFX", audio_system.audio_config.get("combat_sfx", {}))
+    collect("UI", audio_system.audio_config.get("ui_sfx", {}))
+
+    for character_id, voice_map in audio_system.audio_config.get("character_voices", {}).items():
+        collect(f"VOICE:{character_id}", voice_map)
+
+    if report["missing"]:
+        print("⚠️ 以下音频资源缺失或无效:")
+        for item in report["missing"]:
+            print(f"   - {item}")
+    else:
+        print("✅ 所有音频映射均指向真实文件")
+
+    return report
 
 
 def main():
@@ -639,8 +717,8 @@ def main():
     # 创建音频系统
     audio_system = EnhancedAudioSystem()
     
-    # 创建示例音频文件
-    create_sample_audio_files()
+    # 确认音频资产状态
+    verify_audio_assets(audio_system)
     
     # 加载音频包
     print("\n📦 加载音频包...")

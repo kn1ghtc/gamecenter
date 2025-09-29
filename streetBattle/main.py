@@ -23,6 +23,25 @@ if "gamecenter" not in sys.modules:
 
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import AmbientLight, DirectionalLight, Vec4, Vec3, ClockObject, WindowProperties, CardMaker, NodePath, Texture, PNMImage
+from direct.task import Task
+from direct.actor.Actor import Actor
+
+from gamecenter.streetBattle.player import Player
+from gamecenter.streetBattle.combat import CombatSystem
+from gamecenter.streetBattle.net import NetPeer
+from gamecenter.streetBattle.ai import SimpleAI
+from gamecenter.streetBattle.vfx import VFX
+from gamecenter.streetBattle.enhanced_audio_system import AudioSystem
+from gamecenter.streetBattle.ui import HUD
+from gamecenter.streetBattle.enhanced_character_manager import EnhancedCharacterManager as CharacterManager
+from gamecenter.streetBattle.game_state import GameStateManager, GameState
+from gamecenter.streetBattle.kof_animation_system import KOFAnimationSystem
+from gamecenter.streetBattle.game_mode_selector import GameModeSelector
+from gamecenter.streetBattle.character_selector import CharacterSelector
+from gamecenter.streetBattle.character_animator import CharacterAnimator
+from gamecenter.streetBattle.special_moves import SpecialMovesSystem, enhance_player_with_special_moves
+from gamecenter.streetBattle.config import SettingsManager
+from gamecenter.streetBattle.sprite_system import SpriteSystem
 
 
 def safe_node_check(node_path, operation_name="NodePath operation"):
@@ -46,28 +65,6 @@ def safe_node_check(node_path, operation_name="NodePath operation"):
     except Exception as check_error:
         print(f"[DEBUG] {operation_name}: NodePath check failed - {check_error}")
         return False
-from direct.task import Task
-from direct.actor.Actor import Actor
-
-from gamecenter.streetBattle.player import Player
-from gamecenter.streetBattle.combat import CombatSystem
-from gamecenter.streetBattle.net import NetPeer
-from gamecenter.streetBattle.ai import SimpleAI
-from gamecenter.streetBattle.vfx import VFX
-from gamecenter.streetBattle.enhanced_audio_system import AudioSystem
-from gamecenter.streetBattle.ui import HUD
-from gamecenter.streetBattle.enhanced_character_manager import EnhancedCharacterManager as CharacterManager
-from gamecenter.streetBattle.game_state import GameStateManager, GameState
-from gamecenter.streetBattle.kof_animation_system import KOFAnimationSystem
-from gamecenter.streetBattle.game_mode_selector import GameModeSelector
-from gamecenter.streetBattle.character_selector import CharacterSelector
-from gamecenter.streetBattle.character_animator import CharacterAnimator
-from gamecenter.streetBattle.special_moves import SpecialMovesSystem, enhance_player_with_special_moves
-from gamecenter.streetBattle.config import SettingsManager
-from gamecenter.streetBattle.sprite_system import SpriteSystem
-
-
-
 
 class StreetBattleGame(ShowBase):
 	def __init__(self, settings_manager: SettingsManager | None = None):

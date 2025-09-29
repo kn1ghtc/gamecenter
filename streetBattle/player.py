@@ -4,23 +4,35 @@ from direct.actor.Actor import Actor
 
 class Player:
 	"""Player with simple state timings and cooldowns."""
-	def __init__(self, render, loader, name='Player', model_actor=None, pos=Vec3(0, 0, 0), character_data=None, actor_instance=None):
+	def __init__(self, render, loader, name='Player', model_actor=None, pos=Vec3(0, 0, 0), character_data=None, actor_instance=None, character_id=None):
 		self.name = name
 		self.render = render
 		self.loader = loader
+		
+		# 如果提供了character_id，则使用它作为角色名称
+		if character_id:
+			self.character_name = character_id
+		else:
+			self.character_name = name
 		
 		# Load character stats from config file
 		self._load_character_stats()
 		
 		# Set health from character stats or defaults
-		char_stats = self._get_character_stats(name)
+		char_stats = self._get_character_stats(self.character_name)
 		self.max_health = char_stats.get('max_health', 1000)
 		self.health = char_stats.get('health', self.max_health)
 		self.state = 'idle'
 		self.facing = 1
 		self.speed = 6.0
-		self.pos = Vec3(pos)
-		self.ground_y = pos.z  # Ground level for jumping
+		
+		# 处理pos参数，支持tuple和Vec3
+		if isinstance(pos, tuple):
+			self.pos = Vec3(pos[0], pos[1], pos[2])
+		else:
+			self.pos = Vec3(pos)
+		
+		self.ground_y = self.pos.z  # Ground level for jumping
 		self.velocity = Vec3(0, 0, 0)  # For jump physics
 		self.node = None
 		self.model = None  # For 3D character model
@@ -28,12 +40,15 @@ class Player:
 		self.attack_cooldown = 0.0
 		self.last_state = None
 		self.character_data = character_data
-		self.character_name = name
 		self.combo = 0
 		self.power_gauge = 0
 		self.is_jumping = False
 		self.jump_strength = 8.0
 		self.gravity = -20.0
+		
+		# Add missing attributes for interpolation
+		self.target_pos = None  # Target position for smooth movement
+		self.interpolate_speed = 5.0  # Interpolation speed
 		
 		# Initialize with empty node first
 		self.node = self.render.attachNewNode(f"{self.name}_root")
@@ -101,8 +116,8 @@ class Player:
 			except Exception as e:
 				print(f"[PlayerModel] Failed to load Actor model for {self.name}: {e}")
 
-		# Set position
-		if self.node:
+		# Set position - 只在真实Panda3D环境中调用setPos
+		if self.node and hasattr(self.node, 'setPos'):
 			self.node.setPos(self.pos)
 	
 	def _load_character_stats(self):

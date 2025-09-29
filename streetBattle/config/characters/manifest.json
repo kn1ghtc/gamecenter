@@ -2,482 +2,331 @@
   "characters": [
     {
       "id": "angel",
-      "name": "Angel",
       "model_path": "characters/angel/angel.bam",
       "texture_path": "characters/angel/angel_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/angel/portrait.png",
-      "category": "NESTS",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "ash_crimson",
-      "name": "Ash Crimson",
       "model_path": "characters/ash_crimson/ash_crimson.bam",
       "texture_path": "characters/ash_crimson/ash_crimson_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/ash_crimson/portrait.png",
-      "category": "Ash Saga",
-      "tier": "S"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "athena_asamiya",
-      "name": "麻宫雅典娜",
       "model_path": "characters/athena_asamiya/athena_asamiya.bam",
       "texture_path": "characters/athena_asamiya/athena_asamiya_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/athena_asamiya/portrait.png",
-      "category": "Psycho Soldier",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "b_jenet",
-      "name": "B. Jenet",
       "model_path": "characters/b_jenet/b_jenet.bam",
       "texture_path": "characters/b_jenet/b_jenet_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/b_jenet/portrait.png",
-      "category": "Garou",
-      "tier": "B"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "chizuru_kagura",
-      "name": "神楽千鶴",
       "model_path": "characters/chizuru_kagura/chizuru_kagura.bam",
       "texture_path": "characters/chizuru_kagura/chizuru_kagura_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/chizuru_kagura/portrait.png",
-      "category": "Sacred Treasures",
-      "tier": "S"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "choi_bounge",
-      "name": "蔡宝健",
       "model_path": "characters/choi_bounge/choi_bounge.bam",
       "texture_path": "characters/choi_bounge/choi_bounge_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/choi_bounge/portrait.png",
-      "category": "Kim Team",
-      "tier": "C"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "chris",
-      "name": "Chris",
       "model_path": "characters/chris/chris.bam",
       "texture_path": "characters/chris/chris_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/chris/portrait.png",
-      "category": "Orochi",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "dolores",
-      "name": "Dolores",
       "model_path": "characters/dolores/dolores.bam",
       "texture_path": "characters/dolores/dolores_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/dolores/portrait.png",
-      "category": "XV Saga",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "gato",
-      "name": "Gato",
       "model_path": "characters/gato/gato.bam",
       "texture_path": "characters/gato/gato_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/gato/portrait.png",
-      "category": "Garou",
-      "tier": "B"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "geese_howard",
-      "name": "Geese Howard",
       "model_path": "characters/geese_howard/geese_howard.bam",
       "texture_path": "characters/geese_howard/geese_howard_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/geese_howard/portrait.png",
-      "category": "Boss",
-      "tier": "S"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "goro_daimon",
-      "name": "大门五郎",
       "model_path": "characters/goro_daimon/goro_daimon.bam",
       "texture_path": "characters/goro_daimon/goro_daimon_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/goro_daimon/portrait.png",
-      "category": "Japan",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "igniz",
-      "name": "Igniz",
       "model_path": "characters/igniz/igniz.bam",
       "texture_path": "characters/igniz/igniz_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/igniz/portrait.png",
-      "category": "NESTS",
-      "tier": "S"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "iori_yagami",
-      "name": "八神庵",
       "model_path": "characters/iori_yagami/iori_yagami.bam",
       "texture_path": "characters/iori_yagami/iori_yagami_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/iori_yagami/portrait.png",
-      "category": "Japan",
-      "tier": "S"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "isla",
-      "name": "Isla",
       "model_path": "characters/isla/isla.bam",
       "texture_path": "characters/isla/isla_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/isla/portrait.png",
-      "category": "XV Saga",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "joe_higashi",
-      "name": "东丈",
       "model_path": "characters/joe_higashi/joe_higashi.bam",
       "texture_path": "characters/joe_higashi/joe_higashi_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/joe_higashi/portrait.png",
-      "category": "Fatal Fury",
-      "tier": "B"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "k_dash",
-      "name": "K'",
       "model_path": "characters/k_dash/k_dash.bam",
       "texture_path": "characters/k_dash/k_dash_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/k_dash/portrait.png",
-      "category": "NESTS",
-      "tier": "S"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "kula_diamond",
-      "name": "Kula Diamond",
       "model_path": "characters/kula_diamond/kula_diamond.bam",
       "texture_path": "characters/kula_diamond/kula_diamond_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/kula_diamond/portrait.png",
-      "category": "NESTS",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "kyo_kusanagi",
-      "name": "草薙京",
       "model_path": "characters/kyo_kusanagi/kyo_kusanagi.bam",
       "texture_path": "characters/kyo_kusanagi/kyo_kusanagi_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/kyo_kusanagi/portrait.png",
-      "category": "Japan",
-      "tier": "S"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "leona_heidern",
-      "name": "蕾欧娜",
       "model_path": "characters/leona_heidern/leona_heidern.bam",
       "texture_path": "characters/leona_heidern/leona_heidern_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/leona_heidern/portrait.png",
-      "category": "Ikari Warriors",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "lin",
-      "name": "Lin",
       "model_path": "characters/lin/lin.bam",
       "texture_path": "characters/lin/lin_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/lin/portrait.png",
-      "category": "Agents",
-      "tier": "B"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "magaki",
-      "name": "Magaki",
       "model_path": "characters/magaki/magaki.bam",
       "texture_path": "characters/magaki/magaki_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/magaki/portrait.png",
-      "category": "Boss",
-      "tier": "S"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "mai_shiranui",
-      "name": "不知火舞",
       "model_path": "characters/mai_shiranui/mai_shiranui.bam",
       "texture_path": "characters/mai_shiranui/mai_shiranui_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/mai_shiranui/portrait.png",
-      "category": "Fatal Fury",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "mature",
-      "name": "Mature",
       "model_path": "characters/mature/mature.bam",
       "texture_path": "characters/mature/mature_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/mature/portrait.png",
-      "category": "Orochi",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "maxima",
-      "name": "Maxima",
       "model_path": "characters/maxima/maxima.bam",
       "texture_path": "characters/maxima/maxima_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/maxima/portrait.png",
-      "category": "NESTS",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "mr_big",
-      "name": "Mr. Big",
       "model_path": "characters/mr_big/mr_big.bam",
       "texture_path": "characters/mr_big/mr_big_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/mr_big/portrait.png",
-      "category": "AOF",
-      "tier": "B"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "nakoruru",
-      "name": "Nakoruru",
       "model_path": "characters/nakoruru/nakoruru.bam",
       "texture_path": "characters/nakoruru/nakoruru_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/nakoruru/portrait.png",
-      "category": "Samurai Shodown",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "orochi",
-      "name": "Orochi",
       "model_path": "characters/orochi/orochi.bam",
       "texture_path": "characters/orochi/orochi_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/orochi/portrait.png",
-      "category": "Boss",
-      "tier": "SS"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "ramon",
-      "name": "Ramon",
       "model_path": "characters/ramon/ramon.bam",
       "texture_path": "characters/ramon/ramon_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/ramon/portrait.png",
-      "category": "Mexico",
-      "tier": "B"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "robert_garcia",
-      "name": "Robert Garcia",
       "model_path": "characters/robert_garcia/robert_garcia.bam",
       "texture_path": "characters/robert_garcia/robert_garcia_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/robert_garcia/portrait.png",
-      "category": "AOF",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "ryo_sakazaki",
-      "name": "坂崎良",
       "model_path": "characters/ryo_sakazaki/ryo_sakazaki.bam",
       "texture_path": "characters/ryo_sakazaki/ryo_sakazaki_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/ryo_sakazaki/portrait.png",
-      "category": "AOF",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "saisyu_kusanagi",
-      "name": "草薙柴舟",
       "model_path": "characters/saisyu_kusanagi/saisyu_kusanagi.bam",
       "texture_path": "characters/saisyu_kusanagi/saisyu_kusanagi_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/saisyu_kusanagi/portrait.png",
-      "category": "Masters",
-      "tier": "S"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "shermie",
-      "name": "Shermie",
       "model_path": "characters/shermie/shermie.bam",
       "texture_path": "characters/shermie/shermie_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/shermie/portrait.png",
-      "category": "Orochi",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "shingo_yabuki",
-      "name": "矢吹真吾",
       "model_path": "characters/shingo_yabuki/shingo_yabuki.bam",
       "texture_path": "characters/shingo_yabuki/shingo_yabuki_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/shingo_yabuki/portrait.png",
-      "category": "Japan",
-      "tier": "C"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "shunei",
-      "name": "Shun'ei",
       "model_path": "characters/shunei/shunei.bam",
       "texture_path": "characters/shunei/shunei_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/shunei/portrait.png",
-      "category": "XV Saga",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "sie_kensou",
-      "name": "椎拳崇",
       "model_path": "characters/sie_kensou/sie_kensou.bam",
       "texture_path": "characters/sie_kensou/sie_kensou_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/sie_kensou/portrait.png",
-      "category": "Psycho Soldier",
-      "tier": "B"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "terry_bogard",
-      "name": "Terry Bogard",
       "model_path": "characters/terry_bogard/terry_bogard.bam",
       "texture_path": "characters/terry_bogard/terry_bogard_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/terry_bogard/portrait.png",
-      "category": "Fatal Fury",
-      "tier": "S"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "vanessa",
-      "name": "Vanessa",
       "model_path": "characters/vanessa/vanessa.bam",
       "texture_path": "characters/vanessa/vanessa_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/vanessa/portrait.png",
-      "category": "Agents",
-      "tier": "B"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "vice",
-      "name": "Vice",
       "model_path": "characters/vice/vice.bam",
       "texture_path": "characters/vice/vice_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/vice/portrait.png",
-      "category": "Orochi",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "whip",
-      "name": "Whip",
       "model_path": "characters/whip/whip.bam",
       "texture_path": "characters/whip/whip_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/whip/portrait.png",
-      "category": "NESTS",
-      "tier": "B"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "wolfgang_krauser",
-      "name": "Wolfgang Krauser",
       "model_path": "characters/wolfgang_krauser/wolfgang_krauser.bam",
       "texture_path": "characters/wolfgang_krauser/wolfgang_krauser_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/wolfgang_krauser/portrait.png",
-      "category": "Boss",
-      "tier": "S"
+      "animation_available": true,
+      "voice_available": true
     },
     {
       "id": "yuri_sakazaki",
-      "name": "坂崎由莉",
       "model_path": "characters/yuri_sakazaki/yuri_sakazaki.bam",
       "texture_path": "characters/yuri_sakazaki/yuri_sakazaki_tex.png",
-      "animation_available": true,
-      "voice_available": true,
       "portrait_path": "characters/yuri_sakazaki/portrait.png",
-      "category": "AOF",
-      "tier": "A"
+      "animation_available": true,
+      "voice_available": true
     }
-  ],
-  "categories": {
-    "Japan": ["kyo_kusanagi", "iori_yagami", "goro_daimon", "shingo_yabuki"],
-    "Fatal Fury": ["terry_bogard", "mai_shiranui", "joe_higashi"],
-    "AOF": ["ryo_sakazaki", "robert_garcia", "yuri_sakazaki", "mr_big"],
-    "NESTS": ["k_dash", "kula_diamond", "maxima", "angel", "igniz", "whip"],
-    "Orochi": ["chris", "shermie", "mature", "vice"],
-    "Psycho Soldier": ["athena_asamiya", "sie_kensou"],
-    "Ikari Warriors": ["leona_heidern"],
-    "Boss": ["geese_howard", "orochi", "magaki", "wolfgang_krauser"],
-    "Sacred Treasures": ["chizuru_kagura"],
-    "Ash Saga": ["ash_crimson"],
-    "XV Saga": ["shunei", "dolores", "isla"],
-    "Garou": ["gato", "b_jenet"],
-    "Kim Team": ["choi_bounge"],
-    "Mexico": ["ramon"],
-    "Masters": ["saisyu_kusanagi"],
-    "Agents": ["vanessa", "lin"],
-    "Samurai Shodown": ["nakoruru"]
-  },
-  "tiers": {
-    "SS": ["orochi"],
-    "S": ["kyo_kusanagi", "iori_yagami", "terry_bogard", "k_dash", "ash_crimson", "chizuru_kagura", "geese_howard", "igniz", "magaki", "saisyu_kusanagi", "wolfgang_krauser"],
-    "A": ["angel", "athena_asamiya", "chris", "dolores", "goro_daimon", "isla", "kula_diamond", "leona_heidern", "mai_shiranui", "mature", "maxima", "nakoruru", "robert_garcia", "ryo_sakazaki", "shermie", "shunei", "vice", "yuri_sakazaki"],
-    "B": ["b_jenet", "gato", "joe_higashi", "lin", "mr_big", "ramon", "sie_kensou", "vanessa", "whip"],
-    "C": ["choi_bounge", "shingo_yabuki"]
-  },
-  "total_characters": 41,
-  "last_updated": "2025-01-04"
+  ]
 }

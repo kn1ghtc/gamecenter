@@ -151,15 +151,53 @@ def load_sprite_animations(name: str) -> Optional[Tuple[Dict[str, SpriteAnimatio
     if not manifest:
         return None
     manifest_dir = manifest["__manifest_path__"].parent  # type: ignore[index]
+    
+    # 兼容两种字段名：animations 和 states
     states = manifest.get("states", {})
+    if not states:
+        states = manifest.get("animations", {})
+    
     animations: Dict[str, SpriteAnimation] = {}
     metadata: Dict[str, Any] = {}
     top_color_mod = manifest.get("color_mod") if isinstance(manifest, dict) else None
     hit_frame_map: Dict[str, Iterable[int]] = {}
     for state, cfg in states.items():
         sheet_name = cfg.get("sheet")
+        
+        # 支持单个帧文件格式
         if not sheet_name:
+            # 检查是否有frames字段，表示使用单个帧文件
+            frames_count = cfg.get("frames")
+            if isinstance(frames_count, int) and frames_count > 0:
+                frames: List[SpriteFrame] = []
+                sequence = cfg.get("sequence") or list(range(frames_count))
+                fps = cfg.get("fps", 8)
+                base_duration = 1.0 / max(1, fps)
+                durations = cfg.get("durations")
+                
+                for idx, frame_index in enumerate(sequence):
+                    # 构建帧文件名模式
+                    frame_filename = f"{state}_frame_{frame_index + 1}.png"
+                    frame_path = manifest_dir / frame_filename
+                    
+                    if frame_path.exists():
+                        try:
+                            surface = pygame.image.load(frame_path.as_posix()).convert_alpha()
+                            frame_duration = durations[idx] if durations and idx < len(durations) else base_duration
+                            frames.append(SpriteFrame(surface, frame_duration))
+                        except Exception:
+                            continue
+                
+                if frames:
+                    loop = bool(cfg.get("loop", True))
+                    animations[state] = SpriteAnimation(state, frames, loop=loop)
+                    if "hit_frames" in cfg:
+                        frames_value = cfg["hit_frames"]
+                        if isinstance(frames_value, (list, tuple)):
+                            hit_frame_map[state] = tuple(int(i) for i in frames_value)
             continue
+        
+        # 原有的精灵表处理逻辑
         sheet_path = manifest_dir / sheet_name
         if not sheet_path.exists():
             continue

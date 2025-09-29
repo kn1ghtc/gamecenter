@@ -22,11 +22,17 @@
         "rounds_to_win": 2
     },
     "graphics": {
+        "anisotropic_filtering": 8,
+        "anti_aliasing": "fxaa",
         "fullscreen": false,
+        "particle_effects": true,
+        "post_processing": true,
         "resolution": [
             1024,
             768
         ],
+        "shadow_quality": "medium",
+        "texture_quality": "high",
         "vsync": true
     },
     "preferred_version": "3d",

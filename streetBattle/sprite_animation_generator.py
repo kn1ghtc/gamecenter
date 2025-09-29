@@ -751,6 +751,10 @@ class SpriteAnimationGenerator:
             print(f"\nFailed characters: {', '.join(failed_chars)}")
         
         return results
+    
+    def get_character_list(self) -> List[str]:
+        """Get the list of available characters (public method for testing)"""
+        return self.characters
 
 
 def main():

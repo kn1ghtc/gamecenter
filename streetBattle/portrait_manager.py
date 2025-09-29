@@ -184,8 +184,14 @@ class PortraitManager:
         if not path.exists():
             return None
         try:
-            panda_path = Filename.fromOsSpecific(str(path))
+            # 改进路径处理：使用绝对路径并确保跨平台兼容性
+            absolute_path = path.resolve()
+            panda_path = Filename.fromOsSpecific(str(absolute_path))
             panda_path.makeCanonical()
+            
+            # 添加调试信息以帮助诊断路径问题
+            logger.debug("Loading texture from path: %s (absolute: %s)", path, absolute_path)
+            
             tex = self.loader.loadTexture(panda_path)
             if tex:
                 tex.setMinfilter(Texture.FTLinearMipmapLinear)

@@ -1,338 +1,452 @@
 {
-  "kyo_kusanagi": {
-    "id": "kyo_kusanagi",
-    "display_name": "Kyo Kusanagi",
-    "portrait_path": "assets/images/portraits/kyo_kusanagi.png",
-    "sprite_path": "assets/sprites/kyo_kusanagi",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "iori_yagami": {
-    "id": "iori_yagami",
-    "display_name": "Iori Yagami",
-    "portrait_path": "assets/images/portraits/iori_yagami.png",
-    "sprite_path": "assets/sprites/iori_yagami",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "terry_bogard": {
-    "id": "terry_bogard",
-    "display_name": "Terry Bogard",
-    "portrait_path": "assets/images/portraits/terry_bogard.png",
-    "sprite_path": "assets/sprites/terry_bogard",
-    "has_portrait": true,
-    "has_sprite": true
-  },
   "andy_bogard": {
     "id": "andy_bogard",
     "display_name": "Andy Bogard",
     "portrait_path": "assets/images/portraits/andy_bogard.png",
     "sprite_path": "assets/sprites/andy_bogard",
+    "model_path": "assets/characters/andy_bogard",
     "has_portrait": true,
-    "has_sprite": true
-  },
-  "joe_higashi": {
-    "id": "joe_higashi",
-    "display_name": "Joe Higashi",
-    "portrait_path": "assets/images/portraits/joe_higashi.png",
-    "sprite_path": "assets/sprites/joe_higashi",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "ryo_sakazaki": {
-    "id": "ryo_sakazaki",
-    "display_name": "Ryo Sakazaki",
-    "portrait_path": "assets/images/portraits/ryo_sakazaki.png",
-    "sprite_path": "assets/sprites/ryo_sakazaki",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "robert_garcia": {
-    "id": "robert_garcia",
-    "display_name": "Robert Garcia",
-    "portrait_path": "assets/images/portraits/robert_garcia.png",
-    "sprite_path": "assets/sprites/robert_garcia",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "leona_heidern": {
-    "id": "leona_heidern",
-    "display_name": "Leona Heidern",
-    "portrait_path": "assets/images/portraits/leona_heidern.png",
-    "sprite_path": "assets/sprites/leona_heidern",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "athena_asamiya": {
-    "id": "athena_asamiya",
-    "display_name": "Athena Asamiya",
-    "portrait_path": "assets/images/portraits/athena_asamiya.png",
-    "sprite_path": "assets/sprites/athena_asamiya",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "sie_kensou": {
-    "id": "sie_kensou",
-    "display_name": "Sie Kensou",
-    "portrait_path": "assets/images/portraits/sie_kensou.png",
-    "sprite_path": "assets/sprites/sie_kensou",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "mai_shiranui": {
-    "id": "mai_shiranui",
-    "display_name": "Mai Shiranui",
-    "portrait_path": "assets/images/portraits/mai_shiranui.png",
-    "sprite_path": "assets/sprites/mai_shiranui",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "yuri_sakazaki": {
-    "id": "yuri_sakazaki",
-    "display_name": "Yuri Sakazaki",
-    "portrait_path": "assets/images/portraits/yuri_sakazaki.png",
-    "sprite_path": "assets/sprites/yuri_sakazaki",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "choi_bounge": {
-    "id": "choi_bounge",
-    "display_name": "Choi Bounge",
-    "portrait_path": "assets/images/portraits/choi_bounge.png",
-    "sprite_path": "assets/sprites/choi_bounge",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "goro_daimon": {
-    "id": "goro_daimon",
-    "display_name": "Goro Daimon",
-    "portrait_path": "assets/images/portraits/goro_daimon.png",
-    "sprite_path": "assets/sprites/goro_daimon",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "saisyu_kusanagi": {
-    "id": "saisyu_kusanagi",
-    "display_name": "Saisyu Kusanagi",
-    "portrait_path": "assets/images/portraits/saisyu_kusanagi.png",
-    "sprite_path": "assets/sprites/saisyu_kusanagi",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "geese_howard": {
-    "id": "geese_howard",
-    "display_name": "Geese Howard",
-    "portrait_path": "assets/images/portraits/geese_howard.png",
-    "sprite_path": "assets/sprites/geese_howard",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "wolfgang_krauser": {
-    "id": "wolfgang_krauser",
-    "display_name": "Wolfgang Krauser",
-    "portrait_path": "assets/images/portraits/wolfgang_krauser.png",
-    "sprite_path": "assets/sprites/wolfgang_krauser",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "mr_big": {
-    "id": "mr_big",
-    "display_name": "Mr Big",
-    "portrait_path": "assets/images/portraits/mr_big.png",
-    "sprite_path": "assets/sprites/mr_big",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "chizuru_kagura": {
-    "id": "chizuru_kagura",
-    "display_name": "Chizuru Kagura",
-    "portrait_path": "assets/images/portraits/chizuru_kagura.png",
-    "sprite_path": "assets/sprites/chizuru_kagura",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "mature": {
-    "id": "mature",
-    "display_name": "Mature",
-    "portrait_path": "assets/images/portraits/mature.png",
-    "sprite_path": "assets/sprites/mature",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "vice": {
-    "id": "vice",
-    "display_name": "Vice",
-    "portrait_path": "assets/images/portraits/vice.png",
-    "sprite_path": "assets/sprites/vice",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "shermie": {
-    "id": "shermie",
-    "display_name": "Shermie",
-    "portrait_path": "assets/images/portraits/shermie.png",
-    "sprite_path": "assets/sprites/shermie",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "chris": {
-    "id": "chris",
-    "display_name": "Chris",
-    "portrait_path": "assets/images/portraits/chris.png",
-    "sprite_path": "assets/sprites/chris",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "shingo_yabuki": {
-    "id": "shingo_yabuki",
-    "display_name": "Shingo Yabuki",
-    "portrait_path": "assets/images/portraits/shingo_yabuki.png",
-    "sprite_path": "assets/sprites/shingo_yabuki",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "orochi": {
-    "id": "orochi",
-    "display_name": "Orochi",
-    "portrait_path": "assets/images/portraits/orochi.png",
-    "sprite_path": "assets/sprites/orochi",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "k_dash": {
-    "id": "k_dash",
-    "display_name": "K Dash",
-    "portrait_path": "assets/images/portraits/k_dash.png",
-    "sprite_path": "assets/sprites/k_dash",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "maxima": {
-    "id": "maxima",
-    "display_name": "Maxima",
-    "portrait_path": "assets/images/portraits/maxima.png",
-    "sprite_path": "assets/sprites/maxima",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "whip": {
-    "id": "whip",
-    "display_name": "Whip",
-    "portrait_path": "assets/images/portraits/whip.png",
-    "sprite_path": "assets/sprites/whip",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "lin": {
-    "id": "lin",
-    "display_name": "Lin",
-    "portrait_path": "assets/images/portraits/lin.png",
-    "sprite_path": "assets/sprites/lin",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "vanessa": {
-    "id": "vanessa",
-    "display_name": "Vanessa",
-    "portrait_path": "assets/images/portraits/vanessa.png",
-    "sprite_path": "assets/sprites/vanessa",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "ramon": {
-    "id": "ramon",
-    "display_name": "Ramon",
-    "portrait_path": "assets/images/portraits/ramon.png",
-    "sprite_path": "assets/sprites/ramon",
-    "has_portrait": true,
-    "has_sprite": true
-  },
-  "kula_diamond": {
-    "id": "kula_diamond",
-    "display_name": "Kula Diamond",
-    "portrait_path": "assets/images/portraits/kula_diamond.png",
-    "sprite_path": "assets/sprites/kula_diamond",
-    "has_portrait": true,
-    "has_sprite": true
+    "has_sprite": true,
+    "has_3d_model": false
   },
   "angel": {
     "id": "angel",
     "display_name": "Angel",
     "portrait_path": "assets/images/portraits/angel.png",
     "sprite_path": "assets/sprites/angel",
+    "model_path": "assets/characters/angel",
     "has_portrait": true,
-    "has_sprite": true
-  },
-  "igniz": {
-    "id": "igniz",
-    "display_name": "Igniz",
-    "portrait_path": "assets/images/portraits/igniz.png",
-    "sprite_path": "assets/sprites/igniz",
-    "has_portrait": true,
-    "has_sprite": true
+    "has_sprite": true,
+    "has_3d_model": true
   },
   "ash_crimson": {
     "id": "ash_crimson",
     "display_name": "Ash Crimson",
     "portrait_path": "assets/images/portraits/ash_crimson.png",
     "sprite_path": "assets/sprites/ash_crimson",
+    "model_path": "assets/characters/ash_crimson",
     "has_portrait": true,
-    "has_sprite": true
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "athena_asamiya": {
+    "id": "athena_asamiya",
+    "display_name": "Athena Asamiya",
+    "portrait_path": "assets/images/portraits/athena_asamiya.png",
+    "sprite_path": "assets/sprites/athena_asamiya",
+    "model_path": "assets/characters/athena_asamiya",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
   },
   "b_jenet": {
     "id": "b_jenet",
     "display_name": "B Jenet",
     "portrait_path": "assets/images/portraits/b_jenet.png",
     "sprite_path": "assets/sprites/b_jenet",
+    "model_path": "assets/characters/b_jenet",
     "has_portrait": true,
-    "has_sprite": true
+    "has_sprite": true,
+    "has_3d_model": true
   },
-  "gato": {
-    "id": "gato",
-    "display_name": "Gato",
-    "portrait_path": "assets/images/portraits/gato.png",
-    "sprite_path": "assets/sprites/gato",
-    "has_portrait": true,
-    "has_sprite": true
+  "benimaru_nikaido": {
+    "id": "benimaru_nikaido",
+    "display_name": "Benimaru Nikaido",
+    "portrait_path": "assets/images/portraits/benimaru_nikaido.png",
+    "sprite_path": "assets/sprites/benimaru_nikaido",
+    "model_path": "assets/characters/benimaru_nikaido",
+    "has_portrait": false,
+    "has_sprite": true,
+    "has_3d_model": false
   },
-  "magaki": {
-    "id": "magaki",
-    "display_name": "Magaki",
-    "portrait_path": "assets/images/portraits/magaki.png",
-    "sprite_path": "assets/sprites/magaki",
+  "chizuru_kagura": {
+    "id": "chizuru_kagura",
+    "display_name": "Chizuru Kagura",
+    "portrait_path": "assets/images/portraits/chizuru_kagura.png",
+    "sprite_path": "assets/sprites/chizuru_kagura",
+    "model_path": "assets/characters/chizuru_kagura",
     "has_portrait": true,
-    "has_sprite": true
+    "has_sprite": true,
+    "has_3d_model": true
   },
-  "shunei": {
-    "id": "shunei",
-    "display_name": "Shunei",
-    "portrait_path": "assets/images/portraits/shunei.png",
-    "sprite_path": "assets/sprites/shunei",
+  "choi_bounge": {
+    "id": "choi_bounge",
+    "display_name": "Choi Bounge",
+    "portrait_path": "assets/images/portraits/choi_bounge.png",
+    "sprite_path": "assets/sprites/choi_bounge",
+    "model_path": "assets/characters/choi_bounge",
     "has_portrait": true,
-    "has_sprite": true
+    "has_sprite": true,
+    "has_3d_model": true
   },
-  "nakoruru": {
-    "id": "nakoruru",
-    "display_name": "Nakoruru",
-    "portrait_path": "assets/images/portraits/nakoruru.png",
-    "sprite_path": "assets/sprites/nakoruru",
+  "chris": {
+    "id": "chris",
+    "display_name": "Chris",
+    "portrait_path": "assets/images/portraits/chris.png",
+    "sprite_path": "assets/sprites/chris",
+    "model_path": "assets/characters/chris",
     "has_portrait": true,
-    "has_sprite": true
-  },
-  "isla": {
-    "id": "isla",
-    "display_name": "Isla",
-    "portrait_path": "assets/images/portraits/isla.png",
-    "sprite_path": "assets/sprites/isla",
-    "has_portrait": true,
-    "has_sprite": true
+    "has_sprite": true,
+    "has_3d_model": true
   },
   "dolores": {
     "id": "dolores",
     "display_name": "Dolores",
     "portrait_path": "assets/images/portraits/dolores.png",
     "sprite_path": "assets/sprites/dolores",
+    "model_path": "assets/characters/dolores",
     "has_portrait": true,
-    "has_sprite": true
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "gato": {
+    "id": "gato",
+    "display_name": "Gato",
+    "portrait_path": "assets/images/portraits/gato.png",
+    "sprite_path": "assets/sprites/gato",
+    "model_path": "assets/characters/gato",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "geese_howard": {
+    "id": "geese_howard",
+    "display_name": "Geese Howard",
+    "portrait_path": "assets/images/portraits/geese_howard.png",
+    "sprite_path": "assets/sprites/geese_howard",
+    "model_path": "assets/characters/geese_howard",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "goro_daimon": {
+    "id": "goro_daimon",
+    "display_name": "Goro Daimon",
+    "portrait_path": "assets/images/portraits/goro_daimon.png",
+    "sprite_path": "assets/sprites/goro_daimon",
+    "model_path": "assets/characters/goro_daimon",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "igniz": {
+    "id": "igniz",
+    "display_name": "Igniz",
+    "portrait_path": "assets/images/portraits/igniz.png",
+    "sprite_path": "assets/sprites/igniz",
+    "model_path": "assets/characters/igniz",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "iori_yagami": {
+    "id": "iori_yagami",
+    "display_name": "Iori Yagami",
+    "portrait_path": "assets/images/portraits/iori_yagami.png",
+    "sprite_path": "assets/sprites/iori_yagami",
+    "model_path": "assets/characters/iori_yagami",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "isla": {
+    "id": "isla",
+    "display_name": "Isla",
+    "portrait_path": "assets/images/portraits/isla.png",
+    "sprite_path": "assets/sprites/isla",
+    "model_path": "assets/characters/isla",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "joe_higashi": {
+    "id": "joe_higashi",
+    "display_name": "Joe Higashi",
+    "portrait_path": "assets/images/portraits/joe_higashi.png",
+    "sprite_path": "assets/sprites/joe_higashi",
+    "model_path": "assets/characters/joe_higashi",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "k_dash": {
+    "id": "k_dash",
+    "display_name": "K Dash",
+    "portrait_path": "assets/images/portraits/k_dash.png",
+    "sprite_path": "assets/sprites/k_dash",
+    "model_path": "assets/characters/k_dash",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "kula_diamond": {
+    "id": "kula_diamond",
+    "display_name": "Kula Diamond",
+    "portrait_path": "assets/images/portraits/kula_diamond.png",
+    "sprite_path": "assets/sprites/kula_diamond",
+    "model_path": "assets/characters/kula_diamond",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "kyo_kusanagi": {
+    "id": "kyo_kusanagi",
+    "display_name": "Kyo Kusanagi",
+    "portrait_path": "assets/images/portraits/kyo_kusanagi.png",
+    "sprite_path": "assets/sprites/kyo_kusanagi",
+    "model_path": "assets/characters/kyo_kusanagi",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "leona_heidern": {
+    "id": "leona_heidern",
+    "display_name": "Leona Heidern",
+    "portrait_path": "assets/images/portraits/leona_heidern.png",
+    "sprite_path": "assets/sprites/leona_heidern",
+    "model_path": "assets/characters/leona_heidern",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "lin": {
+    "id": "lin",
+    "display_name": "Lin",
+    "portrait_path": "assets/images/portraits/lin.png",
+    "sprite_path": "assets/sprites/lin",
+    "model_path": "assets/characters/lin",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "magaki": {
+    "id": "magaki",
+    "display_name": "Magaki",
+    "portrait_path": "assets/images/portraits/magaki.png",
+    "sprite_path": "assets/sprites/magaki",
+    "model_path": "assets/characters/magaki",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "mai_shiranui": {
+    "id": "mai_shiranui",
+    "display_name": "Mai Shiranui",
+    "portrait_path": "assets/images/portraits/mai_shiranui.png",
+    "sprite_path": "assets/sprites/mai_shiranui",
+    "model_path": "assets/characters/mai_shiranui",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "maps": {
+    "id": "maps",
+    "display_name": "Maps",
+    "portrait_path": "assets/images/portraits/maps.png",
+    "sprite_path": "assets/sprites/maps",
+    "model_path": "assets/characters/maps",
+    "has_portrait": false,
+    "has_sprite": false,
+    "has_3d_model": true
+  },
+  "mature": {
+    "id": "mature",
+    "display_name": "Mature",
+    "portrait_path": "assets/images/portraits/mature.png",
+    "sprite_path": "assets/sprites/mature",
+    "model_path": "assets/characters/mature",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "maxima": {
+    "id": "maxima",
+    "display_name": "Maxima",
+    "portrait_path": "assets/images/portraits/maxima.png",
+    "sprite_path": "assets/sprites/maxima",
+    "model_path": "assets/characters/maxima",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "mr_big": {
+    "id": "mr_big",
+    "display_name": "Mr Big",
+    "portrait_path": "assets/images/portraits/mr_big.png",
+    "sprite_path": "assets/sprites/mr_big",
+    "model_path": "assets/characters/mr_big",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "nakoruru": {
+    "id": "nakoruru",
+    "display_name": "Nakoruru",
+    "portrait_path": "assets/images/portraits/nakoruru.png",
+    "sprite_path": "assets/sprites/nakoruru",
+    "model_path": "assets/characters/nakoruru",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "orochi": {
+    "id": "orochi",
+    "display_name": "Orochi",
+    "portrait_path": "assets/images/portraits/orochi.png",
+    "sprite_path": "assets/sprites/orochi",
+    "model_path": "assets/characters/orochi",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "ramon": {
+    "id": "ramon",
+    "display_name": "Ramon",
+    "portrait_path": "assets/images/portraits/ramon.png",
+    "sprite_path": "assets/sprites/ramon",
+    "model_path": "assets/characters/ramon",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "robert_garcia": {
+    "id": "robert_garcia",
+    "display_name": "Robert Garcia",
+    "portrait_path": "assets/images/portraits/robert_garcia.png",
+    "sprite_path": "assets/sprites/robert_garcia",
+    "model_path": "assets/characters/robert_garcia",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "ryo_sakazaki": {
+    "id": "ryo_sakazaki",
+    "display_name": "Ryo Sakazaki",
+    "portrait_path": "assets/images/portraits/ryo_sakazaki.png",
+    "sprite_path": "assets/sprites/ryo_sakazaki",
+    "model_path": "assets/characters/ryo_sakazaki",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "saisyu_kusanagi": {
+    "id": "saisyu_kusanagi",
+    "display_name": "Saisyu Kusanagi",
+    "portrait_path": "assets/images/portraits/saisyu_kusanagi.png",
+    "sprite_path": "assets/sprites/saisyu_kusanagi",
+    "model_path": "assets/characters/saisyu_kusanagi",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "shermie": {
+    "id": "shermie",
+    "display_name": "Shermie",
+    "portrait_path": "assets/images/portraits/shermie.png",
+    "sprite_path": "assets/sprites/shermie",
+    "model_path": "assets/characters/shermie",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "shingo_yabuki": {
+    "id": "shingo_yabuki",
+    "display_name": "Shingo Yabuki",
+    "portrait_path": "assets/images/portraits/shingo_yabuki.png",
+    "sprite_path": "assets/sprites/shingo_yabuki",
+    "model_path": "assets/characters/shingo_yabuki",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "shunei": {
+    "id": "shunei",
+    "display_name": "Shunei",
+    "portrait_path": "assets/images/portraits/shunei.png",
+    "sprite_path": "assets/sprites/shunei",
+    "model_path": "assets/characters/shunei",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "sie_kensou": {
+    "id": "sie_kensou",
+    "display_name": "Sie Kensou",
+    "portrait_path": "assets/images/portraits/sie_kensou.png",
+    "sprite_path": "assets/sprites/sie_kensou",
+    "model_path": "assets/characters/sie_kensou",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "terry_bogard": {
+    "id": "terry_bogard",
+    "display_name": "Terry Bogard",
+    "portrait_path": "assets/images/portraits/terry_bogard.png",
+    "sprite_path": "assets/sprites/terry_bogard",
+    "model_path": "assets/characters/terry_bogard",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "vanessa": {
+    "id": "vanessa",
+    "display_name": "Vanessa",
+    "portrait_path": "assets/images/portraits/vanessa.png",
+    "sprite_path": "assets/sprites/vanessa",
+    "model_path": "assets/characters/vanessa",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "vice": {
+    "id": "vice",
+    "display_name": "Vice",
+    "portrait_path": "assets/images/portraits/vice.png",
+    "sprite_path": "assets/sprites/vice",
+    "model_path": "assets/characters/vice",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "whip": {
+    "id": "whip",
+    "display_name": "Whip",
+    "portrait_path": "assets/images/portraits/whip.png",
+    "sprite_path": "assets/sprites/whip",
+    "model_path": "assets/characters/whip",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "wolfgang": {
+    "id": "wolfgang",
+    "display_name": "Wolfgang",
+    "portrait_path": "assets/images/portraits/wolfgang.png",
+    "sprite_path": "assets/sprites/wolfgang",
+    "model_path": "assets/characters/wolfgang",
+    "has_portrait": false,
+    "has_sprite": true,
+    "has_3d_model": false
+  },
+  "wolfgang_krauser": {
+    "id": "wolfgang_krauser",
+    "display_name": "Wolfgang Krauser",
+    "portrait_path": "assets/images/portraits/wolfgang_krauser.png",
+    "sprite_path": "assets/sprites/wolfgang_krauser",
+    "model_path": "assets/characters/wolfgang_krauser",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
+  },
+  "yuri_sakazaki": {
+    "id": "yuri_sakazaki",
+    "display_name": "Yuri Sakazaki",
+    "portrait_path": "assets/images/portraits/yuri_sakazaki.png",
+    "sprite_path": "assets/sprites/yuri_sakazaki",
+    "model_path": "assets/characters/yuri_sakazaki",
+    "has_portrait": true,
+    "has_sprite": true,
+    "has_3d_model": true
   }
 }
