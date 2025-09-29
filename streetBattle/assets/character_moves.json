@@ -1,0 +1,276 @@
+{
+  "metadata": {
+    "version": "2025-09-29",
+    "source": "StreetBattle curated move list",
+    "description": "Minimal special/super move definitions used by the gameplay and documentation pipelines."
+  },
+  "default": {
+    "special_moves": {
+      "Hadoken": {
+        "input": ["down", "down-right", "right", "light"],
+        "input_alt": ["down", "down-right", "right", "heavy"],
+        "damage": 24,
+        "animation_time": 0.7,
+        "description": "Classic projectile attack released from the fighter's palms."
+      },
+      "Shoryuken": {
+        "input": ["right", "down", "down-right", "light"],
+        "input_alt": ["right", "down", "down-right", "heavy"],
+        "damage": 30,
+        "animation_time": 0.85,
+        "description": "Invincible rising uppercut with strong anti-air properties."
+      },
+      "Tatsumaki": {
+        "input": ["down", "down-left", "left", "light"],
+        "input_alt": ["down", "down-left", "left", "heavy"],
+        "damage": 20,
+        "animation_time": 1.1,
+        "description": "Spinning kick that advances forward and hits multiple times."
+      }
+    },
+    "super_moves": {
+      "Hyper Combo": {
+        "input": ["down", "down-right", "right", "down", "down-right", "right", "heavy"],
+        "damage": 60,
+        "power_cost": 100,
+        "animation_time": 1.6,
+        "description": "A cinematic finisher that strings multiple attacks together."
+      }
+    }
+  },
+  "characters": {
+    "kyo_kusanagi": {
+      "name": "Kyo Kusanagi",
+      "aliases": ["Kyo Kusanagi", "Kyo"],
+      "special_moves": {
+        "Oniyaki": {
+          "input": ["right", "down", "down-right", "light"],
+          "input_alt": ["right", "down", "down-right", "heavy"],
+          "damage": 32,
+          "animation_time": 0.9,
+          "description": "Fiery uppercut that scorches airborne foes."
+        },
+        "R.E.D. Kick": {
+          "input": ["down", "down-left", "left", "light"],
+          "input_alt": ["down", "down-left", "left", "heavy"],
+          "damage": 26,
+          "animation_time": 1.05,
+          "description": "Acrobatic flying kick that covers distance quickly."
+        }
+      },
+      "super_moves": {
+        "Orochinagi": {
+          "input": ["down", "down-right", "right", "down", "down-right", "right", "heavy"],
+          "damage": 70,
+          "power_cost": 120,
+          "animation_time": 1.8,
+          "description": "Massive wall of flame unleashed across the stage."
+        }
+      }
+    },
+    "iori_yagami": {
+      "name": "Iori Yagami",
+      "aliases": ["Iori Yagami", "Iori"],
+      "special_moves": {
+        "Ya Sakazuki": {
+          "input": ["down", "down-right", "right", "light"],
+          "input_alt": ["down", "down-right", "right", "heavy"],
+          "damage": 28,
+          "animation_time": 0.8,
+          "description": "Purple flame projectile that knocks opponents back."
+        },
+        "Koto Tsuki In": {
+          "input": ["down", "down-left", "left", "light"],
+          "input_alt": ["down", "down-left", "left", "heavy"],
+          "damage": 34,
+          "animation_time": 1.0,
+          "description": "Shoulder charge that leads into a brutal slam."
+        }
+      },
+      "super_moves": {
+        "Ya Otome": {
+          "input": ["down", "down-right", "right", "down", "down-right", "right", "light"],
+          "damage": 75,
+          "power_cost": 130,
+          "animation_time": 1.9,
+          "description": "Iori rushes forward and tears the opponent apart with claw swipes."
+        }
+      }
+    },
+    "terry_bogard": {
+      "name": "Terry Bogard",
+      "aliases": ["Terry Bogard", "Terry"],
+      "special_moves": {
+        "Burn Knuckle": {
+          "input": ["down", "down-right", "right", "light"],
+          "input_alt": ["down", "down-right", "right", "heavy"],
+          "damage": 30,
+          "animation_time": 0.95,
+          "description": "A flaming rushing punch that crashes through guards."
+        },
+        "Crack Shoot": {
+          "input": ["down", "down-left", "left", "light"],
+          "input_alt": ["down", "down-left", "left", "heavy"],
+          "damage": 26,
+          "animation_time": 1.1,
+          "description": "Somersault kick that hits overhead and punishes crouchers."
+        }
+      },
+      "super_moves": {
+        "Buster Wolf": {
+          "input": ["down", "down-right", "right", "down", "down-right", "right", "light"],
+          "damage": 80,
+          "power_cost": 120,
+          "animation_time": 1.7,
+          "description": "Signature rush sequence ending in a powerful energy blast."
+        }
+      }
+    },
+    "mai_shiranui": {
+      "name": "Mai Shiranui",
+      "aliases": ["Mai Shiranui", "Mai"],
+      "special_moves": {
+        "Ryuenbu": {
+          "input": ["down", "down-right", "right", "light"],
+          "input_alt": ["down", "down-right", "right", "heavy"],
+          "damage": 24,
+          "animation_time": 0.8,
+          "description": "Spinning fan of fire that controls the neutral game."
+        },
+        "Kachosen": {
+          "input": ["right", "right", "light"],
+          "input_alt": ["left", "left", "light"],
+          "damage": 22,
+          "animation_time": 0.75,
+          "description": "Projectile fan tossed at high speed."
+        }
+      },
+      "super_moves": {
+        "Chou Hissatsu Shinobi Bachi": {
+          "input": ["down", "down-right", "right", "down", "down-right", "right", "heavy"],
+          "damage": 68,
+          "power_cost": 110,
+          "animation_time": 1.8,
+          "description": "Mai dashes forward engulfed in crimson flames, striking multiple times."
+        }
+      }
+    },
+    "ryo_sakazaki": {
+      "name": "Ryo Sakazaki",
+      "aliases": ["Ryo Sakazaki", "Ryo"],
+      "special_moves": {
+        "Ko-Ou Ken": {
+          "input": ["down", "down-right", "right", "light"],
+          "input_alt": ["down", "down-right", "right", "heavy"],
+          "damage": 25,
+          "animation_time": 0.75,
+          "description": "Energy blast emitted from his palm."
+        },
+        "Zanretsu Ken": {
+          "input": ["left", "right", "light"],
+          "input_alt": ["left", "right", "heavy"],
+          "damage": 32,
+          "animation_time": 1.05,
+          "description": "Rapid punch series ending in a powerful blow."
+        }
+      },
+      "super_moves": {
+        "Haoh Shoukou Ken": {
+          "input": ["down", "down-right", "right", "down", "down-right", "right", "heavy"],
+          "damage": 72,
+          "power_cost": 120,
+          "animation_time": 1.85,
+          "description": "Massive projectile that dominates the screen."
+        }
+      }
+    },
+    "kim_kaphwan": {
+      "name": "Kim Kaphwan",
+      "aliases": ["Kim Kaphwan", "Kim"],
+      "special_moves": {
+        "Hien Zan": {
+          "input": ["down", "down-right", "right", "light"],
+          "input_alt": ["down", "down-right", "right", "heavy"],
+          "damage": 27,
+          "animation_time": 0.85,
+          "description": "Spinning tornado kick that covers the air space."
+        },
+        "Hangetsu Zan": {
+          "input": ["down", "down-left", "left", "light"],
+          "input_alt": ["down", "down-left", "left", "heavy"],
+          "damage": 29,
+          "animation_time": 1.0,
+          "description": "Crescent kick that advances forward at high speed."
+        }
+      },
+      "super_moves": {
+        "Houou Kyaku": {
+          "input": ["down", "down-right", "right", "down", "down-right", "right", "light"],
+          "damage": 78,
+          "power_cost": 110,
+          "animation_time": 1.75,
+          "description": "Lightning-fast barrage of kicks ending with an explosive finisher."
+        }
+      }
+    },
+    "leona_heidern": {
+      "name": "Leona Heidern",
+      "aliases": ["Leona Heidern", "Leona"],
+      "special_moves": {
+        "Moon Slasher": {
+          "input": ["down", "down-right", "right", "light"],
+          "input_alt": ["down", "down-right", "right", "heavy"],
+          "damage": 28,
+          "animation_time": 0.9,
+          "description": "Vertical arc slash that excels as an anti-air tool."
+        },
+        "Baltic Launcher": {
+          "input": ["down", "down-left", "left", "light"],
+          "input_alt": ["down", "down-left", "left", "heavy"],
+          "damage": 25,
+          "animation_time": 0.85,
+          "description": "Explosive projectile tossed forward in a low trajectory."
+        }
+      },
+      "super_moves": {
+        "V-Slasher": {
+          "input": ["down", "down-back", "back", "down", "down-forward", "forward", "heavy"],
+          "damage": 76,
+          "power_cost": 130,
+          "requires_air": true,
+          "animation_time": 1.9,
+          "description": "Aerial cross slash performed at lightning speed across the screen."
+        }
+      }
+    },
+    "chizuru_kagura": {
+      "name": "Chizuru Kagura",
+      "aliases": ["Chizuru Kagura", "Chizuru"],
+      "special_moves": {
+        "Shinsoku Noroshi": {
+          "input": ["down", "down-right", "right", "light"],
+          "input_alt": ["down", "down-right", "right", "heavy"],
+          "damage": 24,
+          "animation_time": 0.9,
+          "description": "Illusionary mirror strike that confounds the opponent."
+        },
+        "Tamayura no Shitsune": {
+          "input": ["down", "down-left", "left", "light"],
+          "input_alt": ["down", "down-left", "left", "heavy"],
+          "damage": 26,
+          "animation_time": 1.1,
+          "description": "Creates a shadow clone that attacks shortly after Chizuru moves."
+        }
+      },
+      "super_moves": {
+        "Rimen no Tsuki": {
+          "input": ["down", "down-right", "right", "down", "down-right", "right", "light"],
+          "damage": 70,
+          "power_cost": 120,
+          "animation_time": 1.85,
+          "description": "Seals the opponent with sacred energy mirrors."
+        }
+      }
+    }
+  }
+}

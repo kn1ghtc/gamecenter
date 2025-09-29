@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""
-Special Moves System for StreetBattle
-Implements KOF97-style special move combinations
+"""Special move orchestration and input parsing for StreetBattle.
+
+This module manages special and super move execution. It now consumes the
+curated move database stored in ``assets/character_moves.json`` so that the
+runtime, resource pipelines, and documentation reference a single source of
+truth for character techniques.
 """
 
 from panda3d.core import Vec3
-from direct.task import Task
 import time
-import os
 import json
+from pathlib import Path
+from typing import Dict, Iterable, List, Optional, Tuple
 
 
 class SpecialMovesSystem:
@@ -19,8 +22,9 @@ class SpecialMovesSystem:
         self.input_buffer = {}  # Player -> list of (timestamp, input)
         self.buffer_time = 1.0  # 1 second input buffer
         self.special_moves = self._load_special_moves()  # generic fallback moves
-        # character-specific move db from kof97_characters.json
-        self.character_moves = {}
+        self.move_metadata = {}
+        self.default_character_moves = {}
+        self.character_moves: Dict[str, Dict[str, dict]] = {}
         self.player_character = {}  # player_id -> character_name
         try:
             self._load_character_moves_db()
@@ -247,10 +251,26 @@ class SpecialMovesSystem:
         """Get character-specific special+super moves; fallback to generic basics"""
         if not character_name:
             return self.special_moves
-        moves = self.character_moves.get(character_name)
+
+        key = character_name.strip()
+        lookups = {
+            key,
+            key.lower(),
+            key.replace(' ', '_'),
+            key.replace(' ', '_').lower(),
+        }
+        moves: Optional[Dict[str, dict]] = None
+        for candidate in lookups:
+            moves = self.character_moves.get(candidate)
+            if moves:
+                break
+
         if moves:
             return moves
-        # fallback: generic core moves
+
+        if self.default_character_moves:
+            return self.default_character_moves
+
         basic_moves = {
             name: data for name, data in self.special_moves.items()
             if not data.get('power_cost', 0) > 50
@@ -283,65 +303,151 @@ class SpecialMovesSystem:
 
     # ---- Internal: load and parse per-character move DB ----
     def _load_character_moves_db(self):
-        """Read kof97_characters.json and build per-character move patterns"""
+        """Load curated move database and normalise entries for runtime use."""
+        current_dir = Path(__file__).resolve().parent
+        db_file = current_dir / 'assets' / 'character_moves.json'
+        if not db_file.exists():
+            return
+
+        with db_file.open('r', encoding='utf-8') as handle:
+            data = json.load(handle)
+
+        self.move_metadata = data.get('metadata', {})
+        defaults = data.get('default', {})
+        self._apply_default_moves(defaults)
+
+        characters = data.get('characters', {})
+        for char_id, payload in characters.items():
+            if not isinstance(payload, dict):
+                continue
+            move_bank: Dict[str, dict] = {}
+            signature_moves: List[str] = []
+
+            specials, special_names = self._normalise_move_group(payload.get('special_moves'))
+            supers, _ = self._normalise_move_group(payload.get('super_moves'), is_super=True)
+            move_bank.update(specials)
+            move_bank.update(supers)
+            signature_moves.extend(special_names)
+
+            if not move_bank:
+                continue
+
+            if signature_moves and 'signature_moves' not in payload:
+                payload['signature_moves'] = signature_moves
+
+            keys = self._canonical_keys(char_id, payload)
+            for key in keys:
+                self.character_moves[key] = move_bank
+
+    def _apply_default_moves(self, defaults: dict):
+        """Merge default move definitions into the shared fallback tables."""
+        if not isinstance(defaults, dict):
+            return
+
+        specials, _ = self._normalise_move_group(defaults.get('special_moves'))
+        supers, _ = self._normalise_move_group(defaults.get('super_moves'), is_super=True)
+
+        if specials:
+            self.special_moves.update(specials)
+        if supers:
+            self.special_moves.update(supers)
+
+        merged = {}
+        merged.update(specials)
+        merged.update(supers)
+        if merged:
+            self.default_character_moves = merged
+
+    def _canonical_keys(self, char_id: Optional[str], payload: dict) -> Iterable[str]:
+        """Generate lookup keys for a character entry (name, aliases, id)."""
+        keys = set()
+        if char_id:
+            keys.add(str(char_id))
+            keys.add(str(char_id).lower())
+            keys.add(str(char_id).replace(' ', '_'))
+            keys.add(str(char_id).replace(' ', '_').lower())
+
+        name = payload.get('name')
+        if name:
+            keys.add(name)
+            keys.add(name.lower())
+            keys.add(name.replace(' ', '_'))
+            keys.add(name.replace(' ', '_').lower())
+
+        for alias in payload.get('aliases', []) or []:
+            if not alias:
+                continue
+            keys.add(alias)
+            keys.add(str(alias).lower())
+            keys.add(str(alias).replace(' ', '_'))
+            keys.add(str(alias).replace(' ', '_').lower())
+
+        return keys
+
+    def _normalise_move_group(self, move_group: Optional[dict], *, is_super: bool = False) -> Tuple[Dict[str, dict], List[str]]:
+        """Convert move entries into runtime-friendly dictionaries."""
+        if not isinstance(move_group, dict):
+            return {}, []
+
+        moves: Dict[str, dict] = {}
+        move_names: List[str] = []
+        for move_name, move_spec in move_group.items():
+            normalised = self._normalise_move_spec(move_name, move_spec, is_super=is_super)
+            if not normalised:
+                continue
+            moves[move_name] = normalised
+            move_names.append(move_name)
+        return moves, move_names
+
+    def _normalise_move_spec(self, move_name: str, move_spec: dict, *, is_super: bool = False) -> Optional[dict]:
+        """Normalise a single move definition into the format used by the engine."""
+        if not isinstance(move_spec, dict):
+            return None
+
+        spec = dict(move_spec)
+        spec.setdefault('name', move_name)
+        spec.setdefault('description', move_name)
+        spec.setdefault('damage', 50 if is_super else 20)
+        spec.setdefault('animation_time', 1.6 if is_super else 0.9)
+
+        input_sequence = spec.get('input')
+        input_alt = spec.get('input_alt')
+        notation = spec.get('notation')
+
+        if not input_sequence and notation:
+            patterns, requires_air = self._parse_notation(str(notation))
+            input_sequence = patterns[0]
+            if len(patterns) > 1:
+                input_alt = patterns[1]
+            spec.setdefault('requires_air', requires_air)
+
+        if not input_sequence:
+            return None
+
+        spec['input'] = [str(token) for token in input_sequence]
+        if input_alt:
+            spec['input_alt'] = [str(token) for token in input_alt]
+
         try:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            db_file = os.path.join(current_dir, 'kof97_characters.json')
-            if not os.path.exists(db_file):
-                return
-            with open(db_file, 'r', encoding='utf-8') as f:
-                chars = json.load(f)
-            for char in chars:
-                name = char.get('name')
-                if not name:
-                    continue
-                spec = {}
-                # special moves
-                for mname, mdata in (char.get('special_moves') or {}).items():
-                    notation = (mdata.get('input') or '').strip()
-                    if not notation:
-                        continue
-                    patterns, requires_air = self._parse_notation(notation)
-                    # create two entries if there are multiple patterns (due to P mapping)
-                    # We'll store primary under mname
-                    entry = {
-                        'name': mname,
-                        'damage': int(mdata.get('damage', 20)),
-                        'animation_time': 0.9,
-                        'description': mname,
-                        'requires_air': requires_air,
-                    }
-                    # patterns may have 1 or 2 alternatives
-                    if len(patterns) == 2:
-                        entry['input'] = patterns[0]
-                        entry['input_alt'] = patterns[1]
-                    else:
-                        entry['input'] = patterns[0]
-                    spec[mname] = entry
-                # super moves
-                for mname, mdata in (char.get('super_moves') or {}).items():
-                    notation = (mdata.get('input') or '').strip()
-                    if not notation:
-                        continue
-                    patterns, requires_air = self._parse_notation(notation)
-                    entry = {
-                        'name': mname,
-                        'damage': int(mdata.get('damage', 50)),
-                        'animation_time': 1.6,
-                        'description': mname,
-                        'power_cost': int(mdata.get('power_cost', 1)) * 50,
-                        'requires_air': requires_air,
-                    }
-                    if len(patterns) == 2:
-                        entry['input'] = patterns[0]
-                        entry['input_alt'] = patterns[1]
-                    else:
-                        entry['input'] = patterns[0]
-                    spec[mname] = entry
-                if spec:
-                    self.character_moves[name] = spec
-        except Exception as e:
-            print(f"[SpecialMoves] Error parsing character moves: {e}")
+            spec['damage'] = int(spec.get('damage', 0))
+        except (TypeError, ValueError):
+            spec['damage'] = 0
+
+        try:
+            spec['animation_time'] = float(spec.get('animation_time', 1.0))
+        except (TypeError, ValueError):
+            spec['animation_time'] = 1.0
+
+        power_cost = spec.get('power_cost')
+        if power_cost is not None:
+            try:
+                spec['power_cost'] = int(power_cost)
+            except (TypeError, ValueError):
+                spec['power_cost'] = 0
+        elif is_super:
+            spec['power_cost'] = 100
+
+        return spec
 
     def _parse_notation(self, notation: str):
         """Parse KOF/FGC notation like 'QCF+P', 'QCB,HCF+P', 'Charge D,U+P', 'QCF+P (air)'.

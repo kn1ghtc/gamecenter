@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from typing import Dict, List, Optional, Any, Tuple
@@ -39,6 +40,9 @@ class EnhancedCharacterManager:
         self.character_models = {}
         self.resource_config = {}
         self.comprehensive_characters = {}
+        self.character_moves_index = {}
+        self.character_moves_lookup = {}
+        self.move_metadata = {}
         
         # Setup paths
         script_root = os.path.dirname(os.path.abspath(__file__))
@@ -197,8 +201,98 @@ class EnhancedCharacterManager:
             except Exception as e:
                 print(f"Failed to load enhanced profiles: {e}")
         
+        # Load curated move database and attach to character records
+        self._load_character_moves_index()
+        self._apply_moves_to_characters()
+
         # premium resource configuration 已由 find_file 逻辑处理，无需 project_root 相关残留
     
+    def _load_character_moves_index(self):
+        """Load curated character move definitions from the shared asset bundle."""
+        moves_file = self.assets_dir / "character_moves.json"
+        if not moves_file.exists():
+            self.character_moves_index = {}
+            self.character_moves_lookup = {}
+            return
+
+        try:
+            with moves_file.open('r', encoding='utf-8') as handle:
+                data = json.load(handle)
+        except Exception as exc:
+            print(f"[EnhancedCharacterManager] Failed to load character_moves.json: {exc}")
+            self.character_moves_index = {}
+            self.character_moves_lookup = {}
+            return
+
+        characters = data.get('characters', {})
+        index: Dict[str, Dict[str, Any]] = {}
+        lookup: Dict[str, Dict[str, Any]] = {}
+
+        for char_id, payload in characters.items():
+            if not isinstance(payload, dict):
+                continue
+
+            entry: Dict[str, Any] = {
+                'name': payload.get('name', ''),
+                'aliases': list(payload.get('aliases', []) or []),
+                'special_moves': copy.deepcopy(payload.get('special_moves', {})),
+                'super_moves': copy.deepcopy(payload.get('super_moves', {})),
+            }
+
+            signature_moves = payload.get('signature_moves') or list(entry['special_moves'].keys())
+            entry['signature_moves'] = signature_moves
+
+            index[char_id] = entry
+
+            candidate_keys = {char_id, entry['name'], *entry['aliases']}
+            for candidate in candidate_keys:
+                key = self._normalise_character_key(candidate)
+                if key:
+                    lookup[key] = entry
+
+        self.character_moves_index = index
+        self.character_moves_lookup = lookup
+        self.move_metadata = data.get('metadata', {})
+
+        if index:
+            print(f"[EnhancedCharacterManager] Loaded move definitions for {len(index)} characters")
+
+    def _apply_moves_to_characters(self):
+        """Merge loaded move definitions into the comprehensive character records."""
+        if not self.character_moves_index or not self.comprehensive_characters:
+            return
+
+        for char_id, char_data in self.comprehensive_characters.items():
+            move_entry = self._lookup_moves_for_character(char_id, char_data)
+            if not move_entry:
+                continue
+
+            char_data['special_moves'] = copy.deepcopy(move_entry.get('special_moves', {}))
+            char_data['super_moves'] = copy.deepcopy(move_entry.get('super_moves', {}))
+            char_data['signature_moves'] = list(move_entry.get('signature_moves', []))
+
+    def _lookup_moves_for_character(self, char_id: Optional[str], char_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Resolve the move entry corresponding to a character id/name/alias."""
+        candidates = [char_id, char_data.get('name')]
+        for alias_field in ('aliases', 'alt_names', 'nicknames'):
+            aliases = char_data.get(alias_field, [])
+            if isinstance(aliases, str):
+                candidates.append(aliases)
+            elif isinstance(aliases, list):
+                candidates.extend(aliases)
+
+        for candidate in candidates:
+            key = self._normalise_character_key(candidate)
+            if key and key in self.character_moves_lookup:
+                return self.character_moves_lookup[key]
+
+        return None
+
+    def _normalise_character_key(self, value: Optional[str]) -> Optional[str]:
+        if not value:
+            return None
+        return str(value).strip().lower().replace(' ', '_')
+
     def get_all_character_names(self) -> List[str]:
         """Get all available character names from comprehensive database"""
         all_names = set()

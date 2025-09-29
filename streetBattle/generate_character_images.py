@@ -1,276 +1,487 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-角色图像生成器 - 使用Flux AI生成高质量格斗游戏角色图像
-Character Image Generator - Generate high-quality fighting game character images with Flux AI
+"""OpenAI 图像模型驱动的 StreetBattle 角色资源生成器.
+
+该脚本利用 OpenAI 的最新图像模型批量生成角色肖像和 2.5D 精灵帧, 同时
+输出完整的提示词与元数据, 方便在美术审核或后续再训练时追踪来源。
 """
 
-import os
-import requests
+from __future__ import annotations
+
+import base64
 import json
-from pathlib import Path
-from typing import Dict, List
+import os
 import time
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+try:  # pragma: no cover - optional dependency is validated at runtime
+    from openai import OpenAI
+    from openai import OpenAIError
+except ImportError:  # pragma: no cover - handled gracefully in class
+    OpenAI = None  # type: ignore[assignment]
+    OpenAIError = Exception  # type: ignore[assignment]
+
+from gamecenter.streetBattle.config import SettingsManager
+
+
+@dataclass(slots=True)
+class CharacterSpec:
+    """角色图像生成所需的最小数据集."""
+
+    identifier: str
+    display_name: str
+    description: str
+    appearance: str
+    fighting_style: str
+    colors: str
+    signature_moves: Tuple[str, ...] = field(default_factory=tuple)
 
 
 class CharacterImageGenerator:
-    """专业格斗游戏角色图像生成器"""
-    
-    def __init__(self):
-        self.output_dir = Path("assets/characters")
+    """封装 OpenAI 图像生成流程, 输出高质量素材与元数据."""
+
+    DEFAULT_POSES: Tuple[str, ...] = (
+        "combat stance",
+        "signature attack pose",
+        "victory celebration",
+        "defensive guard position",
+        "special move preparation",
+        "jumping attack pose",
+    )
+
+    SPRITE_STATES: Dict[str, Tuple[str, ...]] = {
+        "idle": ("neutral stance", "breathing animation", "ready position"),
+        "walk": ("step forward", "mid stride", "step back", "weight shift"),
+        "attack": ("wind up", "strike", "follow through", "recovery"),
+        "hit": ("impact reaction", "stagger back", "recovery stance"),
+        "jump": ("crouch", "leap", "peak", "landing"),
+        "block": ("guard up", "blocking stance", "deflection"),
+        "victory": ("arms raised", "celebration pose", "triumphant stance"),
+    }
+
+    def __init__(
+        self,
+    *,
+    settings_manager: Optional[SettingsManager] = None,
+    client: Optional[Any] = None,
+    ) -> None:
+        self.settings_manager = settings_manager or SettingsManager()
+        self.assets_dir = Path(__file__).resolve().parent / "assets"
+        self.output_dir = self.assets_dir / "images" / "generated"
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        
-        # 角色定义和专业提示词
-        self.characters = {
-            "mr_big": {
-                "display_name": "Mr. Big",
-                "description": "Elegant crime boss from Fatal Fury",
-                "signature_moves": ["Ground Blaster", "Tornado Upper", "California Romance"],
-                "appearance": "tall gentleman in expensive business suit, slicked back dark hair, confident stance with arms crossed",
-                "fighting_style": "street fighting with cane techniques",
-                "colors": "dark navy suit, white shirt, red tie"
-            },
-            "ramon": {
-                "display_name": "Ramon",
-                "description": "Lucha libre wrestler from King of Fighters",
-                "signature_moves": ["Tiger Road", "Feint Step", "Rolling Sobat"],
-                "appearance": "muscular luchador with colorful mask, athletic build in wrestling attire",
-                "fighting_style": "lucha libre wrestling and acrobatic moves",
-                "colors": "bright blue and yellow mask, green wrestling outfit"
-            },
-            "wolfgang": {
-                "display_name": "Wolfgang Krauser",
-                "description": "German nobleman from Fatal Fury",
-                "signature_moves": ["Kaiser Wave", "Leg Tomahawk", "Phoenix Throw"],
-                "appearance": "imposing tall nobleman with long blonde hair, aristocratic uniform with cape",
-                "fighting_style": "brutal power attacks and royal combat techniques",
-                "colors": "dark blue military uniform, golden details, white cape"
-            }
-        }
-    
-    def generate_professional_prompt(self, char_id: str, pose_type: str = "stance") -> str:
-        """生成专业的AI图像提示词"""
-        char = self.characters[char_id]
-        
-        base_prompt = f"""Professional full-body portrait of {char['display_name']}, {char['description']}, 
-{char['appearance']}, performing signature {pose_type} pose, {char['fighting_style']} style,
-high-quality detailed anime fighting game art style, {char['colors']}, 
-clean white background, perfect lighting, 1024x1024 resolution, 
-only one person in image, full body visible from head to toe, 
-no other characters, solo character art, fighting game character design,
-detailed shading, vibrant colors, professional game art quality"""
-        
-        # 清理提示词
-        return " ".join(base_prompt.split())
-    
-    def generate_multiple_poses(self, char_id: str) -> List[str]:
-        """为每个角色生成多个姿势的提示词"""
-        poses = [
-            "combat stance",
-            "signature attack pose", 
-            "victory celebration",
-            "defensive guard position",
-            "special move preparation",
-            "jumping attack pose"
-        ]
-        
-        prompts = []
-        for pose in poses:
-            prompt = self.generate_professional_prompt(char_id, pose)
-            prompts.append((pose, prompt))
-        
-        return prompts
-    
-    def call_flux_api(self, prompt: str, filename: str) -> bool:
-        """调用Flux API生成图像（需要实际的API配置）"""
-        print(f"🎨 生成图像: {filename}")
-        print(f"📝 提示词: {prompt[:100]}...")
-        
-        # 这里需要配置实际的Flux API调用
-        # 由于没有实际的API密钥，我们创建占位符
-        
+        self.sprite_root = self.assets_dir / "sprites"
+        self.sprite_root.mkdir(parents=True, exist_ok=True)
+
+        # AI / 图像配置
+        ai_config = self.settings_manager.get("ai", {}) or {}
+        self.image_model = str(ai_config.get("image_model", "gpt-image-1"))
+        self.image_size = str(ai_config.get("image_size", "1024x1024"))
+        self.sprite_size = str(ai_config.get("sprite_size", "256x256"))
+        self.image_quality = str(ai_config.get("image_quality", "high"))
+        self.rate_limit_delay = float(ai_config.get("rate_limit_delay", 1.0))
+        self.generate_sprite_frames = bool(ai_config.get("generate_sprite_frames", False))
+        self.sprite_rate_limit_delay = float(ai_config.get("sprite_rate_limit_delay", 0.8))
+        self.user_tag = str(ai_config.get("user_tag", "streetbattle-image-generator"))
+
+        self.client = client or self._create_openai_client(ai_config)
+        self.characters: Dict[str, CharacterSpec] = self._load_character_specs()
+
+    # ------------------------------------------------------------------
+    # OpenAI client utilities
+    # ------------------------------------------------------------------
+    def _create_openai_client(self, ai_config: Dict[str, object]) -> Optional[Any]:
+        if OpenAI is None:
+            print("[CharacterImageGenerator] ⚠️ 未安装 openai 包，请执行 `pip install openai` 后重试。")
+            return None
+
+        api_key = os.getenv("OPENAI_API_KEY") or ai_config.get("api_key")
+        if not api_key:
+            print("[CharacterImageGenerator] ⚠️ 未检测到 OPENAI_API_KEY，生成将退化为只写入提示词。")
+            return None
+
         try:
-            # 示例API调用结构（需要根据实际API调整）
-            """
-            api_url = "https://fal.ai/models/fal-ai/flux/schnell"
-            headers = {
-                "Authorization": "Bearer YOUR_API_KEY",
-                "Content-Type": "application/json"
-            }
-            data = {
-                "prompt": prompt,
-                "width": 1024,
-                "height": 1024,
-                "num_inference_steps": 4,
-                "guidance_scale": 3.5
-            }
-            
-            response = requests.post(api_url, headers=headers, json=data)
-            if response.status_code == 200:
-                result = response.json()
-                image_url = result.get("image_url")
-                
-                # 下载图像
-                img_response = requests.get(image_url)
-                with open(self.output_dir / filename, 'wb') as f:
-                    f.write(img_response.content)
-                
-                return True
-            """
-            
-            # 暂时创建占位符文件，显示应该生成的内容
-            placeholder_info = {
-                "character": filename.split('_')[0],
-                "prompt": prompt,
-                "resolution": "1024x1024",
-                "status": "ready_for_generation"
-            }
-            
-            with open(self.output_dir / f"{filename}.json", 'w', encoding='utf-8') as f:
-                json.dump(placeholder_info, f, indent=2, ensure_ascii=False)
-            
-            print(f"✅ 提示词已准备: {filename}.json")
-            return True
-            
-        except Exception as e:
-            print(f"❌ 生成失败: {e}")
+            return OpenAI(api_key=str(api_key))
+        except Exception as exc:  # pragma: no cover - network/auth errors handled gracefully
+            print(f"[CharacterImageGenerator] ⚠️ OpenAI 客户端初始化失败: {exc}")
+            return None
+
+    # ------------------------------------------------------------------
+    # Character data loading
+    # ------------------------------------------------------------------
+    def _load_character_specs(self) -> Dict[str, CharacterSpec]:
+        """从本地角色清单中加载描述信息, 并提供默认回退."""
+
+        manifest_candidates: Iterable[Path] = (
+            self.assets_dir / "characters_manifest_complete.json",
+            self.assets_dir / "characters_manifest.json",
+            Path(__file__).resolve().parent / "characters_manifest_complete.json",
+        )
+
+        specs: Dict[str, CharacterSpec] = {}
+        moves_index = self._load_move_index()
+        move_lookup = self._build_move_lookup(moves_index)
+
+        for manifest_path in manifest_candidates:
+            if not manifest_path.exists():
+                continue
+            try:
+                with manifest_path.open("r", encoding="utf-8") as handle:
+                    payload = json.load(handle)
+                characters = []
+                if isinstance(payload, dict) and "characters" in payload:
+                    characters = payload["characters"]
+                elif isinstance(payload, list):
+                    characters = payload
+                elif isinstance(payload, dict):
+                    characters = list(payload.values())
+
+                for entry in characters:
+                    if not isinstance(entry, dict):
+                        continue
+                    identifier = str(entry.get("id") or entry.get("identifier") or "").strip()
+                    if not identifier:
+                        continue
+                    description = str(entry.get("description") or entry.get("bio") or "" )
+                    appearance = str(entry.get("appearance") or entry.get("look") or "")
+                    fighting_style = str(entry.get("fighting_style") or entry.get("style") or "mixed martial arts")
+                    colors = str(entry.get("palette") or entry.get("colors") or entry.get("primary_color") or "vibrant accent colors")
+                    signature_moves_raw = entry.get("signature_moves") or entry.get("moves") or []
+                    if isinstance(signature_moves_raw, dict):
+                        signature_moves_list = list(signature_moves_raw.keys())
+                    elif isinstance(signature_moves_raw, (list, tuple, set)):
+                        signature_moves_list = [str(move) for move in signature_moves_raw if move]
+                    elif signature_moves_raw:
+                        signature_moves_list = [str(signature_moves_raw)]
+                    else:
+                        signature_moves_list = []
+
+                    move_entry = self._resolve_moves_for_character(identifier, entry, move_lookup)
+                    if move_entry:
+                        derived_moves: List[str] = []
+                        derived_moves.extend(move_entry.get("special_moves", {}).keys())
+                        derived_moves.extend(move_entry.get("super_moves", {}).keys())
+                        if signature_moves_list:
+                            signature_moves_list = list(dict.fromkeys(signature_moves_list + derived_moves))
+                        else:
+                            signature_moves_list = list(dict.fromkeys(derived_moves))
+                    specs[identifier] = CharacterSpec(
+                        identifier=identifier,
+                        display_name=str(entry.get("name") or identifier.replace("_", " ").title()),
+                        description=description or "Elite tournament fighter",
+                        appearance=appearance or "athletic fighter in tournament attire",
+                        fighting_style=fighting_style,
+                        colors=colors,
+                        signature_moves=tuple(signature_moves_list),
+                    )
+            except Exception as exc:  # pragma: no cover - defensive logging
+                print(f"[CharacterImageGenerator] ⚠️ 无法解析 {manifest_path.name}: {exc}")
+
+        if specs:
+            return specs
+
+        # Fallback defaults to guarantee generator usability
+        print("[CharacterImageGenerator] ⚠️ 未找到角色清单, 使用默认角色集。")
+        default_pool = {
+            "mr_big": CharacterSpec(
+                identifier="mr_big",
+                display_name="Mr. Big",
+                description="Elegant crime boss from Fatal Fury",
+                appearance="tall gentleman in expensive business suit, slicked back dark hair, confident stance with arms crossed",
+                fighting_style="street fighting with cane techniques",
+                colors="dark navy suit, white shirt, red tie",
+                signature_moves=("Ground Blaster", "Tornado Upper", "California Romance"),
+            ),
+            "ramon": CharacterSpec(
+                identifier="ramon",
+                display_name="Ramon",
+                description="Lucha libre wrestler from King of Fighters",
+                appearance="muscular luchador with colourful mask and dynamic wrestling attire",
+                fighting_style="lucha libre wrestling and aerial techniques",
+                colors="bright blue and yellow mask, green wrestling outfit",
+                signature_moves=("Tiger Road", "Feint Step", "Rolling Sobat"),
+            ),
+            "wolfgang": CharacterSpec(
+                identifier="wolfgang",
+                display_name="Wolfgang Krauser",
+                description="German nobleman wielding overwhelming power",
+                appearance="imposing tall nobleman with long blonde hair, aristocratic armour and cape",
+                fighting_style="brutal power attacks and royal combat techniques",
+                colors="deep navy armour, gold trim, white cape",
+                signature_moves=("Kaiser Wave", "Leg Tomahawk", "Phoenix Throw"),
+            ),
+        }
+        return default_pool
+
+    def _load_move_index(self) -> Dict[str, Dict[str, Any]]:
+        """Load curated move definitions so prompts can reference signature skills."""
+        moves_path = self.assets_dir / "character_moves.json"
+        if not moves_path.exists():
+            return {}
+
+        try:
+            with moves_path.open("r", encoding="utf-8") as handle:
+                payload = json.load(handle)
+        except Exception as exc:
+            print(f"[CharacterImageGenerator] ⚠️ 无法读取 character_moves.json: {exc}")
+            return {}
+
+        characters = payload.get("characters")
+        if isinstance(characters, dict):
+            return characters
+        return {}
+
+    def _build_move_lookup(self, moves_index: Dict[str, Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        lookup: Dict[str, Dict[str, Any]] = {}
+        for char_id, payload in moves_index.items():
+            if not isinstance(payload, dict):
+                continue
+
+            candidate_keys = {char_id}
+            name = payload.get("name")
+            if name:
+                candidate_keys.add(name)
+
+            for alias in payload.get("aliases", []) or []:
+                if alias:
+                    candidate_keys.add(alias)
+
+            for candidate in candidate_keys:
+                key = self._normalise_key(candidate)
+                if key:
+                    lookup[key] = payload
+
+        return lookup
+
+    def _resolve_moves_for_character(
+        self,
+        identifier: str,
+        entry: Dict[str, Any],
+        move_lookup: Dict[str, Dict[str, Any]],
+    ) -> Optional[Dict[str, Any]]:
+        candidates = [identifier, entry.get("name")]
+
+        for field in ("aliases", "alt_names", "nicknames"):
+            values = entry.get(field)
+            if isinstance(values, str):
+                candidates.append(values)
+            elif isinstance(values, (list, tuple, set)):
+                candidates.extend([v for v in values if v])
+
+        for candidate in candidates:
+            key = self._normalise_key(candidate)
+            if key and key in move_lookup:
+                return move_lookup[key]
+
+        return None
+
+    @staticmethod
+    def _normalise_key(value: Optional[str]) -> Optional[str]:
+        if not value:
+            return None
+        return str(value).strip().lower().replace(" ", "_")
+
+    # ------------------------------------------------------------------
+    # Prompt builders & persistence helpers
+    # ------------------------------------------------------------------
+    def _build_portrait_prompt(self, spec: CharacterSpec, pose: str) -> str:
+        signature = ", ".join(spec.signature_moves) if spec.signature_moves else "signature techniques"
+        template = f"""Professional full-body portrait of {spec.display_name}, {spec.description},
+{spec.appearance}, performing {pose}, {spec.fighting_style} style,
+highly detailed fighting game concept art, {spec.colors},
+clean studio lighting, {self.image_size} resolution,
+full body centred composition, no other characters, premium character sheet quality,
+references: {signature}."""
+        return " ".join(template.split())
+
+    def _build_sprite_prompt(self, spec: CharacterSpec, state: str, frame_desc: str) -> str:
+        template = f"""Pixel art sprite of {spec.display_name}, {spec.appearance}, {frame_desc},
+side-on camera, crisp silhouette, arcade fighting game animation for state '{state}',
+{self.sprite_size} resolution, vibrant {spec.colors}, clean alpha background."""
+        return " ".join(template.split())
+
+    def _write_metadata(
+        self,
+        output_path: Path,
+        prompt: str,
+        *,
+        status: str,
+        metadata: Optional[Dict[str, object]] = None,
+        error: Optional[str] = None,
+    ) -> None:
+        payload = {
+            "prompt": prompt,
+            "status": status,
+            "model": self.image_model,
+            "size": self.image_size,
+            "quality": self.image_quality,
+            "generated_at": datetime.utcnow().isoformat() + "Z",
+        }
+        if metadata:
+            payload.update(metadata)
+        if error:
+            payload["error"] = error
+        output_path.with_suffix(output_path.suffix + ".json").write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False),
+            encoding="utf-8",
+        )
+
+    def _save_image_bytes(self, output_path: Path, base64_payload: str) -> None:
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        image_bytes = base64.b64decode(base64_payload)
+        output_path.write_bytes(image_bytes)
+
+    def call_openai_image_api(
+        self,
+        prompt: str,
+        output_path: Path,
+        *,
+        size: Optional[str] = None,
+        metadata: Optional[Dict[str, object]] = None,
+    ) -> bool:
+        """调用 OpenAI 接口生成图像; 若缺少凭据则仅输出提示词。"""
+
+        if self.client is None:
+            self._write_metadata(output_path, prompt, status="skipped_no_client", metadata=metadata)
             return False
-    
-    def generate_character_images(self, char_id: str):
-        """为指定角色生成所有图像"""
-        if char_id not in self.characters:
+
+        try:
+            response = self.client.images.generate(
+                model=self.image_model,
+                prompt=prompt,
+                size=size or self.image_size,
+                quality=self.image_quality,
+                user=self.user_tag,
+                n=1,
+            )
+            data = response.data[0]
+            self._save_image_bytes(output_path, data.b64_json)
+            details = metadata or {}
+            if getattr(data, "revised_prompt", None):
+                details["revised_prompt"] = data.revised_prompt
+            self._write_metadata(output_path, prompt, status="success", metadata=details)
+            return True
+        except OpenAIError as exc:  # pragma: no cover - external API failure
+            self._write_metadata(output_path, prompt, status="error", metadata=metadata, error=str(exc))
+            return False
+
+    # ------------------------------------------------------------------
+    # Image generation flows
+    # ------------------------------------------------------------------
+    def generate_character_images(self, char_id: str) -> None:
+        spec = self.characters.get(char_id)
+        if not spec:
             print(f"❌ 未知角色: {char_id}")
             return
-        
-        char = self.characters[char_id]
-        print(f"\n🎭 开始生成 {char['display_name']} 的角色图像...")
-        
-        # 生成主肖像
-        main_prompt = self.generate_professional_prompt(char_id, "signature combat stance")
-        main_filename = f"{char_id}_portrait.png"
-        self.call_flux_api(main_prompt, main_filename)
-        
-        # 生成多个动作姿势
-        poses = self.generate_multiple_poses(char_id)
-        for i, (pose_name, prompt) in enumerate(poses):
-            filename = f"{char_id}_pose_{i+1}_{pose_name.replace(' ', '_')}.png"
-            self.call_flux_api(prompt, filename)
-            time.sleep(1)  # 避免API限制
-        
-        print(f"✅ {char['display_name']} 图像生成完成")
-    
-    def generate_sprite_animation_frames(self, char_id: str):
-        """生成精灵动画帧"""
-        char = self.characters[char_id]
-        sprite_dir = Path(f"assets/sprites/{char_id}")
+
+        print(f"\n🥷 正在生成 {spec.display_name} 的立绘与姿势图像")
+        char_dir = self.output_dir / spec.identifier
+        char_dir.mkdir(parents=True, exist_ok=True)
+
+        main_prompt = self._build_portrait_prompt(spec, "signature combat stance")
+        portrait_path = char_dir / f"{spec.identifier}_portrait.png"
+        self.call_openai_image_api(
+            main_prompt,
+            portrait_path,
+            metadata={"character": spec.display_name, "pose": "signature combat stance"},
+        )
+
+        for index, pose in enumerate(self.DEFAULT_POSES, start=1):
+            prompt = self._build_portrait_prompt(spec, pose)
+            pose_path = char_dir / f"{spec.identifier}_pose_{index:02d}_{pose.replace(' ', '_')}.png"
+            self.call_openai_image_api(
+                prompt,
+                pose_path,
+                metadata={"character": spec.display_name, "pose": pose, "index": index},
+            )
+            time.sleep(self.rate_limit_delay)
+
+    def generate_sprite_animation_frames(self, char_id: str) -> None:
+        spec = self.characters.get(char_id)
+        if not spec:
+            return
+
+        print(f"🎬 生成 {spec.display_name} 的 2.5D 精灵帧资产")
+        sprite_dir = self.sprite_root / spec.identifier
         sprite_dir.mkdir(parents=True, exist_ok=True)
-        
-        # 动画状态定义
-        animation_states = {
-            "idle": ["neutral stance", "breathing animation", "ready position"],
-            "walk": ["step forward", "mid stride", "step back", "weight shift"],
-            "attack": ["wind up", "strike", "follow through", "recovery"],
-            "hit": ["impact reaction", "stagger back", "recovery stance"],
-            "jump": ["crouch", "leap", "peak", "landing"],
-            "block": ["guard up", "blocking stance", "deflection"],
-            "victory": ["arms raised", "celebration pose", "triumphant stance"]
+
+        manifest: Dict[str, Dict[str, object]] = {
+            "character_id": spec.identifier,
+            "display_name": spec.display_name,
+            "description": spec.description,
+            "states": {},
+            "generated_at": datetime.utcnow().isoformat() + "Z",
+            "image_model": self.image_model,
+            "sprite_size": self.sprite_size,
         }
-        
-        print(f"\n🎬 生成 {char['display_name']} 精灵动画帧...")
-        
-        for state, frames in animation_states.items():
-            for i, frame_desc in enumerate(frames):
-                prompt = f"""Professional fighting game sprite frame of {char['display_name']}, 
-{char['appearance']}, {frame_desc} animation frame, 
-pixel art style, clean background, 128x128 resolution,
-side view, detailed sprite animation, {char['colors']},
-only one character, clear silhouette, game sprite quality"""
-                
-                filename = f"{char_id}_{state}_frame_{i+1}.png"
-                
-                # 创建精灵动画配置
-                sprite_info = {
-                    "character": char_id,
-                    "animation": state,
-                    "frame": i + 1,
+
+        for state, frames in self.SPRITE_STATES.items():
+            state_dir = sprite_dir / state
+            state_dir.mkdir(parents=True, exist_ok=True)
+            durations = []
+
+            for idx, frame_desc in enumerate(frames):
+                prompt = self._build_sprite_prompt(spec, state, frame_desc)
+                frame_path = state_dir / f"frame_{idx:02d}.png"
+                metadata = {
+                    "character": spec.display_name,
+                    "state": state,
+                    "frame_index": idx,
                     "description": frame_desc,
-                    "prompt": " ".join(prompt.split()),
-                    "resolution": "128x128",
-                    "style": "pixel_art_sprite"
+                    "size": self.sprite_size,
                 }
-                
-                with open(sprite_dir / f"{filename}.json", 'w', encoding='utf-8') as f:
-                    json.dump(sprite_info, f, indent=2, ensure_ascii=False)
-        
-        # 创建精灵动画清单
-        manifest = {
-            "character_id": char_id,
-            "display_name": char['display_name'],
-            "description": char['description'],
-            "states": {}
-        }
-        
-        for state, frames in animation_states.items():
+
+                if self.generate_sprite_frames:
+                    self.call_openai_image_api(
+                        prompt,
+                        frame_path,
+                        size=self.sprite_size,
+                        metadata=metadata,
+                    )
+                    time.sleep(self.sprite_rate_limit_delay)
+                else:
+                    self._write_metadata(
+                        frame_path,
+                        prompt,
+                        status="skipped_config_only",
+                        metadata=metadata,
+                    )
+                durations.append(0.1)
+
             manifest["states"][state] = {
                 "sequence": list(range(len(frames))),
-                "fps": 12 if state in ["walk", "attack"] else 8,
-                "loop": state in ["idle", "walk", "block"],
+                "fps": 12 if state in {"walk", "attack"} else 8,
+                "loop": state in {"idle", "walk", "block"},
                 "frames": len(frames),
-                "durations": [0.1] * len(frames)
+                "durations": durations,
             }
-        
-        with open(sprite_dir / "manifest.json", 'w', encoding='utf-8') as f:
-            json.dump(manifest, f, indent=2, ensure_ascii=False)
-        
-        print(f"✅ {char['display_name']} 精灵动画配置完成")
-    
-    def generate_all_missing_characters(self):
-        """生成所有缺失角色的图像"""
-        print("🚀 开始生成缺失角色图像...")
-        print("=" * 60)
-        
-        for char_id in self.characters.keys():
-            print(f"\n⭐ 处理角色: {self.characters[char_id]['display_name']}")
-            
-            # 生成角色肖像
-            self.generate_character_images(char_id)
-            
-            # 生成精灵动画
-            self.generate_sprite_animation_frames(char_id)
-            
-            print(f"🎉 {self.characters[char_id]['display_name']} 处理完成!")
-        
-        print("\n" + "=" * 60)
-        print("✨ 所有角色图像生成任务完成!")
-        print("\n📋 生成内容:")
-        print("   • 每个角色的主肖像 (1024x1024)")
-        print("   • 6种不同战斗姿势")
-        print("   • 7种动画状态的精灵帧")
-        print("   • 完整的动画配置清单")
-        print("\n💡 下一步:")
-        print("   1. 使用生成的JSON提示词配合Flux AI API")
-        print("   2. 将生成的PNG图像放入对应目录")
-        print("   3. 运行游戏测试新角色")
+
+        manifest_path = sprite_dir / "manifest.json"
+        manifest_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
+
+    def generate_all_missing_characters(self) -> None:
+        print("🚀 开始批量生成 StreetBattle 角色图像资源")
+        print("=" * 72)
+        for spec in self.characters.values():
+            print(f"\n⭐ 处理角色: {spec.display_name}")
+            self.generate_character_images(spec.identifier)
+            self.generate_sprite_animation_frames(spec.identifier)
+        print("\n✨ 所有角色图像生成任务完成!")
+        print("请在 assets/images/generated/ 下查阅生成结果。")
 
 
-def main():
-    """主函数"""
+def main() -> None:
     generator = CharacterImageGenerator()
-    
-    print("🎮 Street Battle 角色图像生成器")
-    print("🎨 为 Mr. Big, Ramon, Wolfgang 生成专业图像")
-    print()
-    
-    # 生成所有缺失角色
     generator.generate_all_missing_characters()
-    
-    # 显示生成的文件
-    output_files = list(generator.output_dir.rglob("*.json"))
-    print(f"\n📁 生成了 {len(output_files)} 个配置文件:")
-    for file in output_files[:10]:  # 只显示前10个
-        print(f"   {file}")
-    if len(output_files) > 10:
-        print(f"   ... 和其他 {len(output_files) - 10} 个文件")
+
+    metadata_files = list(generator.output_dir.rglob("*.json"))
+    print(f"\n📁 已生成 {len(metadata_files)} 份提示词/元数据文件。")
+    for path in metadata_files[:10]:
+        print(f"  - {path.relative_to(Path.cwd())}")
+    if len(metadata_files) > 10:
+        print(f"  ... 以及其他 {len(metadata_files) - 10} 个文件")
 
 
 if __name__ == "__main__":
