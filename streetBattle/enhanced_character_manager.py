@@ -1765,6 +1765,23 @@ class EnhancedCharacterManager:
 
     def create_character_model(self, character_name: str, pos: Vec3 = Vec3(0, 0, 0)) -> Optional[Actor]:
         """Create 3D character model - compatibility wrapper for main.py"""
+        # 🔧 检查缓存，避免重复创建同一个角色
+        if character_name in self.character_models:
+            existing_model = self.character_models[character_name]
+            print(f"🔄 使用缓存的模型: {character_name}")
+            # 返回缓存模型的副本或直接返回（注意：Actor不能简单复制）
+            # 对于Panda3D Actor，我们需要重新创建而不是复用
+            # 所以这里先移除旧模型，然后创建新的
+            try:
+                if hasattr(existing_model, 'cleanup'):
+                    existing_model.cleanup()
+                existing_model.removeNode()
+                del self.character_models[character_name]
+                print(f"🧹 清理旧缓存模型: {character_name}")
+            except Exception as e:
+                print(f"⚠️  清理旧缓存模型失败: {e}")
+        
+        # 创建新模型
         return self.create_enhanced_character_model(character_name, pos, "auto")
     
     def get_random_character(self) -> str:

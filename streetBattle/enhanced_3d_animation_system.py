@@ -136,9 +136,11 @@ class Enhanced3DAnimationStateMachine:
             AnimationTransition(AnimationState.WALK, AnimationState.JUMP, priority=3),
             AnimationTransition(AnimationState.WALK, AnimationState.ATTACK_LIGHT, priority=4),
             
-            # 攻击状态转换（较高优先级，不可被轻易打断）
-            AnimationTransition(AnimationState.ATTACK_LIGHT, AnimationState.IDLE, priority=1, interruptible=False),
-            AnimationTransition(AnimationState.ATTACK_HEAVY, AnimationState.IDLE, priority=1, interruptible=False),
+            # 攻击状态转换（允许返回IDLE，解决"状态转换被拒绝"问题）
+            AnimationTransition(AnimationState.ATTACK_LIGHT, AnimationState.IDLE, priority=1, interruptible=True),
+            AnimationTransition(AnimationState.ATTACK_HEAVY, AnimationState.IDLE, priority=1, interruptible=True),
+            AnimationTransition(AnimationState.ATTACK_LIGHT, AnimationState.ATTACK_HEAVY, priority=2, interruptible=True),
+            AnimationTransition(AnimationState.ATTACK_HEAVY, AnimationState.ATTACK_LIGHT, priority=2, interruptible=True),
             
             # 受伤状态转换
             AnimationTransition(AnimationState.HURT, AnimationState.IDLE, priority=1, interruptible=False),
@@ -146,6 +148,7 @@ class Enhanced3DAnimationStateMachine:
             
             # 跳跃状态转换
             AnimationTransition(AnimationState.JUMP, AnimationState.IDLE, priority=1),
+            AnimationTransition(AnimationState.JUMP, AnimationState.ATTACK_LIGHT, priority=2),
         ]
         
         # 建立转换索引
@@ -210,24 +213,38 @@ class Enhanced3DAnimationStateMachine:
             return False
     
     def _can_transition(self, from_state: AnimationState, to_state: AnimationState) -> bool:
-        """检查状态转换是否允许"""
+        """检查状态转换是否允许 - 更灵活的转换逻辑"""
         transition_key = (from_state, to_state)
         
+        # 允许优先级高的状态转换（如受伤、倒地）
+        if to_state in [AnimationState.HURT, AnimationState.KNOCKDOWN, AnimationState.IDLE]:
+            return True
+        
+        # 如果没有显式定义的转换规则，允许返回idle状态
         if transition_key not in self.transitions:
-            # 允许转换到特定高优先级状态
-            if to_state in [AnimationState.HURT, AnimationState.KNOCKDOWN]:
+            if to_state == AnimationState.IDLE:
                 return True
+            # 对于没有定义转换规则的，使用时间判断
+            if from_state in self.state_timers:
+                current_time = time.time()
+                state_duration = current_time - self.state_start_time
+                min_duration = self.state_timers.get(from_state, 0)
+                # 如果当前状态已经持续足够长时间，允许转换
+                return state_duration >= min_duration * 0.5  # 50%最小时间后即可转换
             return False
         
         transition = self.transitions[transition_key]
         
-        # 检查当前状态是否可被打断
-        if not transition.interruptible:
-            current_time = time.time()
-            state_duration = current_time - self.state_start_time
-            min_duration = self.state_timers.get(from_state, 0)
-            if state_duration < min_duration:
-                return False
+        # 对于可打断的转换，直接允许
+        if transition.interruptible:
+            return transition.condition()
+        
+        # 对于不可打断的转换，检查最小持续时间
+        current_time = time.time()
+        state_duration = current_time - self.state_start_time
+        min_duration = self.state_timers.get(from_state, 0)
+        if state_duration < min_duration * 0.3:  # 必须至少完成30%的最小时间
+            return False
         
         # 检查转换条件
         return transition.condition()

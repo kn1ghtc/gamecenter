@@ -1,0 +1,414 @@
+{
+  "total_characters": 45,
+  "successful_loads": 45,
+  "failed_loads": 0,
+  "characters_with_animations": 0,
+  "characters_without_animations": 45,
+  "detailed_results": [
+    {
+      "character_name": "Andy Bogard",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "NodePath",
+      "errors": []
+    },
+    {
+      "character_name": "Angel",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Ash Crimson",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Athena Asamiya",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "B Jenet",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Benimaru Nikaido",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "NodePath",
+      "errors": []
+    },
+    {
+      "character_name": "Chizuru Kagura",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Choi Bounge",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Chris",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Dolores",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Gato",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Geese Howard",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Goro Daimon",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Igniz",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Iori Yagami",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Isla",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Joe Higashi",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "K Dash",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Kula Diamond",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Kyo Kusanagi",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Leona Heidern",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Lin",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Magaki",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Mai Shiranui",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Maps",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "NodePath",
+      "errors": []
+    },
+    {
+      "character_name": "Mature",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Maxima",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Mr Big",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Nakoruru",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Orochi",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Ramon",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Robert Garcia",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Ryo Sakazaki",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Saisyu Kusanagi",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Shermie",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Shingo Yabuki",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Shunei",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Sie Kensou",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Terry Bogard",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Vanessa",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Vice",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Whip",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Wolfgang",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "NodePath",
+      "errors": []
+    },
+    {
+      "character_name": "Wolfgang Krauser",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    },
+    {
+      "character_name": "Yuri Sakazaki",
+      "model_loaded": true,
+      "has_animations": false,
+      "animation_count": 0,
+      "animations": [],
+      "model_type": "Actor",
+      "errors": []
+    }
+  ]
+}

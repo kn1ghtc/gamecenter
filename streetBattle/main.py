@@ -396,13 +396,15 @@ class StreetBattleGame(ShowBase):
 		if self.game_initialized:
 			return
 		
-		# 🧹 清理重复的3D模型避免显示4个角色
-		print("🧹 Cleaning up duplicate models before game start...")
+		# 🧹 在游戏初始化前先清理旧模型，防止重复创建
+		print("🧹 游戏初始化前清理重复的3D模型...")
 		try:
+			# 清除缓存的角色模型
 			self.char_manager.clear_character_models()
+			# 清理场景中的重复模型
 			self.char_manager.cleanup_scene_duplicates(self.render)
 		except Exception as e:
-			print(f"⚠️  Model cleanup failed: {e}")
+			print(f"⚠️  模型清理失败: {e}")
 		
 		# Camera
 		self.camera.setPos(0, -20, 6)
@@ -839,10 +841,19 @@ class StreetBattleGame(ShowBase):
 			self.selected_opponent = "Iori Yagami"
 			print(f"⚠️  No opponent selected, using default: {self.selected_opponent}")
 		
+		# 🧹 在创建新模型前先清理旧模型，避免重复
+		print("🧹 清理旧的3D模型...")
+		try:
+			self.char_manager.clear_character_models()
+			self.char_manager.cleanup_scene_duplicates(self.render)
+		except Exception as e:
+			print(f"⚠️  模型清理失败: {e}")
+		
 		# Create 3D characters using character manager
 		try:
 			# Player 1 - 3D model only
 			char_id_p0 = self.selected_character.lower().replace(' ', '_')
+			print(f"\\n🎮 正在创建Player 1: {self.selected_character}")
 			model_p0 = self.char_manager.create_character_model(
 				self.selected_character, Vec3(-3, 0, 0)
 			)
@@ -859,6 +870,9 @@ class StreetBattleGame(ShowBase):
 					
 					# 添加角色数据用于UI显示
 					p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
+					
+					# 🔧 确保Player 1模型可见性
+					self._ensure_player_visibility(p0, model_p0, "Player 1")
 					
 					self.players.append(p0)
 					print(f"✅ Player 1 3D model created: {self.selected_character}")
@@ -904,6 +918,7 @@ class StreetBattleGame(ShowBase):
 		try:
 			# Player 2 - 3D model with same enhancements as Player 1  
 			char_id_p1 = self.selected_opponent.lower().replace(' ', '_')
+			print(f"\\n🎮 正在创建Player 2: {self.selected_opponent}")
 			model_p1 = self.char_manager.create_character_model(
 				self.selected_opponent, Vec3(3, 0, 0)
 			)
@@ -921,26 +936,8 @@ class StreetBattleGame(ShowBase):
 					# 添加角色数据用于UI显示
 					p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
 					
-					# 应用与Player1相同的增强功能
-					if hasattr(p1, 'model_3d') and p1.model_3d:
-						# 确保模型正确显示和缩放（与Player1相同的处理）
-						if not p1.model_3d.isEmpty():
-							# 检查模型是否需要额外的可见性修复
-							if hasattr(self.char_manager, '_ensure_model_visibility'):
-								self.char_manager._ensure_model_visibility(p1.model_3d, self.selected_opponent)
-							
-							# 应用智能缩放（如果尚未应用）
-							current_scale = p1.model_3d.getScale()
-							if abs(current_scale.x - 1.0) < 0.01:  # 如果还是默认缩放
-								bounds = p1.model_3d.getTightBounds()
-								if bounds:
-									min_p, max_p = bounds
-									size = max_p - min_p
-									max_dim = max(size.x, size.y, size.z)
-									if max_dim > 2.5:  # 需要缩放
-										auto_scale = 2.0 / max_dim
-										p1.model_3d.setScale(auto_scale)
-										print(f"🔧 Player2额外缩放应用: {auto_scale:.3f}")
+					# 🔧 确保Player 2模型可见性 - 与Player 1使用相同的处理
+					self._ensure_player_visibility(p1, model_p1, "Player 2")
 					
 					self.players.append(p1)
 					print(f"✅ Player 2 3D model created: {self.selected_opponent}")
@@ -1016,6 +1013,47 @@ class StreetBattleGame(ShowBase):
 					console_warning(f"Player {i+1} 没有3D模型，跳过动画注册", "animation")
 		except Exception as e:
 			console_error(f"3D动画注册失败: {e}", "animation")
+	
+	def _ensure_player_visibility(self, player: Player, model: Actor, player_name: str):
+		"""确保玩家模型可见性 - 统一的处理逻辑"""
+		try:
+			# 强制设置不透明度和可见性
+			model.setTransparency(False)  # 禁用透明度
+			model.clearColor()  # 清除任何颜色覆盖
+			model.setColorScale(1.0, 1.0, 1.0, 1.0)  # 完全不透明的白色
+			
+			# 确保模型在正确的渲染队列中
+			model.setBin('opaque', 0)  # 设置为不透明渲染队列
+			model.setDepthTest(True)  # 启用深度测试
+			model.setDepthWrite(True)  # 启用深度写入
+			
+			# 确保双面渲染
+			model.setTwoSided(True)
+			
+			# 检查并应用材质
+			if hasattr(self.char_manager, '_ensure_model_visibility'):
+				char_data = self.char_manager.get_character_by_name(player.character_name)
+				if char_data:
+					self.char_manager._ensure_model_visibility(model, char_data)
+			
+			# 确保缩放正确
+			current_scale = model.getScale()
+			if abs(current_scale.x - 1.0) > 0.9:  # 如果缩放太小或接近默认
+				# 重新应用智能缩放
+				bounds = model.getTightBounds()
+				if bounds:
+					min_p, max_p = bounds
+					size = max_p - min_p
+					max_dim = max(size.x, size.y, size.z)
+					if max_dim > 2.5:  # 需要缩放
+						auto_scale = 2.0 / max_dim
+						model.setScale(auto_scale)
+						print(f"🔧 {player_name}重新应用缩放: {auto_scale:.3f}")
+			
+			print(f"✅ {player_name}可见性确保完成")
+			
+		except Exception as e:
+			print(f"❌ {player_name}可见性设置失败: {e}")
 
 	def start_network(self, mode='local', host_ip=None, port=12000):
 		self.mode = mode
