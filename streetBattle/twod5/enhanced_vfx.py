@@ -77,6 +77,9 @@ class EnhancedVFXSystem:
         # 预创建粒子纹理
         self._create_particle_textures()
         
+        # 攻击轨迹线条
+        self.attack_trails: List[Dict] = []
+        
     def _create_particle_textures(self):
         """创建粒子纹理"""
         self.textures: Dict[str, Surface] = {}
@@ -120,12 +123,21 @@ class EnhancedVFXSystem:
     
     def create_hit_effect(self, x: float, y: float, effect_type: str = "light"):
         """创建打击特效"""
-        particle_count = {"light": 15, "heavy": 25, "special": 40}[effect_type]
+        particle_count = {
+            "light": 15, 
+            "medium": 20,
+            "heavy": 25, 
+            "special": 40
+        }.get(effect_type, 15)
+        
         colors = {
             "light": [(255, 200, 100, 255), (255, 150, 50, 255)],
+            "medium": [(255, 180, 120, 255), (200, 120, 80, 255)],
             "heavy": [(100, 150, 255, 255), (150, 200, 255, 255)],
             "special": [(255, 100, 255, 255), (200, 50, 255, 255)]
         }
+        
+        effect_colors = colors.get(effect_type, colors["light"])
         
         for _ in range(particle_count):
             angle = random.uniform(0, 2 * math.pi)
@@ -133,7 +145,7 @@ class EnhancedVFXSystem:
             vx = math.cos(angle) * speed
             vy = math.sin(angle) * speed
             
-            color = random.choice(colors[effect_type])
+            color = random.choice(effect_colors)
             size = random.uniform(3, 8)
             lifetime = random.uniform(0.5, 1.2)
             
@@ -141,8 +153,100 @@ class EnhancedVFXSystem:
             self.particles.append(particle)
         
         # 屏幕震动
-        shake_intensity = {"light": 3.0, "heavy": 6.0, "special": 10.0}[effect_type]
+        shake_intensity = {
+            "light": 3.0, 
+            "medium": 4.5,
+            "heavy": 6.0, 
+            "special": 10.0
+        }.get(effect_type, 3.0)
+        
         self.screen_shake = max(self.screen_shake, shake_intensity)
+    
+    def create_punch_trail(self, start_x: float, start_y: float, 
+                          end_x: float, end_y: float, 
+                          color: Tuple[int, int, int] = (255, 200, 100)):
+        """创建出拳轨迹特效"""
+        trail_data = {
+            'start': (start_x, start_y),
+            'end': (end_x, end_y),
+            'color': color,
+            'alpha': 220,
+            'lifetime': 0.12,
+            'max_lifetime': 0.12,
+            'width': 8
+        }
+        self.attack_trails.append(trail_data)
+        
+        # 沿轨迹创建粒子
+        steps = 5
+        for i in range(steps):
+            t = i / steps
+            px = start_x + (end_x - start_x) * t
+            py = start_y + (end_y - start_y) * t
+            
+            # 添加轨迹粒子
+            offset_x = random.uniform(-5, 5)
+            offset_y = random.uniform(-5, 5)
+            
+            vx = random.uniform(-50, 50)
+            vy = random.uniform(-50, 50)
+            
+            particle_color = (*color, 200)
+            size = random.uniform(2, 4)
+            lifetime = random.uniform(0.2, 0.4)
+            
+            particle = EnhancedParticle(
+                px + offset_x, py + offset_y, 
+                vx, vy, 
+                particle_color, size, lifetime, "spark"
+            )
+            self.particles.append(particle)
+    
+    def create_kick_trail(self, center_x: float, center_y: float,
+                         direction: float, radius: float = 80):
+        """创建出腿轨迹特效（弧形）"""
+        # 创建弧形轨迹粒子
+        arc_steps = 8
+        start_angle = direction - math.pi / 4
+        end_angle = direction + math.pi / 4
+        
+        for i in range(arc_steps):
+            t = i / arc_steps
+            angle = start_angle + (end_angle - start_angle) * t
+            
+            px = center_x + math.cos(angle) * radius
+            py = center_y + math.sin(angle) * radius
+            
+            # 速度沿切线方向
+            tangent_angle = angle + math.pi / 2
+            speed = random.uniform(100, 200)
+            vx = math.cos(tangent_angle) * speed
+            vy = math.sin(tangent_angle) * speed
+            
+            color = (150, 200, 255, 220)
+            size = random.uniform(3, 6)
+            lifetime = random.uniform(0.3, 0.5)
+            
+            particle = EnhancedParticle(px, py, vx, vy, color, size, lifetime, "spark")
+            self.particles.append(particle)
+    
+    def create_impact_ring(self, x: float, y: float, max_radius: float = 60):
+        """创建冲击波环特效"""
+        ring_particles = 20
+        for i in range(ring_particles):
+            angle = (2 * math.pi * i) / ring_particles
+            
+            # 环形扩散
+            speed = random.uniform(200, 350)
+            vx = math.cos(angle) * speed
+            vy = math.sin(angle) * speed
+            
+            color = (255, 255, 200, 255)
+            size = random.uniform(4, 7)
+            lifetime = random.uniform(0.4, 0.7)
+            
+            particle = EnhancedParticle(x, y, vx, vy, color, size, lifetime, "spark")
+            self.particles.append(particle)
     
     def create_projectile_trail(self, x: float, y: float, direction: Tuple[float, float]):
         """创建投射物轨迹特效"""
@@ -200,6 +304,17 @@ class EnhancedVFXSystem:
         if self.screen_shake > 0:
             self.screen_shake -= self.screen_shake_decay * dt
             self.screen_shake = max(0, self.screen_shake)
+        
+        # 更新攻击轨迹
+        for trail in list(self.attack_trails):
+            trail['lifetime'] -= dt
+            if trail['lifetime'] > 0:
+                # 更新透明度
+                life_ratio = trail['lifetime'] / trail['max_lifetime']
+                trail['alpha'] = int(220 * life_ratio)
+                trail['width'] = int(8 * life_ratio)
+            else:
+                self.attack_trails.remove(trail)
     
     def render(self, screen: Surface, camera_offset: Tuple[float, float] = (0, 0)):
         """渲染VFX特效"""
@@ -207,6 +322,30 @@ class EnhancedVFXSystem:
         shake_x = random.uniform(-self.screen_shake, self.screen_shake) if self.screen_shake > 0 else 0
         shake_y = random.uniform(-self.screen_shake, self.screen_shake) if self.screen_shake > 0 else 0
         
+        # 渲染攻击轨迹线条
+        for trail in self.attack_trails:
+            if trail['alpha'] > 0 and trail['width'] > 0:
+                start_pos = (
+                    int(trail['start'][0] - camera_offset[0] + shake_x),
+                    int(trail['start'][1] - camera_offset[1] + shake_y)
+                )
+                end_pos = (
+                    int(trail['end'][0] - camera_offset[0] + shake_x),
+                    int(trail['end'][1] - camera_offset[1] + shake_y)
+                )
+                
+                # 创建带透明度的线条
+                temp_surface = pygame.Surface(screen.get_size(), pygame.SRCALPHA)
+                pygame.draw.line(
+                    temp_surface,
+                    (*trail['color'], trail['alpha']),
+                    start_pos,
+                    end_pos,
+                    trail['width']
+                )
+                screen.blit(temp_surface, (0, 0))
+        
+        # 渲染粒子
         for particle in self.particles:
             # 计算屏幕位置
             screen_x = int(particle.x - camera_offset[0] + shake_x)
@@ -274,3 +413,18 @@ def create_character_aura(x: float, y: float, character_name: str = "default"):
     """创建角色气场特效"""
     vfx = get_vfx_system()
     vfx.create_special_aura(x, y, character_name)
+
+def create_punch_trail_effect(start_x: float, start_y: float, end_x: float, end_y: float):
+    """创建出拳轨迹效果"""
+    vfx = get_vfx_system()
+    vfx.create_punch_trail(start_x, start_y, end_x, end_y)
+
+def create_kick_trail_effect(center_x: float, center_y: float, direction: float):
+    """创建出腿轨迹效果"""
+    vfx = get_vfx_system()
+    vfx.create_kick_trail(center_x, center_y, direction)
+
+def create_impact_ring_effect(x: float, y: float):
+    """创建冲击波环效果"""
+    vfx = get_vfx_system()
+    vfx.create_impact_ring(x, y)
