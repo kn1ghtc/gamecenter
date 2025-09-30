@@ -69,9 +69,10 @@ class SpriteCharacter:
             manifest_path = sprite_dir / "manifest.json"
             
             if not manifest_path.exists():
-                print(f"[SpriteCharacter] No manifest found for {self.character_id}")
+                print(f"[SpriteCharacter] No manifest found for {self.character_id}, using defaults")
                 # Create default animations for testing
                 self._create_default_animations()
+                self._create_placeholder_textures()
                 return
             
             with open(manifest_path, 'r', encoding='utf-8') as f:
@@ -97,18 +98,33 @@ class SpriteCharacter:
                     "priority": anim_data.get("priority", 0),  # Animation priority (higher = more important)
                 }
             
-            # Load combined spritesheet texture
+            # Try multiple loading strategies
             spritesheet_path = sprite_dir / f"{self.character_id}_spritesheet.png"
+            
+            # Strategy 1: Load from spritesheet
             if spritesheet_path.exists():
+                print(f"[SpriteCharacter] Loading from spritesheet: {spritesheet_path.name}")
                 self._load_spritesheet(spritesheet_path)
-            else:
-                print(f"[SpriteCharacter] No spritesheet found: {spritesheet_path}")
-                # Create placeholder textures
+            
+            # Strategy 2: Load from individual frame directories (fallback or supplement)
+            if not self.textures:
+                print(f"[SpriteCharacter] Spritesheet not available, trying individual frames...")
+                self._load_individual_frames(sprite_dir)
+            
+            # Strategy 3: Create placeholders as last resort
+            if not self.textures:
+                print(f"[SpriteCharacter] No sprite assets found, creating placeholders...")
                 self._create_placeholder_textures()
+            
+            print(f"[SpriteCharacter] Loaded {len(self.textures)} textures and {len(self.animations)} animations")
                 
         except Exception as e:
             print(f"[SpriteCharacter] Failed to load sprite data for {self.character_id}: {e}")
+            import traceback
+            traceback.print_exc()
+            # Ensure we always have something to display
             self._create_default_animations()
+            self._create_placeholder_textures()
     
     def _create_default_animations(self):
         """Create default animation data for testing"""
@@ -289,10 +305,70 @@ class SpriteCharacter:
                 
                 self.textures[frame_idx] = frame_texture
             
-            print(f"[SpriteCharacter] Loaded {len(self.textures)} frame textures")
+            print(f"[SpriteCharacter] Loaded {len(self.textures)} frame textures from spritesheet")
             
         except Exception as e:
             print(f"[SpriteCharacter] Failed to load spritesheet: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    def _load_individual_frames(self, sprite_dir: Path):
+        """Load frames from individual PNG files in animation subdirectories"""
+        try:
+            # Animation directories to check
+            anim_dirs = ["idle", "walk", "attack", "hit", "jump", "victory", "block"]
+            
+            frame_counter = 0
+            loaded_frames_map = {}  # Map animation name to frame indices
+            
+            for anim_name in anim_dirs:
+                anim_dir = sprite_dir / anim_name
+                if not anim_dir.exists():
+                    continue
+                
+                # Find all PNG files in this animation directory
+                frame_files = sorted(anim_dir.glob("*.png"))
+                if not frame_files:
+                    continue
+                
+                print(f"[SpriteCharacter] Loading {len(frame_files)} frames for '{anim_name}'")
+                
+                anim_frame_indices = []
+                for frame_file in frame_files:
+                    try:
+                        # Load image
+                        img = PNMImage()
+                        if not img.read(Filename.fromOsSpecific(str(frame_file))):
+                            print(f"[SpriteCharacter] Failed to read frame: {frame_file.name}")
+                            continue
+                        
+                        # Create texture
+                        frame_texture = Texture()
+                        frame_texture.load(img)
+                        frame_texture.setMagfilter(Texture.FTNearest)
+                        frame_texture.setMinfilter(Texture.FTNearest)
+                        
+                        # Store texture with global frame index
+                        self.textures[frame_counter] = frame_texture
+                        anim_frame_indices.append(frame_counter)
+                        frame_counter += 1
+                        
+                    except Exception as e:
+                        print(f"[SpriteCharacter] Error loading frame {frame_file.name}: {e}")
+                        continue
+                
+                # Update animation data with loaded frame indices
+                if anim_name in self.animations:
+                    self.animations[anim_name]["frames"] = anim_frame_indices
+                    loaded_frames_map[anim_name] = anim_frame_indices
+            
+            print(f"[SpriteCharacter] Loaded {len(self.textures)} total frames from individual files")
+            print(f"[SpriteCharacter] Frame map: {loaded_frames_map}")
+            
+        except Exception as e:
+            print(f"[SpriteCharacter] Failed to load individual frames: {e}")
+            import traceback
+            traceback.print_exc()
     
     def _create_sprite_node(self):
         """Create the sprite display node"""
@@ -429,22 +505,29 @@ class SpriteCharacter:
                         self._on_animation_complete()
                         return task.done
             
-            # Update current frame
+            # Update current frame with bounds checking
             if frame_idx != self.current_frame:
+                # 🔧 确保frame_idx在有效范围内
+                frame_idx = max(0, min(frame_idx, len(frames) - 1))
+                
                 self.current_frame = frame_idx
                 self.current_attack_frame = frame_idx
                 
                 # Get actual frame number from sequence
-                frame_num = frames[frame_idx]
-                
-                # Apply frame texture with blending if needed
-                if frame_num in self.textures:
-                    self._apply_frame_texture(frame_num)
-                
-                # Trigger attack effects on active frames
-                if (self.in_attack_animation and 
-                    self.current_attack_frame in self.attack_active_frames):
-                    self._trigger_attack_effect()
+                # 🔧 再次验证索引有效性，防止list index out of range
+                if 0 <= frame_idx < len(frames):
+                    frame_num = frames[frame_idx]
+                    
+                    # Apply frame texture with blending if needed
+                    if frame_num in self.textures:
+                        self._apply_frame_texture(frame_num)
+                    
+                    # Trigger attack effects on active frames
+                    if (self.in_attack_animation and 
+                        self.current_attack_frame in self.attack_active_frames):
+                        self._trigger_attack_effect()
+                else:
+                    print(f"[SpriteCharacter] Warning: frame_idx {frame_idx} out of range (frames length: {len(frames)})")
             
             # Handle blending
             if self.blend_timer < self.blend_duration:

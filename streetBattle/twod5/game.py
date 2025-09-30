@@ -172,40 +172,155 @@ class SpriteBattleGame:
         except Exception as exc:  # pragma: no cover - configuration error surface
             raise RuntimeError(f"无法解析技能配置文件: {skills_path}") from exc
 
+    def _load_unified_roster_metadata(self) -> Dict[str, Dict[str, Any]]:
+        """Return lightweight roster metadata from the shared character configuration file."""
+
+        roster_candidates = [
+            Path(__file__).resolve().parents[1] / "config" / "characters" / "unified_roster.json",
+            Path(__file__).resolve().parents[1] / "config" / "characters" / "manifest.json",
+        ]
+
+        payload: Dict[str, Dict[str, Any]] = {}
+        for candidate in roster_candidates:
+            if not candidate.exists():
+                continue
+            try:
+                with candidate.open("r", encoding="utf-8") as handle:
+                    data = json.load(handle)
+                if isinstance(data, dict) and "characters" in data:
+                    data = data["characters"]
+                if isinstance(data, list):
+                    temp: Dict[str, Dict[str, Any]] = {}
+                    for entry in data:
+                        if isinstance(entry, dict):
+                            char_id = str(entry.get("id") or entry.get("name") or "").strip().lower()
+                            if char_id:
+                                temp[char_id] = entry
+                    if temp:
+                        payload = temp
+                        break
+                elif isinstance(data, dict):
+                    payload = {str(k).lower(): v for k, v in data.items() if isinstance(v, dict)}
+                    if payload:
+                        break
+            except Exception:
+                continue
+        return payload
+
     def _load_roster_config(self) -> Tuple[Dict[str, Dict[str, Any]], List[str]]:
         roster_path = Path(__file__).resolve().parents[1] / "config" / "roster.json"
+        roster_meta = self._load_unified_roster_metadata()
+
         roster_map: Dict[str, Dict[str, Any]] = {}
         order: List[str] = []
+        default_player: Optional[str] = None
+        default_cpu: Optional[str] = None
+
+        def _normalise_key(value: Optional[str]) -> Optional[str]:
+            if not value:
+                return None
+            key = str(value).strip()
+            return key.lower() if key else None
+
+        def _merge_roster_entry(char_id: str, source: Optional[Dict[str, Any]] = None) -> None:
+            key = _normalise_key(char_id)
+            if not key:
+                return
+            existing = roster_map.get(key, {}).copy()
+            roster_info = roster_meta.get(key, {}) if roster_meta else {}
+            source = source or {}
+
+            display_name = source.get("display_name") or roster_info.get("display_name")
+            if not display_name:
+                display_name = key.replace("_", " ").title()
+
+            manifest_name = source.get("manifest") or roster_info.get("manifest") or key
+            skill_profile = source.get("skill_profile") or roster_info.get("skill_profile") or key
+
+            def _stat(name: str, fallback: float = 3.0) -> float:
+                value = source.get(name)
+                if value is None:
+                    value = roster_info.get(name)
+                try:
+                    return float(value)
+                except (TypeError, ValueError):
+                    return fallback
+
+            merged = {
+                "key": key,
+                "display_name": str(display_name),
+                "manifest": str(manifest_name),
+                "skill_profile": str(skill_profile),
+                "team": source.get("team") or roster_info.get("team"),
+                "tempo": _stat("tempo"),
+                "power": _stat("power"),
+                "technique": _stat("technique"),
+                "guard": _stat("guard"),
+                "palette": source.get("palette") or roster_info.get("palette"),
+            }
+            existing.update({k: v for k, v in merged.items() if v is not None})
+            roster_map[key] = existing
+            if key not in order:
+                order.append(key)
+
         if roster_path.exists():
             try:
                 with roster_path.open("r", encoding="utf-8") as handle:
                     payload = json.load(handle)
-                fighters = payload.get("fighters", []) if isinstance(payload, dict) else []
+                if isinstance(payload, dict):
+                    default_player = _normalise_key(payload.get("default_player"))
+                    default_cpu = _normalise_key(payload.get("default_cpu"))
+                    fighters = payload.get("fighters", [])
+                else:
+                    fighters = []
+
                 if isinstance(fighters, list):
                     for entry in fighters:
-                        if not isinstance(entry, dict):
-                            continue
-                        key = str(entry.get("key") or "").strip()
-                        if not key:
-                            continue
-                        roster_map[key] = {
-                            "key": key,
-                            "display_name": str(entry.get("display_name") or key.replace("_", " ").title()),
-                            "manifest": str(entry.get("manifest") or key),
-                            "skill_profile": str(entry.get("skill_profile") or key),
-                            "team": entry.get("team"),
-                            "tempo": entry.get("tempo"),
-                            "power": entry.get("power"),
-                            "technique": entry.get("technique"),
-                            "guard": entry.get("guard"),
-                            "palette": entry.get("palette"),
-                        }
-                        order.append(key)
+                        if isinstance(entry, str):
+                            _merge_roster_entry(entry)
+                        elif isinstance(entry, dict):
+                            key = entry.get("key") or entry.get("id") or entry.get("name")
+                            _merge_roster_entry(key or "", entry)
+                elif isinstance(fighters, dict):
+                    for key, entry in fighters.items():
+                        if isinstance(entry, dict):
+                            _merge_roster_entry(key, entry)
             except Exception as exc:  # pragma: no cover
                 raise RuntimeError(f"无法解析角色配置文件: {roster_path}") from exc
+
+        if not roster_map and roster_meta:
+            # Fallback: use sprite-ready characters from the unified roster metadata
+            for char_id, info in roster_meta.items():
+                if info.get("has_sprite"):
+                    _merge_roster_entry(char_id, info)
+                if len(roster_map) >= 12:
+                    break
+
         if not roster_map:
-            # Fallback removed - only use characters with high-quality portraits
             print("Warning: No roster configuration found. Only characters with portraits will be available.")
+            return {}, []
+
+        # Ensure defaults are present and the order is stable.
+        if default_player and default_player in roster_map:
+            if default_player in order:
+                order.remove(default_player)
+            order.insert(0, default_player)
+
+        if default_cpu and default_cpu in roster_map:
+            if default_cpu in order:
+                order.remove(default_cpu)
+            if not order or order[0] != default_cpu:
+                order.append(default_cpu)
+
+        # Guarantee at least two roster entries to avoid startup crashes.
+        if not order:
+            order.extend(list(roster_map.keys())[:8])
+        if len(order) == 1:
+            solo = order[0]
+            fallback = next((key for key in roster_map if key != solo), solo)
+            if fallback not in order:
+                order.append(fallback)
+
         return roster_map, order
 
     # ------------------------------------------------------------------
@@ -256,7 +371,9 @@ class SpriteBattleGame:
     def _run_match_setup(self, player_key: Optional[str], cpu_key: Optional[str]) -> Optional[Tuple[str, str]]:
         if self.screen is None or self.clock is None:
             return None
-        if len(self.roster_order) <= 1:
+        if not self.roster_order:
+            raise RuntimeError("Roster configuration is empty. 请检查 config/roster.json 或统一角色清单。")
+        if len(self.roster_order) == 1:
             base = self.roster_order[0]
             return base, base
         setup = MatchSetupScreen(
@@ -296,10 +413,13 @@ class SpriteBattleGame:
     def _initialise_match(self) -> None:
         if pygame is None:
             return
+        if not self.roster_order:
+            raise RuntimeError("Roster configuration is empty，无法初始化比赛。")
         if not self.current_player_key:
             self.current_player_key = self.roster_order[0]
         if not self.current_cpu_key:
-            self.current_cpu_key = self._alternative_key(self.current_player_key)
+            opponent = self._alternative_key(self.current_player_key)
+            self.current_cpu_key = opponent or self.roster_order[0]
         self.sprite_sources = {}
         self.player = self._spawn_fighter(
             self.current_player_key,

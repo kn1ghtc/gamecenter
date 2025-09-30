@@ -17,7 +17,7 @@ from typing import Any, Dict, Iterable, MutableMapping, Optional
 _SETTINGS_FILE = "settings.json"
 
 _DEFAULT_SETTINGS: Dict[str, Any] = {
-    "preferred_version": "3d",  # either "3d" (Panda3D) or "2.5d" (pygame)
+    "preferred_version": "2.5d",  # either "3d" (Panda3D) or "2.5d" (pygame)
     "remember_last_version": True,
     "graphics": {
         "resolution": [1024, 768],

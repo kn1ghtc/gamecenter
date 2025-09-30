@@ -298,6 +298,7 @@ class EnhancedCharacterManager:
                 print(f"[CharacterManager] Skipping disabled character: {roster_entry.get('display_name', char_id)} - {roster_entry.get('disabled_reason', 'No reason provided')}")
                 continue
             
+            # ✅ 确保使用normalized char_id作为key，而不是display_name
             merged_id = roster_entry.get('id') or char_id
             canonical_key = self._normalise_character_key(merged_id) or merged_id
 
@@ -308,13 +309,18 @@ class EnhancedCharacterManager:
                     existing_key = key
                     break
 
+            # ✅ 始终使用normalized ID作为最终的key
+            final_key = canonical_key
+
             if existing_key is None:
-                existing = {'id': merged_id}
-                existing_key = merged_id
+                existing = {'id': canonical_key}
             else:
                 existing = dict(self.comprehensive_characters.get(existing_key, {}))
+                # ✅ 如果找到了旧的entry，需要删除旧的key，用新的normalized key替换
+                if existing_key != final_key and existing_key in self.comprehensive_characters:
+                    del self.comprehensive_characters[existing_key]
 
-            existing.setdefault('id', merged_id)
+            existing.setdefault('id', canonical_key)
 
             display_name = roster_entry.get('display_name') or roster_entry.get('name')
             if display_name:
@@ -333,7 +339,8 @@ class EnhancedCharacterManager:
                 if field in roster_entry and roster_entry[field] not in (None, ''):
                     existing[field] = roster_entry[field]
 
-            self.comprehensive_characters[existing_key] = existing
+            # ✅ 使用normalized final_key而不是existing_key
+            self.comprehensive_characters[final_key] = existing
 
     def _load_character_moves_index(self):
         """Load curated character move definitions from the shared asset bundle."""
@@ -482,6 +489,28 @@ class EnhancedCharacterManager:
                 return char_data
 
         return None
+    
+    def get_random_character(self) -> Optional[str]:
+        """Get a random character ID from available characters (excluding disabled).
+        
+        Returns:
+            Random character ID (e.g., 'kyo_kusanagi'), not display_name
+        """
+        import random
+        
+        # 过滤掉disabled的角色
+        available_chars = [
+            char_id for char_id, char_data in self.comprehensive_characters.items()
+            if isinstance(char_data, dict) 
+            and not char_data.get('disabled', False)
+            and char_data.get('has_3d_model', True)
+        ]
+        
+        if not available_chars:
+            # 如果没有可用角色，返回默认角色
+            return "kyo_kusanagi"
+        
+        return random.choice(available_chars)
     
     def _get_premium_resource_path(self, character_name: str, resource_tier: str = "auto") -> Tuple[Optional[str], Optional[Dict[str, str]]]:
         """Get premium resource path and animations based on tier selection"""
@@ -1789,16 +1818,7 @@ class EnhancedCharacterManager:
         # 创建新模型
         return self.create_enhanced_character_model(character_name, pos, "auto")
     
-    def get_random_character(self) -> str:
-        """Get random character name from comprehensive database"""
-        import random
-        if self.comprehensive_characters:
-            char_id = random.choice(list(self.comprehensive_characters.keys()))
-            return self.comprehensive_characters[char_id]['name']
-        elif self.characters_data:
-            return random.choice(list(self.characters_data.keys()))
-        else:
-            return "Kyo Kusanagi"  # Ultimate fallback
+    # ✅ get_random_character方法已在493行定义，此处删除重复定义
     
     def get_characters_by_team(self) -> Dict[str, List[str]]:
         """Get characters organized by teams from comprehensive database"""

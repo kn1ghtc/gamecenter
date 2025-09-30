@@ -1,6 +1,6 @@
 # Game Center 开发文档
 
-> 最后更新：2025-09-28（北京时间）
+> 最后更新：2025-09-30（北京时间）
 
 Game Center 是一个汇集多款 Python 游戏与工具的项目集合，覆盖 3D/2.5D 格斗、平台跳跃、棋类 AI 以及资源处理脚本。本指南聚焦于统一的项目结构、运行方式和当前可用功能，便于后续维护与扩展。
 
@@ -158,6 +158,11 @@ python tools/training.py --episodes 100  # 示例训练脚本
 - **资源管线**：精灵 manifest 统一引用 Martial Hero CC0 包，可通过 `tools/sync_sprites.py` 与 `tools/sync_portraits.py` 维护。3D 模式资源由 `resource_manager.py` 负责拉取与审计。
 - **全自动测试**：`tests/test_smoke.py` 校验精灵、技能、设置；额外的 `test_combat.py`、`test_rollback_sim.py` 验证战斗逻辑。
 
+**最新更新（2025-09-30）**
+- 修复了 2.5D 启动时因 `config/roster.json` 使用字符串列表导致的角色表空集问题，现支持自动融合统一角色清单，避免 “list index out of range” 崩溃。
+- `SpriteBattleGame` 会确保默认玩家/CPU 角色始终可用，并在缺失配置时回退到统一精灵清单。
+- 新增 `tests/test_twod5_roster.py` 冒烟测试，覆盖花名册解析与默认角色检查。
+
 **运行指令**
 ```powershell
 cd gamecenter/streetBattle
@@ -174,6 +179,7 @@ python twod5/game.py        # 直接进入 2.5D 模式
 ```powershell
 cd gamecenter
 python -m pytest streetBattle/tests/test_smoke.py
+pytest streetBattle/tests/test_twod5_roster.py
 ```
 
 **常用脚本**

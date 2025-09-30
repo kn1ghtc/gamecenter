@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -43,7 +41,6 @@ from gamecenter.streetBattle.special_moves import SpecialMovesSystem, enhance_pl
 from gamecenter.streetBattle.config import SettingsManager
 from gamecenter.streetBattle.sprite_system import SpriteSystem
 from gamecenter.streetBattle.enhanced_3d_animation_system import Animation3DManager, AnimationState
-from gamecenter.streetBattle.performance_optimizer import SmartLoadingSystem
 from gamecenter.streetBattle.smart_console import setup_optimized_console, console_info, console_error, console_debug, console_warning
 
 
@@ -105,8 +102,6 @@ class StreetBattleGame(ShowBase):
 		except Exception:
 			pass
 		
-		# 🚀 初始化智能加载系统
-		self.smart_loader = SmartLoadingSystem(self)
 		
 		# 🎭 初始化3D动画管理器
 		self.animation_3d_manager = Animation3DManager()
@@ -137,8 +132,8 @@ class StreetBattleGame(ShowBase):
 		self.character_selector = CharacterSelector(self, self.char_manager)
 		self.stage_backdrop = None
 		
-		# 🚀 启动优化加载流程
-		self.smart_loader.start_optimized_loading()
+		# 🚀 启动优化加载流程（暂时注释，因为SmartLoader未实现）
+		# self.smart_loader.start_optimized_loading()
 		
 		# Show mode selection immediately
 		self.mode_selector.show(callback=self._on_game_mode_selected)
@@ -344,18 +339,26 @@ class StreetBattleGame(ShowBase):
 		elif mode == 'network':
 			self.character_selector.show(callback=self._on_character_selected, mode='single')
 	
-	def _on_character_selected(self, character_name):
-		"""Handle character selection and initialize game"""
+	def _on_character_selected(self, character_id):
+		"""Handle character selection and initialize game
+		
+		Args:
+			character_id: 角色ID（如 'kyo_kusanagi'），不是display_name
+		"""
 		# 检查是否取消选择
-		if character_name is None:
+		if character_id is None:
 			print("Character selection cancelled")
 			self._return_to_mode_selection()
 			return
 		
-		self.selected_character = character_name
+		# ✅ 存储角色ID（不是display_name）
+		self.selected_character = character_id
 		self.character_selector.hide()
 		
-		print(f"Selected character: {character_name}")
+		# ✅ 获取角色数据用于日志显示
+		char_data = self.char_manager.get_character_by_name(character_id)
+		display_name = char_data.get('display_name', character_id) if char_data else character_id
+		print(f"✅ Selected character: {display_name} (ID: {character_id})")
 		
 		# Handle different game modes
 		if self.current_game_mode == 'adventure':
@@ -369,7 +372,7 @@ class StreetBattleGame(ShowBase):
 		"""Initialize adventure (story) mode"""
 		print("Initializing Adventure Mode...")
 		# For now, start with first opponent
-		self.selected_opponent = "Iori Yagami"  # Will be dynamic later
+		self.selected_opponent = "iori_yagami"  # ✅ 使用char_id而不是display_name
 		self.current_level = 1
 		self._initialize_game()
 	
@@ -381,14 +384,17 @@ class StreetBattleGame(ShowBase):
 		while self.selected_opponent == self.selected_character:
 			self.selected_opponent = self.char_manager.get_random_character()
 		
-		print(f"Random opponent selected: {self.selected_opponent}")
+		# ✅ 获取角色数据用于日志显示
+		opponent_data = self.char_manager.get_character_by_name(self.selected_opponent)
+		opponent_display = opponent_data.get('display_name', self.selected_opponent) if opponent_data else self.selected_opponent
+		print(f"✅ Random opponent selected: {opponent_display} (ID: {self.selected_opponent})")
 		self._initialize_game()
 	
 	def _initialize_network_mode(self):
 		"""Initialize network mode"""
 		print("Initializing Network Mode...")
 		# For now, use AI opponent until network is connected
-		self.selected_opponent = "Kyo Kusanagi"
+		self.selected_opponent = "kyo_kusanagi"  # ✅ 使用char_id而不是display_name
 		self._initialize_game()
 	
 	def _initialize_game(self):
@@ -604,6 +610,16 @@ class StreetBattleGame(ShowBase):
 		preferred_mode = self.settings_manager.get("preferred_version", "3d")
 		print(f"🎮 Initializing in {preferred_mode.upper()} mode")
 		
+		# 🔥 更新窗口标题以显示当前模式
+		try:
+			from panda3d.core import WindowProperties
+			props = WindowProperties()
+			props.setTitle(f"StreetBattle - {preferred_mode.upper()} Mode")
+			self.win.requestProperties(props)
+			print(f"✅ Window title updated to: StreetBattle - {preferred_mode.upper()} Mode")
+		except Exception as e:
+			print(f"⚠️ Could not update window title: {e}")
+		
 		# Gameplay systems
 		self.mode = 'local'  # Will be updated based on game mode
 		self.netpeer = None
@@ -776,62 +792,90 @@ class StreetBattleGame(ShowBase):
 		# Create sprite characters
 		try:
 			# Player 1 sprite
-			char_id_p0 = self.selected_character.lower().replace(' ', '_')
+			# ✅ self.selected_character 已经是 char_id（如 'kyo_kusanagi'）
+			char_id_p0 = self.selected_character
+			char_data_p0 = self.char_manager.get_character_by_name(char_id_p0)
+			display_name_p0 = char_data_p0.get('display_name', char_id_p0) if char_data_p0 else char_id_p0
+			
+			console_info(f"创建玩家1精灵: {display_name_p0} (ID: {char_id_p0})", "sprite")
 			sprite_p0 = self.sprite_system.create_sprite_character(
-				char_id_p0, self.selected_character, Vec3(-3, 0, 0)
+				char_id_p0, display_name_p0, Vec3(-3, 0, 0)
 			)
 			
 			if sprite_p0:
-				console_debug(f"玩家1精灵创建成功: {self.selected_character}", "sprite")
+				console_debug(f"玩家1精灵创建成功: {display_name_p0}", "sprite")
 				self.sprite_characters.append(sprite_p0)
 			else:
-				console_warning(f"创建玩家1精灵失败: {self.selected_character}", "sprite")
+				console_warning(f"创建玩家1精灵失败: {display_name_p0}", "sprite")
 				
 		except Exception as e:
 			console_error(f"创建玩家1精灵异常: {e}", "sprite")
+			import traceback
+			console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "sprite")
 		
 		try:
 			# Player 2 sprite
-			char_id_p1 = self.selected_opponent.lower().replace(' ', '_')
+			# ✅ self.selected_opponent 已经是 char_id（如 'iori_yagami'）
+			char_id_p1 = self.selected_opponent
+			char_data_p1 = self.char_manager.get_character_by_name(char_id_p1)
+			display_name_p1 = char_data_p1.get('display_name', char_id_p1) if char_data_p1 else char_id_p1
+			
+			console_info(f"创建玩家2精灵: {display_name_p1} (ID: {char_id_p1})", "sprite")
 			sprite_p1 = self.sprite_system.create_sprite_character(
-				char_id_p1, self.selected_opponent, Vec3(3, 0, 0)
+				char_id_p1, display_name_p1, Vec3(3, 0, 0)
 			)
 			
 			if sprite_p1:
-				console_debug(f"玩家2精灵创建成功: {self.selected_opponent}", "sprite")
+				console_debug(f"玩家2精灵创建成功: {display_name_p1}", "sprite")
 				# Make opponent face left
 				sprite_p1.set_facing(False)
 				self.sprite_characters.append(sprite_p1)
 			else:
-				console_warning(f"创建玩家2精灵失败: {self.selected_opponent}", "sprite")
+				console_warning(f"创建玩家2精灵失败: {display_name_p1}", "sprite")
 				
 		except Exception as e:
 			console_error(f"创建玩家2精灵异常: {e}", "sprite")
+			import traceback
+			console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "sprite")
 		
 		# Create basic Player objects for game logic (without 3D models)
 		try:
-			p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
-			p0.character_name = self.selected_character
+			# ✅ 使用正确的char_id和display_name
+			char_id_p0 = self.selected_character
+			char_data_p0 = self.char_manager.get_character_by_name(char_id_p0)
+			display_name_p0 = char_data_p0.get('display_name', char_id_p0) if char_data_p0 else char_id_p0
+			
+			p0 = Player(self.render, self.loader, name=display_name_p0, pos=Vec3(-3, 0, 0))
+			p0.character_name = display_name_p0
 			p0.character_id = char_id_p0
-			p0.sprite_character = sprite_p0 if len(self.sprite_characters) > 0 else None
+			p0.sprite_character = self.sprite_characters[0] if len(self.sprite_characters) > 0 else None
 			p0.render_mode = "2.5d"
-			p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
+			p0.character_data = char_data_p0 or {}
 			self.players.append(p0)
-			console_debug(f"玩家1逻辑创建成功: {self.selected_character}", "init")
+			console_debug(f"玩家1逻辑创建成功: {display_name_p0}", "init")
 		except Exception as e:
 			console_error(f"创建玩家1逻辑失败: {e}", "init")
+			import traceback
+			console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "init")
 		
 		try:
-			p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
-			p1.character_name = self.selected_opponent
+			# ✅ 使用正确的char_id和display_name
+			char_id_p1 = self.selected_opponent
+			char_data_p1 = self.char_manager.get_character_by_name(char_id_p1)
+			display_name_p1 = char_data_p1.get('display_name', char_id_p1) if char_data_p1 else char_id_p1
+			
+			p1 = Player(self.render, self.loader, name=display_name_p1, pos=Vec3(3, 0, 0))
+			p1.character_name = display_name_p1
 			p1.character_id = char_id_p1
-			p1.sprite_character = sprite_p1 if len(self.sprite_characters) > 1 else None
+			p1.sprite_character = self.sprite_characters[1] if len(self.sprite_characters) > 1 else None
 			p1.render_mode = "2.5d"
-			p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
+			p1.character_data = char_data_p1 or {}
 			self.players.append(p1)
-			console_debug(f"玩家2逻辑创建成功: {self.selected_opponent}", "init")
+			console_debug(f"玩家2逻辑创建成功: {display_name_p1}", "init")
 		except Exception as e:
 			console_error(f"创建玩家2逻辑失败: {e}", "init")
+			import traceback
+			console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "init")
 			
 		console_info(f"2.5D模式: {len(self.players)}个玩家, {len(self.sprite_characters)}个精灵", "init")
 		
@@ -850,7 +894,7 @@ class StreetBattleGame(ShowBase):
 		
 		# 确保有默认角色
 		if not self.selected_character:
-			self.selected_character = "Kyo Kusanagi"
+			self.selected_character = "kyo_kusanagi"  # ✅ 使用char_id而不是display_name
 			console_warning(f"未选择角色，使用默认: {self.selected_character}", "init")
 		
 		# 🔧 检查选中的角色是否有有效的3D模型
@@ -858,16 +902,18 @@ class StreetBattleGame(ShowBase):
 		if char_data_p0:
 			is_disabled = char_data_p0.get('disabled', False)
 			has_3d = char_data_p0.get('has_3d_model', False)
-			console_debug(f"验证角色 {self.selected_character}: disabled={is_disabled}, has_3d_model={has_3d}", "init")
+			display_name_p0 = char_data_p0.get('display_name', self.selected_character)
+			console_debug(f"验证角色 {display_name_p0} ({self.selected_character}): disabled={is_disabled}, has_3d_model={has_3d}", "init")
 			
 			if is_disabled or not has_3d:
-				console_warning(f"角色 {self.selected_character} 没有有效的3D模型 (disabled={is_disabled}, has_3d={has_3d})，切换到默认角色", "init")
-				self.selected_character = "Kyo Kusanagi"
+				console_warning(f"角色 {display_name_p0} 没有有效的3D模型 (disabled={is_disabled}, has_3d={has_3d})，切换到默认角色", "init")
+				self.selected_character = "kyo_kusanagi"  # ✅ 使用char_id
 		else:
 			console_warning(f"未找到角色数据: {self.selected_character}，切换到默认角色", "init")
+			self.selected_character = "kyo_kusanagi"  # ✅ 使用char_id
 			
 		if not self.selected_opponent:
-			self.selected_opponent = "Iori Yagami"
+			self.selected_opponent = "iori_yagami"  # ✅ 使用char_id而不是display_name
 			console_warning(f"未选择对手，使用默认: {self.selected_opponent}", "init")
 		
 		# 🔧 检查对手角色是否有有效的3D模型
@@ -875,13 +921,15 @@ class StreetBattleGame(ShowBase):
 		if char_data_p1:
 			is_disabled = char_data_p1.get('disabled', False)
 			has_3d = char_data_p1.get('has_3d_model', False)
-			console_debug(f"验证对手 {self.selected_opponent}: disabled={is_disabled}, has_3d_model={has_3d}", "init")
+			display_name_p1 = char_data_p1.get('display_name', self.selected_opponent)
+			console_debug(f"验证对手 {display_name_p1} ({self.selected_opponent}): disabled={is_disabled}, has_3d_model={has_3d}", "init")
 			
 			if is_disabled or not has_3d:
-				console_warning(f"对手 {self.selected_opponent} 没有有效的3D模型 (disabled={is_disabled}, has_3d={has_3d})，切换到默认对手", "init")
-				self.selected_opponent = "Iori Yagami"
+				console_warning(f"对手 {display_name_p1} 没有有效的3D模型 (disabled={is_disabled}, has_3d={has_3d})，切换到默认对手", "init")
+				self.selected_opponent = "iori_yagami"  # ✅ 使用char_id
 		else:
 			console_warning(f"未找到对手数据: {self.selected_opponent}，切换到默认对手", "init")
+			self.selected_opponent = "iori_yagami"  # ✅ 使用char_id
 		
 		# 🧹 在创建新模型前先清理旧模型，避免重复
 		console_debug("清理旧的3D模型", "cleanup")
@@ -895,22 +943,26 @@ class StreetBattleGame(ShowBase):
 		# 🔧 Player 1 和 Player 2 使用完全相同的初始化逻辑，确保一致性
 		try:
 			# Player 1 - 3D model
-			char_id_p0 = self.selected_character.lower().replace(' ', '_')
-			console_info(f"创建玩家1: {self.selected_character} (ID: {char_id_p0})", "model")
+			# ✅ self.selected_character 现在已经是 char_id（如 'kyo_kusanagi'）
+			char_id_p0 = self.selected_character
+			char_data_p0 = self.char_manager.get_character_by_name(char_id_p0)
+			display_name_p0 = char_data_p0.get('display_name', char_id_p0) if char_data_p0 else char_id_p0
+			
+			console_info(f"创建玩家1: {display_name_p0} (ID: {char_id_p0})", "model")
 			model_p0 = self.char_manager.create_character_model(
-				self.selected_character, Vec3(-3, 0, 0)
+				char_id_p0, Vec3(-3, 0, 0)
 			)
 			
 			if model_p0:
 				console_debug(f"玩家1模型已创建，类型: {type(model_p0)}", "model")
 				try:
-					p0 = Player(self.render, self.loader, name=self.selected_character, 
+					p0 = Player(self.render, self.loader, name=display_name_p0, 
 							   actor_instance=model_p0, pos=Vec3(-3, 0, 0))
-					p0.character_name = self.selected_character
-					p0.character_id = char_id_p0
+					p0.character_name = display_name_p0  # ✅ 显示名称用于UI
+					p0.character_id = char_id_p0  # ✅ ID用于数据查找
 					p0.render_mode = "3d"
 					p0.model_3d = model_p0
-					p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
+					p0.character_data = char_data_p0
 					
 					# 🔧 确保模型可见性
 					self._ensure_player_visibility(p0, model_p0, "Player 1")
@@ -925,54 +977,63 @@ class StreetBattleGame(ShowBase):
 						console_info(f"✓ 玩家1模型已强制重新附加到场景", "model")
 					
 					self.players.append(p0)
-					console_info(f"✅ 玩家1 3D模型创建成功: {self.selected_character}", "model")
+					console_info(f"✅ 玩家1 3D模型创建成功: {display_name_p0}", "model")
 				except Exception as e:
 					console_error(f"玩家1 3D模型创建失败: {e}", "model")
 					import traceback
 					console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "model")
 					# Fallback to basic player
-					p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
-					p0.character_name = self.selected_character
+					p0 = Player(self.render, self.loader, name=display_name_p0, pos=Vec3(-3, 0, 0))
+					p0.character_name = display_name_p0
 					p0.character_id = char_id_p0
 					p0.render_mode = "fallback"
-					p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
+					p0.character_data = char_data_p0
 					self.players.append(p0)
 					console_info(f"✅ 玩家1 fallback创建成功", "model")
 			else:
 				console_warning(f"⚠ 玩家1 3D模型加载失败 - 使用fallback", "model")
-				p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
-				p0.character_name = self.selected_character
+				p0 = Player(self.render, self.loader, name=display_name_p0, pos=Vec3(-3, 0, 0))
+				p0.character_name = display_name_p0
 				p0.character_id = char_id_p0
 				p0.render_mode = "fallback"
-				p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
+				p0.character_data = char_data_p0
 				self.players.append(p0)
 				
 		except Exception as e:
 			console_error(f"创建玩家1异常: {e}", "model")
 			import traceback
 			console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "model")
-			p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
-			p0.character_data = {}
+			char_id_p0 = self.selected_character
+			char_data_p0 = self.char_manager.get_character_by_name(char_id_p0)
+			display_name_p0 = char_data_p0.get('display_name', char_id_p0) if char_data_p0 else char_id_p0
+			p0 = Player(self.render, self.loader, name=display_name_p0, pos=Vec3(-3, 0, 0))
+			p0.character_name = display_name_p0
+			p0.character_id = char_id_p0
+			p0.character_data = char_data_p0 or {}
 			self.players.append(p0)
 		
 		try:
 			# Player 2 - 使用与Player 1完全相同的逻辑
-			char_id_p1 = self.selected_opponent.lower().replace(' ', '_')
-			console_info(f"创建玩家2: {self.selected_opponent} (ID: {char_id_p1})", "model")
+			# ✅ self.selected_opponent 现在已经是 char_id（如 'iori_yagami'）
+			char_id_p1 = self.selected_opponent
+			char_data_p1 = self.char_manager.get_character_by_name(char_id_p1)
+			display_name_p1 = char_data_p1.get('display_name', char_id_p1) if char_data_p1 else char_id_p1
+			
+			console_info(f"创建玩家2: {display_name_p1} (ID: {char_id_p1})", "model")
 			model_p1 = self.char_manager.create_character_model(
-				self.selected_opponent, Vec3(3, 0, 0)
+				char_id_p1, Vec3(3, 0, 0)
 			)
 			
 			if model_p1:
 				console_debug(f"玩家2模型已创建，类型: {type(model_p1)}", "model")
 				try:
-					p1 = Player(self.render, self.loader, name=self.selected_opponent,
+					p1 = Player(self.render, self.loader, name=display_name_p1,
 							   actor_instance=model_p1, pos=Vec3(3, 0, 0))
-					p1.character_name = self.selected_opponent
-					p1.character_id = char_id_p1
+					p1.character_name = display_name_p1  # ✅ 显示名称用于UI
+					p1.character_id = char_id_p1  # ✅ ID用于数据查找
 					p1.render_mode = "3d"
 					p1.model_3d = model_p1
-					p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
+					p1.character_data = char_data_p1
 					
 					# 🔧 确保模型可见性 - 与Player 1使用相同的处理
 					self._ensure_player_visibility(p1, model_p1, "Player 2")
@@ -987,34 +1048,39 @@ class StreetBattleGame(ShowBase):
 						console_info(f"✓ 玩家2模型已强制重新附加到场景", "model")
 					
 					self.players.append(p1)
-					console_info(f"✅ 玩家2 3D模型创建成功: {self.selected_opponent}", "model")
+					console_info(f"✅ 玩家2 3D模型创建成功: {display_name_p1}", "model")
 				except Exception as e:
 					console_error(f"玩家2 3D模型创建失败: {e}", "model")
 					import traceback
 					console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "model")
 					# Fallback to basic player
-					p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
-					p1.character_name = self.selected_opponent
+					p1 = Player(self.render, self.loader, name=display_name_p1, pos=Vec3(3, 0, 0))
+					p1.character_name = display_name_p1
 					p1.character_id = char_id_p1
 					p1.render_mode = "fallback"
-					p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
+					p1.character_data = char_data_p1
 					self.players.append(p1)
 					console_info(f"✅ 玩家2 fallback创建成功", "model")
 			else:
 				console_warning(f"⚠ 玩家2 3D模型加载失败 - 使用fallback", "model")
-				p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
-				p1.character_name = self.selected_opponent
+				p1 = Player(self.render, self.loader, name=display_name_p1, pos=Vec3(3, 0, 0))
+				p1.character_name = display_name_p1
 				p1.character_id = char_id_p1
 				p1.render_mode = "fallback"
-				p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
+				p1.character_data = char_data_p1
 				self.players.append(p1)
 				
 		except Exception as e:
 			console_error(f"创建玩家2异常: {e}", "model")
 			import traceback
 			console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "model")
-			p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
-			p1.character_data = {}
+			char_id_p1 = self.selected_opponent
+			char_data_p1 = self.char_manager.get_character_by_name(char_id_p1)
+			display_name_p1 = char_data_p1.get('display_name', char_id_p1) if char_data_p1 else char_id_p1
+			p1 = Player(self.render, self.loader, name=display_name_p1, pos=Vec3(3, 0, 0))
+			p1.character_name = display_name_p1
+			p1.character_id = char_id_p1
+			p1.character_data = char_data_p1 or {}
 			self.players.append(p1)
 			
 		console_info(f"3D模式: {len(self.players)}个玩家已创建", "init")

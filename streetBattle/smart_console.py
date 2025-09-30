@@ -6,6 +6,7 @@ Smart Console Output Manager
 Optimizes and manages console output with log levels, frequency control, formatted output
 """
 
+import sys
 import time
 import threading
 from typing import Dict, List, Optional, Any
@@ -13,6 +14,17 @@ from enum import Enum
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from datetime import datetime
+
+# 确保Windows控制台使用UTF-8编码
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        # 如果reconfigure失败（Python < 3.7），使用codecs
+        import codecs
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
 
 
 class LogLevel(Enum):
@@ -53,7 +65,7 @@ class SmartConsoleManager:
         # 默认格式器
         self._setup_default_formatters()
         
-        print("✅ 智能控制台管理器初始化完成")
+        print("[OK] Smart Console Manager initialized")
     
     def _setup_default_frequency_limits(self):
         """设置默认频率限制"""
@@ -78,11 +90,11 @@ class SmartConsoleManager:
     def _setup_default_formatters(self):
         """设置默认输出格式器"""
         self.output_formatters = {
-            LogLevel.DEBUG: lambda msg: f"🔍 [DEBUG] {msg}",
-            LogLevel.INFO: lambda msg: f"ℹ️  [INFO] {msg}",
-            LogLevel.WARNING: lambda msg: f"⚠️  [WARN] {msg}",
-            LogLevel.ERROR: lambda msg: f"❌ [ERROR] {msg}",
-            LogLevel.CRITICAL: lambda msg: f"🚨 [CRITICAL] {msg}"
+            LogLevel.DEBUG: lambda msg: f"[DEBUG] {msg}",
+            LogLevel.INFO: lambda msg: f"[INFO] {msg}",
+            LogLevel.WARNING: lambda msg: f"[WARN] {msg}",
+            LogLevel.ERROR: lambda msg: f"[ERROR] {msg}",
+            LogLevel.CRITICAL: lambda msg: f"[CRITICAL] {msg}"
         }
     
     def set_frequency_limit(self, category: str, max_per_second: int):
@@ -92,7 +104,7 @@ class SmartConsoleManager:
     def set_min_level(self, level: LogLevel):
         """设置最小日志等级"""
         self.min_level = level
-        print(f"📊 设置最小日志等级: {level.name}")
+        print(f"[LOG] Set minimum log level: {level.name}")
     
     def log(self, message: str, level: LogLevel = LogLevel.INFO, 
             category: str = "general", suppress_duplicates: bool = True):
@@ -158,7 +170,13 @@ class SmartConsoleManager:
         if log_msg.category != "general":
             formatted_msg = f"[{log_msg.category.upper()}] {formatted_msg}"
         
-        print(formatted_msg)
+        # 安全输出，避免编码错误
+        try:
+            print(formatted_msg, flush=True)
+        except UnicodeEncodeError:
+            # 如果出现编码错误，使用ASCII编码并忽略错误
+            safe_msg = formatted_msg.encode('ascii', 'ignore').decode('ascii')
+            print(f"[ENCODING ERROR] {safe_msg}", flush=True)
     
     def debug(self, message: str, category: str = "debug"):
         """调试消息"""
@@ -230,10 +248,10 @@ class SmartConsoleManager:
     def print_statistics(self):
         """打印统计信息"""
         stats = self.get_statistics()
-        print(f"\n📊 控制台输出统计:")
-        print(f"   总消息数: {stats['total_messages']}")
-        print(f"   抑制重复: {stats['duplicate_suppressions']}")
-        print(f"   分类统计:")
+        print(f"\n[STATS] Console Output Statistics:")
+        print(f"   Total Messages: {stats['total_messages']}")
+        print(f"   Duplicate Suppressions: {stats['duplicate_suppressions']}")
+        print(f"   Category Statistics:")
         for category, count in stats['category_counts'].items():
             print(f"     {category}: {count}")
     
@@ -241,19 +259,19 @@ class SmartConsoleManager:
         """设置安静模式"""
         if quiet:
             self.set_min_level(LogLevel.WARNING)
-            print("🤫 启用安静模式 - 只显示警告和错误")
+            print("[QUIET] Quiet mode enabled - showing warnings and errors only")
         else:
             self.set_min_level(LogLevel.INFO)
-            print("🔊 禁用安静模式 - 显示所有信息")
+            print("[QUIET] Quiet mode disabled - showing all information")
     
     def enable_debug_mode(self, enable: bool = True):
         """启用/禁用调试模式"""
         if enable:
             self.set_min_level(LogLevel.DEBUG)
-            print("🔍 启用调试模式 - 显示所有日志")
+            print("[DEBUG] Debug mode enabled - showing all logs")
         else:
             self.set_min_level(LogLevel.INFO)
-            print("📋 禁用调试模式 - 隐藏调试信息")
+            print("[DEBUG] Debug mode disabled - hiding debug information")
     
     def clear_history(self):
         """清除历史记录"""
@@ -294,7 +312,7 @@ def setup_optimized_console(min_level: LogLevel = LogLevel.INFO, quiet_mode: boo
     if quiet_mode:
         _console_manager.set_quiet_mode(True)
     
-    print("✅ 优化控制台输出系统已设置")
+    print("[OK] Optimized console output system initialized")
     return _console_manager
 
 

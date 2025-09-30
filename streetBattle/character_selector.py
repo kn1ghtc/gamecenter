@@ -183,22 +183,39 @@ class EnhancedCharacterSelector:
                 os.path.join(self.characters_config_root, 'manifest.json'),
                 os.path.join(os.path.dirname(self.assets_root), 'assets', 'unified_character_list.json'),
             ]
-
+            
+            print(f"[CharacterSelector] 搜索角色配置文件...")
             for path in candidate_paths:
+                print(f"  检查: {path}")
                 if not os.path.exists(path):
+                    print(f"    ❌ 文件不存在")
                     continue
-                with open(path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                if isinstance(data, dict) and 'characters' in data:
-                    data = data['characters']
-                roster = _list_to_dict(data)
-                if roster:
-                    print(f"✓ 加载统一角色列表: {len(roster)} 个角色 ({os.path.basename(path)})")
-                    return roster
-            print("⚠️ 未找到有效的角色名单文件，返回空列表")
+                    
+                print(f"    ✓ 文件存在，尝试加载...")
+                try:
+                    with open(path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                    if isinstance(data, dict) and 'characters' in data:
+                        data = data['characters']
+                    roster = _list_to_dict(data)
+                    if roster:
+                        print(f"✓ 加载统一角色列表: {len(roster)} 个角色 ({os.path.basename(path)})")
+                        # 输出前3个角色作为调试信息
+                        sample_chars = list(roster.keys())[:3]
+                        print(f"  示例角色: {', '.join(sample_chars)}")
+                        return roster
+                    else:
+                        print(f"    ⚠️ 文件加载成功但没有有效角色数据")
+                except Exception as load_error:
+                    print(f"    ❌ 加载失败: {load_error}")
+                    
+            print("❌ 所有候选路径都未找到有效的角色配置文件")
+            print("Warning: No roster configuration found. Only characters with portraits will be available.")
             return {}
         except Exception as e:
             print(f"❌ 加载统一角色列表失败: {e}")
+            import traceback
+            traceback.print_exc()
             return {}
 
     def _setup_preview_renderer(self):
@@ -304,6 +321,22 @@ class EnhancedCharacterSelector:
         )
         print("[CharacterSelector] Title text created")
         
+        # 🎮 显示当前渲染模式
+        current_mode = "3D"  # 默认
+        if hasattr(self.base_app, 'settings_manager') and self.base_app.settings_manager:
+            mode_setting = self.base_app.settings_manager.get("preferred_version", "3d")
+            current_mode = mode_setting.upper()
+        
+        self.mode_indicator = OnscreenText(
+            text=f"Mode: {current_mode}",
+            parent=self.main_frame,
+            pos=(0, 1.20),
+            scale=0.05,
+            fg=(1, 0.8, 0.2, 1) if current_mode == "2.5D" else (0.7, 0.9, 1, 1),
+            align=TextNode.ACenter
+        )
+        print(f"[CharacterSelector] Mode indicator created: {current_mode}")
+        
         # 角色网格区域（去除滚动框）
         print("[CharacterSelector] Creating grid container...")
         self.grid_container = DirectFrame(
@@ -386,25 +419,63 @@ class EnhancedCharacterSelector:
         # 获取可用角色列表
         available_characters = []
         
+        # ✅ 优先从settings_manager获取渲染模式，确保正确读取
+        preferred_mode = "3d"  # 默认为3D模式
+        if hasattr(self.base_app, 'settings_manager') and self.base_app.settings_manager:
+            preferred_mode = self.base_app.settings_manager.get("preferred_version", "3d")
+            print(f"[CharacterSelector] 从settings_manager读取渲染模式: {preferred_mode}")
+        else:
+            print(f"[CharacterSelector] settings_manager不可用，使用默认模式: {preferred_mode}")
+        
+        print(f"[CharacterSelector] 当前渲染模式: {preferred_mode}")
+        print(f"[CharacterSelector] 可用角色总数: {len(self.unified_characters)}")
+        
         for char_id, char_info in self.unified_characters.items():
+            # ✅ 跳过disabled角色（NodePath模型）
+            if char_info.get('disabled', False):
+                disabled_reason = char_info.get('disabled_reason', 'No reason provided')
+                print(f"[CharacterSelector] 跳过禁用角色: {char_info.get('display_name', char_id)} - {disabled_reason}")
+                continue
+            
+            # ✅ 根据渲染模式决定是否跳过角色
+            if preferred_mode == "3d":
+                # 3D模式下需要有3D模型
+                if not char_info.get('has_3d_model', True):
+                    print(f"[CharacterSelector] 跳过无3D模型的角色: {char_info.get('display_name', char_id)}")
+                    continue
+            elif preferred_mode == "2.5d":
+                # 2.5D模式下需要有精灵资源
+                if not char_info.get('has_sprite', False):
+                    print(f"[CharacterSelector] 跳过无精灵资源的角色: {char_info.get('display_name', char_id)}")
+                    continue
+            
+            # ✅ 检查是否有头像（用于显示在选择界面）
             has_portrait = char_info.get('has_portrait')
             if has_portrait is None:
                 has_portrait = bool(char_info.get('portrait_path'))
+            
             if has_portrait:
                 available_characters.append({
                     'id': char_id,
                     'display_name': char_info.get('display_name') or char_info.get('name') or char_id.replace('_', ' ').title(),
                     'portrait_path': char_info.get('portrait_path', ''),
                     'sprite_path': char_info.get('sprite_path', ''),
-                    'has_sprite': char_info.get('has_sprite', False)
+                    'has_sprite': char_info.get('has_sprite', False),
+                    'has_3d_model': char_info.get('has_3d_model', False)
                 })
+            else:
+                print(f"[CharacterSelector] 跳过无头像的角色: {char_info.get('display_name', char_id)}")
         
         if not available_characters:
             print("❌ 没有可用角色")
+            print(f"   渲染模式: {preferred_mode}")
+            print(f"   总角色数: {len(self.unified_characters)}")
+            print(f"   请检查角色配置文件中的 has_3d_model/has_sprite 和 has_portrait 字段")
             return
         
         self.all_characters = available_characters
         total_chars = len(available_characters)
+        print(f"✓ 找到 {total_chars} 个可用角色（{preferred_mode}模式）")
         
         # 固定网格布局: 每行 8 列，保证竞技场风格的一致性
         cols = min(8, max(1, total_chars))
