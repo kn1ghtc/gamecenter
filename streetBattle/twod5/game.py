@@ -337,11 +337,29 @@ class SpriteBattleGame:
             return
         if not pygame.get_init():
             pygame.init()
+        
+        # Auto-detect fullscreen resolution if fullscreen is enabled
+        if self.fullscreen:
+            # Get desktop resolution
+            display_info = pygame.display.Info()
+            desktop_width = display_info.current_w
+            desktop_height = display_info.current_h
+            
+            # Use desktop resolution for fullscreen
+            self.width = desktop_width
+            self.height = desktop_height
+            print(f"[2.5D] Fullscreen mode detected: {self.width}x{self.height}")
+        
         flags = pygame.DOUBLEBUF | pygame.HWSURFACE
         if self.fullscreen:
             flags |= pygame.FULLSCREEN
+        
         self.screen = pygame.display.set_mode((self.width, self.height), flags)
         pygame.display.set_caption("StreetBattle 2.5D")
+        
+        # Update floor_y based on actual resolution
+        self.floor_y = int(self.height * 0.82)
+        
         if not self.vsync and hasattr(pygame.display, "gl_set_swap_interval"):
             try:
                 pygame.display.gl_set_swap_interval(0)
@@ -715,6 +733,9 @@ class SpriteBattleGame:
                 if event.key == pygame.K_ESCAPE:
                     self.running = False
                     return
+                if event.key == pygame.K_F11:
+                    # Toggle fullscreen
+                    self._toggle_fullscreen()
                 if event.key in self.keymap.get("attack", []):
                     self.attack_buffer = True
                 if event.key in self.keymap.get("special", []):
@@ -723,6 +744,46 @@ class SpriteBattleGame:
                     self.help_visible = not self.help_visible
                 if self.match_over and event.key in (pygame.K_RETURN, pygame.K_KP_ENTER):
                     self._initialise_match()
+    
+    def _toggle_fullscreen(self) -> None:
+        """Toggle between fullscreen and windowed mode"""
+        if pygame is None or self.screen is None:
+            return
+        
+        self.fullscreen = not self.fullscreen
+        
+        if self.fullscreen:
+            # Switch to fullscreen with desktop resolution
+            display_info = pygame.display.Info()
+            self.width = display_info.current_w
+            self.height = display_info.current_h
+            flags = pygame.DOUBLEBUF | pygame.HWSURFACE | pygame.FULLSCREEN
+            print(f"[2.5D] Switching to fullscreen: {self.width}x{self.height}")
+        else:
+            # Switch to windowed mode with default resolution
+            graphics = self.settings_manager.get("graphics", {}) or {}
+            resolution = graphics.get("resolution", [1280, 720])
+            self.width = int(max(960, resolution[0]))
+            self.height = int(max(600, resolution[1]))
+            flags = pygame.DOUBLEBUF | pygame.HWSURFACE
+            print(f"[2.5D] Switching to windowed mode: {self.width}x{self.height}")
+        
+        # Recreate display with new settings
+        self.screen = pygame.display.set_mode((self.width, self.height), flags)
+        self.floor_y = int(self.height * 0.82)
+        
+        # Recreate HUD with new dimensions
+        if self.hud:
+            self.hud = HudRenderer(self.width, self.height, self.floor_y, theme_name=self.theme_name)
+        
+        # Recreate VFX and Animation systems with new dimensions
+        if hasattr(self, 'vfx_system') and self.vfx_system:
+            from .enhanced_vfx import EnhancedVFXSystem
+            self.vfx_system = EnhancedVFXSystem(self.width, self.height)
+        
+        if hasattr(self, 'animation_enhancer') and self.animation_enhancer:
+            from .animation_enhancer import AnimationEnhancer
+            self.animation_enhancer = AnimationEnhancer(screen_size=(self.width, self.height))
 
     def _gather_player_inputs(self) -> Dict[str, bool]:
         pressed = pygame.key.get_pressed()
@@ -773,10 +834,10 @@ class SpriteBattleGame:
         player_damage = max(0, prev_player_health - self.player.health)
         cpu_damage = max(0, prev_cpu_health - self.cpu.health)
         
-        # Trigger VFX effects on hit
+        # Trigger VFX effects on hit (changed to separate if blocks for symmetry)
         if self.vfx_system:
             if player_damage > 0:
-                # Player was hit
+                # Player was hit by CPU
                 hit_type = "light" if player_damage < 50 else ("medium" if player_damage < 100 else "heavy")
                 self.vfx_system.create_hit_effect(
                     self.player.position.x, 
@@ -786,8 +847,9 @@ class SpriteBattleGame:
                 # Create attack trails based on CPU's active skill
                 if self.cpu.active_skill:
                     self._create_skill_vfx(self.cpu, self.player)
-            elif cpu_damage > 0:
-                # CPU was hit
+            
+            if cpu_damage > 0:
+                # CPU was hit by Player
                 hit_type = "light" if cpu_damage < 50 else ("medium" if cpu_damage < 100 else "heavy")
                 self.vfx_system.create_hit_effect(
                     self.cpu.position.x, 

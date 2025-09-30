@@ -1,7 +1,7 @@
 {
   "default_stats": {
-    "max_health": 1000,
-    "health": 1000,
+    "max_health": 500,
+    "health": 500,
     "attack_power": 50,
     "defense": 10,
     "speed": 100,
