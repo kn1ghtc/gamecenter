@@ -42,6 +42,9 @@ from gamecenter.streetBattle.character_animator import CharacterAnimator
 from gamecenter.streetBattle.special_moves import SpecialMovesSystem, enhance_player_with_special_moves
 from gamecenter.streetBattle.config import SettingsManager
 from gamecenter.streetBattle.sprite_system import SpriteSystem
+from gamecenter.streetBattle.enhanced_3d_animation_system import Animation3DManager, AnimationState
+from gamecenter.streetBattle.performance_optimizer import SmartLoadingSystem
+from gamecenter.streetBattle.smart_console import setup_optimized_console, console_info, console_error, console_debug, console_warning
 
 
 def safe_node_check(node_path, operation_name="NodePath operation"):
@@ -68,6 +71,10 @@ def safe_node_check(node_path, operation_name="NodePath operation"):
 
 class StreetBattleGame(ShowBase):
 	def __init__(self, settings_manager: SettingsManager | None = None):
+		# 🚀 初始化优化控制台输出系统
+		self.console = setup_optimized_console(quiet_mode=True)  # 启用安静模式，减少输出
+		console_info("启动Street Battle引擎", "startup")
+		
 		self.settings_manager = settings_manager or SettingsManager()
 		graphics_settings = self.settings_manager.get("graphics", {}) or {}
 		resolution = graphics_settings.get("resolution", [1024, 768])
@@ -98,6 +105,12 @@ class StreetBattleGame(ShowBase):
 		except Exception:
 			pass
 		
+		# 🚀 初始化智能加载系统
+		self.smart_loader = SmartLoadingSystem(self)
+		
+		# 🎭 初始化3D动画管理器
+		self.animation_3d_manager = Animation3DManager()
+		
 		# Game state management
 		self.current_game_mode = None
 		self.selected_character = None
@@ -114,19 +127,18 @@ class StreetBattleGame(ShowBase):
 		
 		# Display professional system information
 		total_chars = len(self.char_manager.comprehensive_characters)
-		print(f"\\n{'='*60}")  
-		print("🥊 STREET BATTLE - King of Fighters Engine")
-		print(f"{'='*60}")
-		print(f"✅ Character Database: {total_chars} fighters loaded")
-		print(f"🎮 Game Modes: Adventure • Versus • Network")
-		print(f"🎨 Enhanced Graphics: KOF Animation System Active")
-		print(f"🔊 Audio System: Premium Sound Effects Ready") 
-		print(f"{'='*60}\\n")
+		console_info(f"角色数据库: {total_chars} 名战士已加载", "startup")
+		console_info("游戏模式: 冒险 • 对战 • 网络", "startup") 
+		console_info("增强图形: KOF动画系统激活", "startup")
+		console_info("音频系统: 高级音效就绪", "startup")
 		
 		# UI systems
 		self.mode_selector = GameModeSelector(self)
 		self.character_selector = CharacterSelector(self, self.char_manager)
 		self.stage_backdrop = None
+		
+		# 🚀 启动优化加载流程
+		self.smart_loader.start_optimized_loading()
 		
 		# Show mode selection immediately
 		self.mode_selector.show(callback=self._on_game_mode_selected)
@@ -933,19 +945,30 @@ class StreetBattleGame(ShowBase):
 				char_id = player.character_id
 				
 				if hasattr(player, 'model_3d') and player.model_3d:
-					# Extract body parts for original animator
-					body_parts = self._extract_body_parts(player)
+					# 🎭 注册到新的3D动画管理器
+					state_machine = self.animation_3d_manager.register_character(
+						f"player_{i}", player.model_3d, char_name
+					)
+					if state_machine:
+						# 为玩家保存状态机引用，方便控制
+						player.animation_state_machine = state_machine
+						console_info(f"Player {i+1} 3D动画状态机注册成功: {char_name}", "animation")
 					
-					# Register with original animator
-					self.animator.register_character(f"player_{i}", player.model_3d, body_parts)
+					# Extract body parts for original animator (保持兼容性)
+					if hasattr(self, 'animator') and self.animator:
+						body_parts = self._extract_body_parts(player)
+						self.animator.register_character(f"player_{i}", player.model_3d, body_parts)
 					
-					# Register with KOF animation system
-					actor_instance = player.model_3d if isinstance(player.model_3d, Actor) else None
-					self.kof_animator.register_character(char_id, player.model_3d, actor_instance)
+					# Register with KOF animation system (保持兼容性)
+					if hasattr(self, 'kof_animator') and self.kof_animator:
+						actor_instance = player.model_3d if isinstance(player.model_3d, Actor) else None
+						self.kof_animator.register_character(char_id, player.model_3d, actor_instance)
 					
-					print(f"✅ Registered Player {i+1} for 3D animations: {char_name}")
+					console_info(f"Player {i+1} 完整3D动画系统注册: {char_name}", "animation")
+				else:
+					console_warning(f"Player {i+1} 没有3D模型，跳过动画注册", "animation")
 		except Exception as e:
-			print(f"❌ 3D animation registration failed: {e}")
+			console_error(f"3D动画注册失败: {e}", "animation")
 
 	def start_network(self, mode='local', host_ip=None, port=12000):
 		self.mode = mode
@@ -1143,6 +1166,13 @@ Jump + Attack = Air Attack"""
 	def update(self, task: Task):
 		dt = self.clock.getDt()
 		
+		# 🎭 更新3D动画管理器
+		try:
+			if hasattr(self, 'animation_3d_manager') and self.animation_3d_manager:
+				self.animation_3d_manager.update_all(dt)
+		except Exception as e:
+			console_error(f"3D动画管理器更新失败: {e}", "animation")
+		
 		# Update game state first
 		self.game_state.update(self.players)
 		
@@ -1163,19 +1193,19 @@ Jump + Attack = Air Attack"""
 			# apply to local player inputs
 			local_inputs = {k: self.key_map.get(k, False) for k in ['left', 'right', 'up', 'down', 'light', 'heavy', 'jump']}
 			
-			# Only debug print inputs occasionally to avoid spam
+			# 使用新的控制台系统进行调试输出
 			active_keys = [k for k, v in local_inputs.items() if v]
-			if active_keys and self.frame % 30 == 0:  # Print every 30 frames (0.5 seconds at 60fps)
-				print(f"🎮 Player input detected: {active_keys}")
+			if active_keys and self.frame % 60 == 0:  # 降低频率到每秒一次
+				console_debug(f"Player input detected: {active_keys}", "input")
 			
 			# Ensure we have players before applying input
 			if len(self.players) > 0:
 				try:
 					self.players[0].apply_input(local_inputs, dt)
-					if active_keys and self.frame % 30 == 0:
-						print(f"🚀 Applied input to player 0: pos={self.players[0].pos}")
+					if active_keys and self.frame % 60 == 0:
+						console_debug(f"Applied input to player 0: pos={self.players[0].pos}", "input")
 				except Exception as e:
-					print(f"❌ Error applying input to player 0: {e}")
+					console_error(f"Error applying input to player 0: {e}", "input")
 				
 				# send inputs to host if client
 				self.send_local_input(local_inputs)

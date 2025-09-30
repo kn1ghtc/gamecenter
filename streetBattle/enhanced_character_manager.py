@@ -1542,6 +1542,9 @@ class EnhancedCharacterManager:
     def _apply_character_enhancements(self, actor: Actor, char_data: Dict[str, Any]):
         """Apply character-specific visual and gameplay enhancements"""
         try:
+            # 首先确保模型可见性 - 解决Iori等角色不可见问题
+            self._ensure_model_visibility(actor, char_data)
+            
             # Apply enhanced color scheme if available
             color_scheme = char_data.get('color_scheme', {})
             if color_scheme:
@@ -1571,13 +1574,85 @@ class EnhancedCharacterManager:
             else:
                 base_scale_factor = 1.0
             
-            # 为3D战斗模式应用屏幕适配缩放
-            # 由于许多3D模型可能过大，我们需要将其缩小到适合游戏屏幕的大小
-            screen_scale_factor = 0.3  # 基础屏幕缩放因子，使3D模型适配屏幕
-            final_scale = base_scale_factor * screen_scale_factor
+            # 为3D战斗模式应用智能缩放 - 解决模型过大问题
+            # 首先获取模型的边界框来计算合适的缩放比例
+            tight_bounds = actor.getTightBounds()
+            if tight_bounds and len(tight_bounds) == 2:
+                min_point, max_point = tight_bounds
+                model_size = max_point - min_point
+                max_dimension = max(model_size.x, model_size.y, model_size.z)
+                
+                # 目标大小：2.0单位（适合游戏屏幕显示的角色大小）
+                target_size = 2.0
+                if max_dimension > 0:
+                    auto_scale_factor = target_size / max_dimension
+                    # 限制缩放范围，避免极端值
+                    auto_scale_factor = max(0.01, min(1.0, auto_scale_factor))
+                else:
+                    auto_scale_factor = 0.1
+                
+                print(f"📏 模型尺寸分析: {model_size}, 最大维度: {max_dimension:.2f}, 自动缩放: {auto_scale_factor:.3f}")
+            else:
+                # 如果无法获取边界框，使用保守的小缩放值
+                auto_scale_factor = 0.1
+                print(f"⚠️  无法获取模型边界框，使用默认缩放: {auto_scale_factor}")
+            
+            # 结合角色统计数据的最终缩放
+            final_scale = base_scale_factor * auto_scale_factor
             
             actor.setScale(final_scale)
-            print(f"✅ Applied 3D character scaling: {final_scale:.2f} (base: {base_scale_factor:.2f}, screen: {screen_scale_factor})")
+            print(f"✅ Applied智能3D角色缩放: {final_scale:.3f} (base: {base_scale_factor:.2f}, auto: {auto_scale_factor:.3f})")
+            
+        except Exception as e:
+            print(f"❌ Character enhancement failed: {e}")
+            # 应用保守的fallback设置
+            try:
+                actor.setScale(0.1)  # 保守的小缩放
+                actor.setColorScale(1.0, 1.0, 1.0, 1.0)  # 确保完全可见
+            except Exception as fallback_e:
+                print(f"❌ Fallback enhancement also failed: {fallback_e}")
+    
+    def _ensure_model_visibility(self, actor: Actor, char_data: Dict[str, Any]):
+        """确保3D模型可见性，解决材质丢失和透明度问题"""
+        try:
+            # 强制设置不透明度和可见性
+            actor.setTransparency(False)  # 禁用透明度
+            actor.setRenderModeWireframe()  # 先设置线框，确保几何体可见
+            actor.clearRenderMode()  # 然后清除线框，恢复正常渲染
+            actor.setColorScale(1.0, 1.0, 1.0, 1.0)  # 确保完全不透明
+            
+            # 如果没有纹理，添加默认材质
+            if actor.findAllTextures():
+                print(f"✅ 模型已有纹理")
+            else:
+                print(f"⚠️  模型缺少纹理，应用默认材质")
+                # 创建基础材质
+                from panda3d.core import Material
+                material = Material()
+                
+                # 根据角色设置不同的颜色
+                char_name = char_data.get('name', '').lower()
+                if 'iori' in char_name:
+                    material.setDiffuse((0.8, 0.2, 0.2, 1.0))  # 红色系给Iori
+                elif 'kyo' in char_name:
+                    material.setDiffuse((0.2, 0.2, 0.8, 1.0))  # 蓝色系给Kyo
+                else:
+                    material.setDiffuse((0.6, 0.6, 0.6, 1.0))  # 灰色给其他角色
+                
+                material.setAmbient((0.3, 0.3, 0.3, 1.0))
+                material.setSpecular((0.1, 0.1, 0.1, 1.0))
+                material.setShininess(10)
+                actor.setMaterial(material)
+                
+            print(f"✅ 确保了模型可见性: {char_data.get('name', 'Unknown')}")
+            
+        except Exception as e:
+            print(f"❌ 模型可见性设置失败: {e}")
+            # 最后的备用措施：设置明亮的颜色确保可见
+            try:
+                actor.setColorScale(1.0, 0.0, 1.0, 1.0)  # 粉红色，确保能看到
+            except:
+                pass
             
             # 确保角色站在地面上，而不是漂浮
             bounds = actor.getTightBounds()

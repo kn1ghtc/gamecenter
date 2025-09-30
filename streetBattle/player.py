@@ -1,6 +1,28 @@
 from panda3d.core import Vec3
 from direct.actor.Actor import Actor
 
+# 导入新的控制台系统
+try:
+	from gamecenter.streetBattle.smart_console import console_debug, console_error, console_position
+except ImportError:
+	# 如果导入失败，使用普通print作为备选
+	def console_debug(msg, category=None): print(f"[DEBUG] {msg}")
+	def console_error(msg, category=None): print(f"[ERROR] {msg}")
+	def console_position(name, pos): print(f"[POS] {name}: {pos}")
+
+# 导入动画状态枚举
+try:
+	from gamecenter.streetBattle.enhanced_3d_animation_system import AnimationState
+except ImportError:
+	# 如果导入失败，创建简单的备选
+	class AnimationState:
+		IDLE = "idle"
+		WALK = "walk"
+		JUMP = "jump"
+		ATTACK_LIGHT = "light_attack"
+		ATTACK_HEAVY = "heavy_attack"
+		HURT = "hurt"
+
 
 class Player:
 	"""Player with simple state timings and cooldowns."""
@@ -52,6 +74,9 @@ class Player:
 		# Add missing attributes for interpolation
 		self.target_pos = None  # Target position for smooth movement
 		self.interpolate_speed = 5.0  # Interpolation speed
+		
+		# 🎭 3D动画状态机引用（将在main.py中设置）
+		self.animation_state_machine = None
 		
 		# Initialize with empty node first
 		self.node = self.render.attachNewNode(f"{self.name}_root")
@@ -268,76 +293,145 @@ class Player:
 			print(f"Error applying character customization: {e}")
 
 	def apply_input(self, inputs, dt):
-		# If stunned/hurt -> ignore inputs
-		if self.state in ('hurt', 'knockdown'):
-			return
+		"""处理玩家输入，增强安全性和错误处理以防止崩溃"""
+		try:
+			# If stunned/hurt -> ignore inputs
+			if self.state in ('hurt', 'knockdown'):
+				return
 
-		# Jump input (only when on ground)
-		if inputs.get('jump') and not self.is_jumping and abs(self.pos.z - self.ground_y) < 0.1:
-			self.is_jumping = True
-			self.velocity.z = self.jump_strength
-			self.state = 'jump'
-			self.state_timer = 0.5
-
-		# Horizontal movement
-		move = Vec3(0, 0, 0)
-		if inputs.get('left'):
-			move.x -= self.speed * dt
-			self.facing = -1
-		if inputs.get('right'):
-			move.x += self.speed * dt
-			self.facing = 1
-		if inputs.get('up'):
-			move.y += self.speed * dt
-		if inputs.get('down'):
-			move.y -= self.speed * dt
-
-		# Apply horizontal movement
-		if move.lengthSquared() > 0 and self.attack_cooldown <= 0:
-			old_pos = Vec3(self.pos)
-			self.pos += move
-			
-			# Immediately update 3D model position
-			if self.node and hasattr(self.node, 'setPos'):
-				try:
-					self.node.setPos(self.pos)
-					# Debug output for position changes (reduced frequency)
-					if not hasattr(self, '_debug_counter'):
-						self._debug_counter = 0
-					self._debug_counter += 1
-					if self._debug_counter % 60 == 0:  # Print every 60 frames (1 second at 60fps)
-						print(f"🎮 {self.name} position: {self.pos}")
-				except Exception as e:
-					print(f"❌ Error updating {self.name} position: {e}")
-			
-			# Clear any target position to avoid interpolation conflicts
-			self.target_pos = None
-
-		# attacks are edge-triggered
-		if inputs.get('light') and self.attack_cooldown <= 0:
-			if self.is_jumping:
-				self.state = 'jump_atk'
-				self.state_timer = 0.3
-				self.attack_cooldown = 0.5
-			else:
-				self.state = 'light_atk'
-				self.state_timer = 0.25
-				self.attack_cooldown = 0.4
-		elif inputs.get('heavy') and self.attack_cooldown <= 0:
-			if self.is_jumping:
-				self.state = 'jump_heavy_atk'
-				self.state_timer = 0.4
-				self.attack_cooldown = 0.7
-			else:
-				self.state = 'heavy_atk'
+			# Jump input (only when on ground)
+			if inputs.get('jump') and not self.is_jumping and abs(self.pos.z - self.ground_y) < 0.1:
+				self.is_jumping = True
+				self.velocity.z = self.jump_strength
+				self.state = 'jump'
 				self.state_timer = 0.5
-				self.attack_cooldown = 0.8
-		else:
-			if self.state not in ('light_atk', 'heavy_atk', 'jump', 'jump_atk', 'jump_heavy_atk'):
-				if move.lengthSquared() > 0:
-					self.state = 'walk'
+
+			# Horizontal movement
+			move = Vec3(0, 0, 0)
+			if inputs.get('left'):
+				move.x -= self.speed * dt
+				self.facing = -1
+			if inputs.get('right'):
+				move.x += self.speed * dt
+				self.facing = 1
+			if inputs.get('up'):
+				move.y += self.speed * dt
+			if inputs.get('down'):
+				move.y -= self.speed * dt
+
+			# Apply horizontal movement with enhanced safety checks
+			if move.lengthSquared() > 0 and self.attack_cooldown <= 0:
+				old_pos = Vec3(self.pos)
+				self.pos += move
+				
+				# 安全更新3D模型位置 - 防止崩溃的关键改进
+				if self._safe_update_position():
+					# Clear any target position to avoid interpolation conflicts
+					self.target_pos = None
 				else:
-					self.state = 'idle'
+					# 如果位置更新失败，回滚到原位置
+					self.pos = old_pos
+
+			# attacks are edge-triggered
+			if inputs.get('light') and self.attack_cooldown <= 0:
+				if self.is_jumping:
+					self.state = 'jump_atk'
+					self.state_timer = 0.3
+					self.attack_cooldown = 0.5
+					# 🎭 更新3D动画状态机
+					self._update_animation_state(AnimationState.ATTACK_LIGHT)
+				else:
+					self.state = 'light_atk'
+					self.state_timer = 0.25
+					self.attack_cooldown = 0.4
+					# 🎭 更新3D动画状态机
+					self._update_animation_state(AnimationState.ATTACK_LIGHT)
+			elif inputs.get('heavy') and self.attack_cooldown <= 0:
+				if self.is_jumping:
+					self.state = 'jump_heavy_atk'
+					self.state_timer = 0.4
+					self.attack_cooldown = 0.7
+					# 🎭 更新3D动画状态机
+					self._update_animation_state(AnimationState.ATTACK_HEAVY)
+				else:
+					self.state = 'heavy_atk'
+					self.state_timer = 0.5
+					self.attack_cooldown = 0.8
+					# 🎭 更新3D动画状态机
+					self._update_animation_state(AnimationState.ATTACK_HEAVY)
+			else:
+				if self.state not in ('light_atk', 'heavy_atk', 'jump', 'jump_atk', 'jump_heavy_atk'):
+					if move.lengthSquared() > 0:
+						self.state = 'walk'
+						# 🎭 更新3D动画状态机
+						self._update_animation_state(AnimationState.WALK)
+					else:
+						self.state = 'idle'
+						# 🎭 更新3D动画状态机
+						self._update_animation_state(AnimationState.IDLE)
+		
+		except Exception as e:
+			console_error(f"Player {self.name} input processing error: {e}", "input")
+			# 安全恢复：确保状态仍然有效
+			if hasattr(self, 'state') and self.state not in ('idle', 'walk', 'hurt', 'knockdown'):
+				self.state = 'idle'
+				self._update_animation_state(AnimationState.IDLE)
+	
+	def _update_animation_state(self, new_state):
+		"""更新3D动画状态机状态"""
+		try:
+			if hasattr(self, 'animation_state_machine') and self.animation_state_machine:
+				self.animation_state_machine.request_state_change(new_state)
+		except Exception as e:
+			console_debug(f"{self.name} 动画状态更新失败: {e}", "animation")
+	
+	def _safe_update_position(self) -> bool:
+		"""安全更新角色位置，包含全面的错误处理"""
+		try:
+			# 基本安全检查
+			if not self.node:
+				print(f"⚠️  {self.name}: node is None, skipping position update")
+				return False
+			
+			# 检查node是否为有效的Panda3D对象
+			if not hasattr(self.node, 'setPos'):
+				print(f"⚠️  {self.name}: node lacks setPos method")
+				return False
+			
+			# 检查node是否已被删除
+			if hasattr(self.node, 'isEmpty') and callable(self.node.isEmpty):
+				if self.node.isEmpty():
+					console_debug(f"{self.name}: node is empty", "position")
+					return False
+			
+			# 验证位置参数的有效性
+			if not isinstance(self.pos, Vec3):
+				console_debug(f"{self.name}: position is not Vec3", "position")
+				return False
+			
+			# 检查位置数值是否合理（防止NaN或无穷大）
+			if not (abs(self.pos.x) < 1000 and abs(self.pos.y) < 1000 and abs(self.pos.z) < 1000):
+				console_debug(f"{self.name}: position values out of reasonable range: {self.pos}", "position")
+				return False
+			
+			# 尝试更新位置
+			self.node.setPos(self.pos)
+			
+			# 使用新的控制台系统，减少输出频率
+			if not hasattr(self, '_debug_counter'):
+				self._debug_counter = 0
+			self._debug_counter += 1
+			if self._debug_counter % 120 == 0:  # 每2秒打印一次（假设60FPS）
+				console_position(self.name, self.pos)
+			
+			return True
+			
+		except AttributeError as e:
+			console_error(f"{self.name} position update failed (AttributeError): {e}", "position")
+			return False
+		except Exception as e:
+			console_error(f"{self.name} position update failed (Exception): {e}", "position")
+			return False
 
 	def take_damage(self, amount):
 		self.health = max(0, self.health - amount)
