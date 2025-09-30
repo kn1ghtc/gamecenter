@@ -182,7 +182,10 @@ def load_sprite_animations(name: str) -> Optional[Tuple[Dict[str, SpriteAnimatio
                     
                     if frame_path.exists():
                         try:
-                            surface = pygame.image.load(frame_path.as_posix()).convert_alpha()
+                            surface = pygame.image.load(frame_path.as_posix())
+                            # 只在display已初始化时才convert_alpha
+                            if pygame.display.get_init():
+                                surface = surface.convert_alpha()
                             frame_duration = durations[idx] if durations and idx < len(durations) else base_duration
                             frames.append(SpriteFrame(surface, frame_duration))
                         except Exception:
@@ -202,7 +205,10 @@ def load_sprite_animations(name: str) -> Optional[Tuple[Dict[str, SpriteAnimatio
         if not sheet_path.exists():
             continue
         try:
-            surface = pygame.image.load(sheet_path.as_posix()).convert_alpha()
+            surface = pygame.image.load(sheet_path.as_posix())
+            # 只在display已初始化时才convert_alpha
+            if pygame.display.get_init():
+                surface = surface.convert_alpha()
         except Exception:
             continue
         frame_size = cfg.get("frame_size") or [surface.get_width(), surface.get_height()]

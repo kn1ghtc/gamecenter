@@ -105,22 +105,14 @@ class TestGameSettings:
         settings = self.config_manager.get_game_settings()
         graphics = settings["graphics"]
 
-        # 检查图形设置字段
+        # 检查图形设置字段（简化版，去掉已移除的设置）
         assert "fullscreen" in graphics
         assert "resolution" in graphics
         assert "vsync" in graphics
-        assert "texture_quality" in graphics
-        assert "shadow_quality" in graphics
-        assert "anti_aliasing" in graphics
-        assert "anisotropic_filtering" in graphics
-        assert "particle_effects" in graphics
-        assert "post_processing" in graphics
 
         # 验证图形设置值
         assert isinstance(graphics["fullscreen"], bool)
         assert isinstance(graphics["vsync"], bool)
-        assert isinstance(graphics["particle_effects"], bool)
-        assert isinstance(graphics["post_processing"], bool)
 
         # 检查分辨率
         resolution = graphics["resolution"]
@@ -128,18 +120,6 @@ class TestGameSettings:
         assert len(resolution) == 2
         assert resolution[0] > 0 and resolution[1] > 0
         assert resolution[0] >= 800 and resolution[1] >= 600, "分辨率设置过低"
-
-        # 检查图形质量设置
-        valid_qualities = ["low", "medium", "high", "ultra"]
-        assert graphics["texture_quality"] in valid_qualities
-        assert graphics["shadow_quality"] in valid_qualities
-
-        # 检查抗锯齿设置
-        valid_aa = ["none", "fxaa", "msaa2x", "msaa4x", "msaa8x"]
-        assert graphics["anti_aliasing"] in valid_aa
-
-        # 检查各向异性过滤
-        assert graphics["anisotropic_filtering"] in [0, 2, 4, 8, 16]
 
     def test_version_settings(self):
         """测试版本设置"""
@@ -149,8 +129,8 @@ class TestGameSettings:
         assert "preferred_version" in settings
         assert "remember_last_version" in settings
 
-        # 验证版本设置
-        valid_versions = ["2d", "3d"]
+        # 验证版本设置（现在支持2.5d）
+        valid_versions = ["2.5d", "3d"]
         assert settings["preferred_version"] in valid_versions
         assert isinstance(settings["remember_last_version"], bool)
 
@@ -175,12 +155,12 @@ class TestGameSettings:
         """测试设置默认值"""
         settings = self.config_manager.get_game_settings()
 
-        # 检查合理的默认值
+        # 检查合理的默认值（调整为800x600的新默认分辨率）
         assert settings["audio"]["effects_volume"] >= 0.5, "音效音量默认值过低"
         assert settings["audio"]["music_volume"] >= 0.5, "音乐音量默认值过低"
         assert settings["gameplay"]["rounds_to_win"] >= 2, "回合数默认值过低"
-        assert settings["graphics"]["resolution"][0] >= 1024, "分辨率默认值过低"
-        assert settings["graphics"]["resolution"][1] >= 768, "分辨率默认值过低"
+        assert settings["graphics"]["resolution"][0] >= 800, "分辨率宽度默认值过低"
+        assert settings["graphics"]["resolution"][1] >= 600, "分辨率高度默认值过低"
 
 
 if __name__ == "__main__":
