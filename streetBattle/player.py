@@ -148,9 +148,9 @@ class Player:
 		if self.node and hasattr(self.node, 'setPos'):
 			self.node.setPos(self.pos)
 			# 确保3D模型被正确父化到render节点
-			if hasattr(self.node, 'reparentTo') and render:
-				self.node.reparentTo(render)
-				print(f"[Player] Reparented {self.name} 3D model to render node")
+			if hasattr(self.node, 'reparentTo') and self.render:
+				self.node.reparentTo(self.render)
+				console_debug(f"[Player] Reparented {self.name} 3D model to render node", "player")
 			
 			# 确保模型在地面上，而不是漂浮
 			self._ensure_ground_contact()

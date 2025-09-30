@@ -429,12 +429,12 @@ class HUD:
                 char_name_p0 = getattr(p0, 'character_name', p0.name if hasattr(p0, 'name') else 'Player 1')
                 
                 if hasattr(p0, 'character_name') and isinstance(char_data_p0, dict):
-                    fighting_style = char_data_p0.get('fighting_style', 'Unknown Style')
-                    nationality = char_data_p0.get('nationality', 'Unknown')
+                    fighting_style = char_data_p0.get('fighting_style', char_data_p0.get('style', 'KOF Fighter'))
+                    nationality = char_data_p0.get('nationality', char_data_p0.get('country', 'International'))
                     info_text = f"{fighting_style}\n{nationality}"
                     self.char_info_p0.setText(info_text)
                 else:
-                    self.char_info_p0.setText("Street Fighter\nUnknown")
+                    self.char_info_p0.setText(f"KOF Fighter\n{char_name_p0}")
                 
                 # Load and set P1 portrait
                 if not hasattr(self, '_p0_portrait_loaded') or self._p0_portrait_loaded != char_name_p0:
@@ -448,12 +448,12 @@ class HUD:
                 char_name_p1 = getattr(p1, 'character_name', p1.name if hasattr(p1, 'name') else 'Player 2')
                 
                 if hasattr(p1, 'character_name') and isinstance(char_data_p1, dict):
-                    fighting_style = char_data_p1.get('fighting_style', 'Unknown Style')
-                    nationality = char_data_p1.get('nationality', 'Unknown')
+                    fighting_style = char_data_p1.get('fighting_style', char_data_p1.get('style', 'KOF Fighter'))
+                    nationality = char_data_p1.get('nationality', char_data_p1.get('country', 'International'))
                     info_text = f"{fighting_style}\n{nationality}"
                     self.char_info_p1.setText(info_text)
                 else:
-                    self.char_info_p1.setText("Street Fighter\nUnknown")
+                    self.char_info_p1.setText(f"KOF Fighter\n{char_name_p1}")
                 
                 # Load and set P2 portrait
                 if not hasattr(self, '_p1_portrait_loaded') or self._p1_portrait_loaded != char_name_p1:

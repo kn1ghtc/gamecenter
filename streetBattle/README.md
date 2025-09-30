@@ -1,12 +1,53 @@
 # 🎯 **Street Battle 终极版** - 全栈格斗游戏系统
 
-**最新版本**: v1.6.0 (2025.09.30)  
+**最新版本**: v1.6.1 (2025.09.30 Phase 2)  
 **状态**: 🟢 生产就绪 (85%商业化就绪度)  
 **3D系统**: ✅ 完全可用（含程序化动画）
 
 ---
 
-## 📢 **最新更新 (2025.09.30)**
+## 🚨 **关键修复 (2025.09.30 Phase 2)**
+
+### ✅ 玩家1显示问题 + 角色验证失败修复
+
+**问题**:
+- Phase 1优化后出现玩家1不显示问题
+- 所有角色在验证时都被判定为"无3D模型"
+- Andy Bogard等禁用角色仍显示警告
+
+**根本原因**:
+`enhanced_character_manager.py`元数据合并逻辑遗漏了关键字段`has_3d_model`、`disabled`、`disabled_reason`
+
+**解决方案**:
+```python
+# enhanced_character_manager.py 第328-333行
+for field in (
+    'portrait_path', 'sprite_path', 'has_portrait', 'has_sprite',
+    'model_path', 'texture_path', 'animation_available', 'voice_available',
+    'category', 'tier', 'has_3d_model', 'disabled', 'disabled_reason'  # ← 新增
+):
+```
+
+**测试验证**:
+```bash
+# 运行Phase 2集成测试
+python -m pytest tests\test_phase2_integration.py -v
+
+# 结果：✅ 8/8 测试通过
+# - Chris角色has_3d_model正确为True
+# - 默认角色Kyo/Iori验证通过
+# - Andy Bogard正确被排除
+# - 所有41个可用角色has_3d_model=True
+```
+
+**影响**:
+- ✅ 所有3D角色现在能正确显示
+- ✅ 角色选择器预览警告消除
+- ✅ 禁用角色不会出现在选择器中
+
+---
+
+## 📢 **Phase 1更新 (2025.09.30)**
 
 ### 🎬 程序化动画系统实现 - 短期解决方案
 

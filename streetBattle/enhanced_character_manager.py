@@ -328,7 +328,7 @@ class EnhancedCharacterManager:
             for field in (
                 'portrait_path', 'sprite_path', 'has_portrait', 'has_sprite',
                 'model_path', 'texture_path', 'animation_available', 'voice_available',
-                'category', 'tier'
+                'category', 'tier', 'has_3d_model', 'disabled', 'disabled_reason'
             ):
                 if field in roster_entry and roster_entry[field] not in (None, ''):
                     existing[field] = roster_entry[field]

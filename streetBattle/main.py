@@ -397,14 +397,14 @@ class StreetBattleGame(ShowBase):
 			return
 		
 		# 🧹 在游戏初始化前先清理旧模型，防止重复创建
-		print("🧹 游戏初始化前清理重复的3D模型...")
+		console_debug("游戏初始化前清理重复的3D模型", "init")
 		try:
 			# 清除缓存的角色模型
 			self.char_manager.clear_character_models()
 			# 清理场景中的重复模型
 			self.char_manager.cleanup_scene_duplicates(self.render)
 		except Exception as e:
-			print(f"⚠️  模型清理失败: {e}")
+			console_warning(f"模型清理失败: {e}", "init")
 		
 		# Camera
 		self.camera.setPos(0, -20, 6)
@@ -446,7 +446,7 @@ class StreetBattleGame(ShowBase):
 				try:
 					self.ground.removeNode()
 				except Exception as remove_error:
-					print(f"[DEBUG] Ground removal failed: {remove_error}")
+					console_debug(f"Ground移除失败: {remove_error}", "arena")
 			self.ground = None
 		arena_root = NodePath('arena_root')
 
@@ -495,7 +495,7 @@ class StreetBattleGame(ShowBase):
 		arena_root.setPos(0, 0, 0)
 		self.ground = arena_root
 		self._build_stage_backdrop()
-		print("Built local textured arena")
+		console_debug("本地纹理竞技场创建完成", "arena")
 
 	def _create_procedural_ground(self):
 		"""Fallback: create flat-colored arena geometry."""
@@ -506,7 +506,7 @@ class StreetBattleGame(ShowBase):
 		card.setTwoSided(True)
 		card.setColor(0.15, 0.15, 0.16, 1)
 		self.ground = card
-		print("Created fallback procedural arena surface")
+		console_debug("备用程序化竞技场创建完成", "arena")
 		self._build_stage_backdrop()
 
 	def _build_stage_backdrop(self):
@@ -516,7 +516,7 @@ class StreetBattleGame(ShowBase):
 				try:
 					self.stage_backdrop.removeNode()
 				except Exception as backdrop_error:
-					print(f"[DEBUG] Stage backdrop removal failed: {backdrop_error}")
+					console_debug(f"舞台背景移除失败: {backdrop_error}", "arena")
 
 			self.stage_backdrop = None
 
@@ -755,7 +755,23 @@ class StreetBattleGame(ShowBase):
 	
 	def _initialize_2_5d_mode(self):
 		"""Initialize 2.5D sprite-based rendering mode"""
-		print("   Initializing 2.5D sprite characters...")
+		console_info("初始化2.5D精灵角色模式", "init")
+		
+		# 🧹 确保清理所有3D模型，防止干扰2.5D显示
+		try:
+			console_debug("清理场景中的3D模型节点...", "cleanup")
+			for node_name in ['player1_model', 'player2_model', 'character_model']:
+				nodes = self.render.findAllMatches(f"**/{node_name}")
+				for node in nodes:
+					if node and not node.isEmpty():
+						node.removeNode()
+						console_debug(f"已移除3D模型节点: {node_name}", "cleanup")
+			
+			# 清理角色管理器中的模型缓存
+			self.char_manager.clear_character_models()
+			console_debug("已清理角色管理器模型缓存", "cleanup")
+		except Exception as e:
+			console_warning(f"清理3D模型时出错: {e}", "cleanup")
 		
 		# Create sprite characters
 		try:
@@ -766,13 +782,13 @@ class StreetBattleGame(ShowBase):
 			)
 			
 			if sprite_p0:
-				print(f"Player 1 sprite created: {self.selected_character}")
+				console_debug(f"玩家1精灵创建成功: {self.selected_character}", "sprite")
 				self.sprite_characters.append(sprite_p0)
 			else:
-				print(f"Failed to create sprite for {self.selected_character}")
+				console_warning(f"创建玩家1精灵失败: {self.selected_character}", "sprite")
 				
 		except Exception as e:
-			print(f"Failed to create player 1 sprite: {e}")
+			console_error(f"创建玩家1精灵异常: {e}", "sprite")
 		
 		try:
 			# Player 2 sprite
@@ -782,15 +798,15 @@ class StreetBattleGame(ShowBase):
 			)
 			
 			if sprite_p1:
-				print(f"Player 2 sprite created: {self.selected_opponent}")
+				console_debug(f"玩家2精灵创建成功: {self.selected_opponent}", "sprite")
 				# Make opponent face left
 				sprite_p1.set_facing(False)
 				self.sprite_characters.append(sprite_p1)
 			else:
-				print(f"Failed to create sprite for {self.selected_opponent}")
+				console_warning(f"创建玩家2精灵失败: {self.selected_opponent}", "sprite")
 				
 		except Exception as e:
-			print(f"Failed to create player 2 sprite: {e}")
+			console_error(f"创建玩家2精灵异常: {e}", "sprite")
 		
 		# Create basic Player objects for game logic (without 3D models)
 		try:
@@ -801,9 +817,9 @@ class StreetBattleGame(ShowBase):
 			p0.render_mode = "2.5d"
 			p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
 			self.players.append(p0)
-			print(f"Player 1 logic created: {self.selected_character}")
+			console_debug(f"玩家1逻辑创建成功: {self.selected_character}", "init")
 		except Exception as e:
-			print(f"Failed to create player 1 logic: {e}")
+			console_error(f"创建玩家1逻辑失败: {e}", "init")
 		
 		try:
 			p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
@@ -813,53 +829,80 @@ class StreetBattleGame(ShowBase):
 			p1.render_mode = "2.5d"
 			p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
 			self.players.append(p1)
-			print(f"Player 2 logic created: {self.selected_opponent}")
+			console_debug(f"玩家2逻辑创建成功: {self.selected_opponent}", "init")
 		except Exception as e:
-			print(f"Failed to create player 2 logic: {e}")
+			console_error(f"创建玩家2逻辑失败: {e}", "init")
 			
-		print(f"🎮 2.5D Mode: {len(self.players)} players, {len(self.sprite_characters)} sprites")
+		console_info(f"2.5D模式: {len(self.players)}个玩家, {len(self.sprite_characters)}个精灵", "init")
 		
 		# Register players for sprite animation system only
 		try:
 			for i, player in enumerate(self.players):
 				# Only register with 2.5D systems
 				if hasattr(player, 'sprite_character') and player.sprite_character:
-					print(f"Registered Player {i+1} for 2.5D sprite animations")
+					console_debug(f"玩家{i+1}已注册2.5D精灵动画系统", "sprite")
 		except Exception as e:
-			print(f"2.5D animation registration failed: {e}")
+			console_warning(f"2.5D动画注册失败: {e}", "sprite")
 	
 	def _initialize_3d_mode(self):
 		"""Initialize 3D model-based rendering mode"""
-		print("   Initializing 3D model characters...")
+		console_info("初始化3D模型角色模式", "init")
 		
 		# 确保有默认角色
 		if not self.selected_character:
 			self.selected_character = "Kyo Kusanagi"
-			print(f"⚠️  No character selected, using default: {self.selected_character}")
+			console_warning(f"未选择角色，使用默认: {self.selected_character}", "init")
+		
+		# 🔧 检查选中的角色是否有有效的3D模型
+		char_data_p0 = self.char_manager.get_character_by_name(self.selected_character)
+		if char_data_p0:
+			is_disabled = char_data_p0.get('disabled', False)
+			has_3d = char_data_p0.get('has_3d_model', False)
+			console_debug(f"验证角色 {self.selected_character}: disabled={is_disabled}, has_3d_model={has_3d}", "init")
+			
+			if is_disabled or not has_3d:
+				console_warning(f"角色 {self.selected_character} 没有有效的3D模型 (disabled={is_disabled}, has_3d={has_3d})，切换到默认角色", "init")
+				self.selected_character = "Kyo Kusanagi"
+		else:
+			console_warning(f"未找到角色数据: {self.selected_character}，切换到默认角色", "init")
 			
 		if not self.selected_opponent:
 			self.selected_opponent = "Iori Yagami"
-			print(f"⚠️  No opponent selected, using default: {self.selected_opponent}")
+			console_warning(f"未选择对手，使用默认: {self.selected_opponent}", "init")
+		
+		# 🔧 检查对手角色是否有有效的3D模型
+		char_data_p1 = self.char_manager.get_character_by_name(self.selected_opponent)
+		if char_data_p1:
+			is_disabled = char_data_p1.get('disabled', False)
+			has_3d = char_data_p1.get('has_3d_model', False)
+			console_debug(f"验证对手 {self.selected_opponent}: disabled={is_disabled}, has_3d_model={has_3d}", "init")
+			
+			if is_disabled or not has_3d:
+				console_warning(f"对手 {self.selected_opponent} 没有有效的3D模型 (disabled={is_disabled}, has_3d={has_3d})，切换到默认对手", "init")
+				self.selected_opponent = "Iori Yagami"
+		else:
+			console_warning(f"未找到对手数据: {self.selected_opponent}，切换到默认对手", "init")
 		
 		# 🧹 在创建新模型前先清理旧模型，避免重复
-		print("🧹 清理旧的3D模型...")
+		console_debug("清理旧的3D模型", "cleanup")
 		try:
 			self.char_manager.clear_character_models()
 			self.char_manager.cleanup_scene_duplicates(self.render)
 		except Exception as e:
-			print(f"⚠️  模型清理失败: {e}")
+			console_warning(f"模型清理失败: {e}", "cleanup")
 		
-		# Create 3D characters using character manager
+		# Create 3D characters using character manager - 统一处理逻辑
+		# 🔧 Player 1 和 Player 2 使用完全相同的初始化逻辑，确保一致性
 		try:
-			# Player 1 - 3D model only
+			# Player 1 - 3D model
 			char_id_p0 = self.selected_character.lower().replace(' ', '_')
-			print(f"\\n🎮 正在创建Player 1: {self.selected_character}")
+			console_info(f"创建玩家1: {self.selected_character} (ID: {char_id_p0})", "model")
 			model_p0 = self.char_manager.create_character_model(
 				self.selected_character, Vec3(-3, 0, 0)
 			)
 			
 			if model_p0:
-				# Create Player object with 3D model
+				console_debug(f"玩家1模型已创建，类型: {type(model_p0)}", "model")
 				try:
 					p0 = Player(self.render, self.loader, name=self.selected_character, 
 							   actor_instance=model_p0, pos=Vec3(-3, 0, 0))
@@ -867,64 +910,61 @@ class StreetBattleGame(ShowBase):
 					p0.character_id = char_id_p0
 					p0.render_mode = "3d"
 					p0.model_3d = model_p0
-					
-					# 添加角色数据用于UI显示
 					p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
 					
-					# 🔧 确保Player 1模型可见性
+					# 🔧 确保模型可见性
 					self._ensure_player_visibility(p0, model_p0, "Player 1")
 					
+					# 🔧 验证模型是否在场景中
+					if model_p0.getParent() == self.render:
+						console_info(f"✓ 玩家1模型已正确附加到场景", "model")
+					else:
+						console_warning(f"⚠ 玩家1模型父节点不是render: {model_p0.getParent()}", "model")
+						# 强制重新附加
+						model_p0.reparentTo(self.render)
+						console_info(f"✓ 玩家1模型已强制重新附加到场景", "model")
+					
 					self.players.append(p0)
-					print(f"✅ Player 1 3D model created: {self.selected_character}")
+					console_info(f"✅ 玩家1 3D模型创建成功: {self.selected_character}", "model")
 				except Exception as e:
-					print(f"❌ Failed to create Player 1 with 3D model: {e}")
-					# Fallback to basic player without 3D model
+					console_error(f"玩家1 3D模型创建失败: {e}", "model")
+					import traceback
+					console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "model")
+					# Fallback to basic player
 					p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
 					p0.character_name = self.selected_character
 					p0.character_id = char_id_p0
 					p0.render_mode = "fallback"
 					p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
 					self.players.append(p0)
-					print(f"✅ Player 1 fallback created: {self.selected_character}")
+					console_info(f"✅ 玩家1 fallback创建成功", "model")
 			else:
-				print(f"⚠️  Player 1 3D model creation failed: {self.selected_character}")
-				# 创建一个基础的Player对象作为fallback
+				console_warning(f"⚠ 玩家1 3D模型加载失败 - 使用fallback", "model")
 				p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
 				p0.character_name = self.selected_character
 				p0.character_id = char_id_p0
 				p0.render_mode = "fallback"
 				p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
 				self.players.append(p0)
-				print(f"✅ Player 1 fallback created: {self.selected_character}")
 				
 		except Exception as e:
-			print(f"❌ Failed to create player 1 3D model: {e}")
-			# 作为最后的fallback - 确保至少有一个Player对象
-			try:
-				p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
-				p0.character_name = self.selected_character
-				p0.character_id = self.selected_character.lower().replace(' ', '_')
-				p0.render_mode = "emergency"
-				p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
-				self.players.append(p0)
-				print(f"✅ Player 1 emergency fallback created")
-			except Exception as fallback_e:
-				print(f"❌ Complete failure creating player 1: {fallback_e}")
-				# 创建最基础的Player对象，不能让players列表为空
-				p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
-				p0.character_data = {}  # 空数据避免UI错误
-				self.players.append(p0)
+			console_error(f"创建玩家1异常: {e}", "model")
+			import traceback
+			console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "model")
+			p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
+			p0.character_data = {}
+			self.players.append(p0)
 		
 		try:
-			# Player 2 - 3D model with same enhancements as Player 1  
+			# Player 2 - 使用与Player 1完全相同的逻辑
 			char_id_p1 = self.selected_opponent.lower().replace(' ', '_')
-			print(f"\\n🎮 正在创建Player 2: {self.selected_opponent}")
+			console_info(f"创建玩家2: {self.selected_opponent} (ID: {char_id_p1})", "model")
 			model_p1 = self.char_manager.create_character_model(
 				self.selected_opponent, Vec3(3, 0, 0)
 			)
 			
 			if model_p1:
-				# Create Player object with 3D model using same logic as Player 1
+				console_debug(f"玩家2模型已创建，类型: {type(model_p1)}", "model")
 				try:
 					p1 = Player(self.render, self.loader, name=self.selected_opponent,
 							   actor_instance=model_p1, pos=Vec3(3, 0, 0))
@@ -932,55 +972,52 @@ class StreetBattleGame(ShowBase):
 					p1.character_id = char_id_p1
 					p1.render_mode = "3d"
 					p1.model_3d = model_p1
-					
-					# 添加角色数据用于UI显示
 					p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
 					
-					# 🔧 确保Player 2模型可见性 - 与Player 1使用相同的处理
+					# 🔧 确保模型可见性 - 与Player 1使用相同的处理
 					self._ensure_player_visibility(p1, model_p1, "Player 2")
 					
+					# 🔧 验证模型是否在场景中
+					if model_p1.getParent() == self.render:
+						console_info(f"✓ 玩家2模型已正确附加到场景", "model")
+					else:
+						console_warning(f"⚠ 玩家2模型父节点不是render: {model_p1.getParent()}", "model")
+						# 强制重新附加
+						model_p1.reparentTo(self.render)
+						console_info(f"✓ 玩家2模型已强制重新附加到场景", "model")
+					
 					self.players.append(p1)
-					print(f"✅ Player 2 3D model created: {self.selected_opponent}")
+					console_info(f"✅ 玩家2 3D模型创建成功: {self.selected_opponent}", "model")
 				except Exception as e:
-					print(f"❌ Failed to create Player 2 with 3D model: {e}")
-					# Fallback to basic player without 3D model
+					console_error(f"玩家2 3D模型创建失败: {e}", "model")
+					import traceback
+					console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "model")
+					# Fallback to basic player
 					p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
 					p1.character_name = self.selected_opponent
 					p1.character_id = char_id_p1
 					p1.render_mode = "fallback"
 					p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
 					self.players.append(p1)
-					print(f"✅ Player 2 fallback created: {self.selected_opponent}")
+					console_info(f"✅ 玩家2 fallback创建成功", "model")
 			else:
-				print(f"⚠️  Player 2 3D model creation failed: {self.selected_opponent}")
-				# 创建一个基础的Player对象作为fallback
+				console_warning(f"⚠ 玩家2 3D模型加载失败 - 使用fallback", "model")
 				p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
 				p1.character_name = self.selected_opponent
 				p1.character_id = char_id_p1
 				p1.render_mode = "fallback"
 				p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
 				self.players.append(p1)
-				print(f"✅ Player 2 fallback created: {self.selected_opponent}")
 				
 		except Exception as e:
-			print(f"❌ Failed to create player 2 3D model: {e}")
-			# 作为最后的fallback - 确保至少有两个Player对象
-			try:
-				p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
-				p1.character_name = self.selected_opponent
-				p1.character_id = self.selected_opponent.lower().replace(' ', '_')
-				p1.render_mode = "emergency"
-				p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
-				self.players.append(p1)
-				print(f"✅ Player 2 emergency fallback created")
-			except Exception as fallback_e:
-				print(f"❌ Complete failure creating player 2: {fallback_e}")
-				# 创建最基础的Player对象，不能让players列表只有一个
-				p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
-				p1.character_data = {}  # 空数据避免UI错误
-				self.players.append(p1)
+			console_error(f"创建玩家2异常: {e}", "model")
+			import traceback
+			console_debug(f"堆栈跟踪:\n{traceback.format_exc()}", "model")
+			p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
+			p1.character_data = {}
+			self.players.append(p1)
 			
-		print(f"🎮 3D Mode: {len(self.players)} players with 3D models")
+		console_info(f"3D模式: {len(self.players)}个玩家已创建", "init")
 		
 		# Register players for 3D animation systems only
 		try:
@@ -1048,12 +1085,12 @@ class StreetBattleGame(ShowBase):
 					if max_dim > 2.5:  # 需要缩放
 						auto_scale = 2.0 / max_dim
 						model.setScale(auto_scale)
-						print(f"🔧 {player_name}重新应用缩放: {auto_scale:.3f}")
+						console_debug(f"{player_name}重新应用缩放: {auto_scale:.3f}", "model")
 			
-			print(f"✅ {player_name}可见性确保完成")
+			console_info(f"{player_name}可见性确保完成", "model")
 			
 		except Exception as e:
-			print(f"❌ {player_name}可见性设置失败: {e}")
+			console_error(f"{player_name}可见性设置失败: {e}", "model")
 
 	def start_network(self, mode='local', host_ip=None, port=12000):
 		self.mode = mode
@@ -1356,15 +1393,17 @@ Jump + Attack = Air Attack"""
 				pos = h.get('pos')
 				damage = h.get('damage', 0)
 				
+				# 🔧 优化控制台输出 - 只在重要时刻输出
 				if hit_type == 'combo' or damage > 15:
 					# Enhanced combo effect
 					self.vfx.play_combo_effect(pos) 
 					self.audio.play_sfx('combo')
-					print("💥 Combo hit!")
+					console_info(f"💥 Combo hit! Damage: {damage}", "combat")
 				elif hit_type == 'special':
 					# Special move effect
 					move_name = h.get('move_name', 'fireball')
 					self.vfx.play_special_move_effect(pos, move_name)
+					console_info(f"✨ Special move: {move_name}", "combat")
 					self.audio.play_sfx('combo')
 					print(f"🔥 Special move: {move_name}")
 				else:
@@ -1400,7 +1439,9 @@ Jump + Attack = Air Attack"""
 							
 							self.animator.start_hit_reaction(f"player_{target_idx}", hit_direction)
 				except Exception as e:
-					print(f"Hit animation failed: {e}")
+					# 🔧 减少错误输出频率
+					if self.frame % 300 == 0:  # 每5秒最多输出一次
+						console_warning(f"击中动画失败: {e}", "animation")
 
 		# Always update players and sprites
 		for i, p in enumerate(self.players):
@@ -1428,8 +1469,9 @@ Jump + Attack = Air Attack"""
 						try:
 							self.animator.update_animation_state(f"player_{i}", p.state, player_inputs)
 						except Exception as e:
-							if self.frame % 300 == 0:  # Only log every 5 seconds
-								print(f"Animation update error: {e}")
+							# 🔧 减少错误输出频率 - 每5秒最多一次
+							if self.frame % 300 == 0:
+								console_warning(f"动画更新错误 (player {i}): {e}", "animation")
 					
 					# Update KOF animation system (primary animation system for 3D)
 					char_name = self.selected_character if i == 0 else self.selected_opponent
@@ -1438,8 +1480,9 @@ Jump + Attack = Air Attack"""
 							char_id = char_name.lower().replace(' ', '_')
 							self.kof_animator.update_animation(char_id, player_inputs, p.state)
 						except Exception as e:
-							if self.frame % 300 == 0:  # Only log every 5 seconds
-								print(f"KOF animation update error: {e}")
+							# 🔧 减少错误输出频率 - 每5秒最多一次
+							if self.frame % 300 == 0:
+								console_warning(f"KOF动画更新错误 ({char_id}): {e}", "animation")
 
 		# camera shake for VFX
 		if hasattr(self.vfx, '_shake_timer') and self.vfx._shake_timer > 0 and self.cam:
@@ -1496,24 +1539,24 @@ Jump + Attack = Air Attack"""
 	
 	def _on_state_change(self, new_state, previous_state):
 		"""Handle game state changes"""
-		print(f"Game state changed: {previous_state.value if previous_state else 'None'} -> {new_state.value}")
+		console_info(f"游戏状态变化: {previous_state.value if previous_state else 'None'} -> {new_state.value}", "state")
 		
 		if new_state == GameState.ROUND_START:
 			# Reset player positions and health for new round
 			self._reset_round()
 		elif new_state == GameState.FIGHTING:
 			# Enable input processing
-			pass
+			console_debug("战斗开始 - 输入处理已启用", "state")
 		elif new_state == GameState.ROUND_END:
 			# Disable input processing
-			pass
+			console_debug("回合结束 - 输入处理已禁用", "state")
 		elif new_state == GameState.GAME_OVER:
 			# Show final results
-			pass
+			console_info("游戏结束", "state")
 	
 	def _on_round_start(self, round_num):
 		"""Handle round start"""
-		print(f"Round {round_num} starting!")
+		console_info(f"回合 {round_num} 开始!", "round")
 		self.hud.show_round_start(round_num)
 		
 		# Reset players for new round
@@ -1524,7 +1567,7 @@ Jump + Attack = Air Attack"""
 		if winner_idx is not None:
 			winner_name = getattr(self.players[winner_idx], 'character_name', f'Player {winner_idx + 1}')
 			result_text = "KO" if result_type.value == "ko" else "TIME UP"
-			print(f"Round ended: {winner_name} wins by {result_text}")
+			console_info(f"回合结束: {winner_name} 获胜 ({result_text})", "round")
 			self.hud.show_game_result(winner_name, result_text)
 			
 			# Play victory/defeat animations
@@ -1533,19 +1576,19 @@ Jump + Attack = Air Attack"""
 				loser_idx = 1 - winner_idx
 				self.animator.start_defeat_animation(f"player_{loser_idx}")
 			except Exception as e:
-				print(f"Animation trigger failed: {e}")
+				console_warning(f"动画触发失败: {e}", "animation")
 		else:
-			print("Round ended in draw")
+			console_info("回合结束: 平局", "round")
 			self.hud.show_game_result("DRAW", "DRAW")
 	
 	def _on_game_end(self, winner_idx):
 		"""Handle game end"""
 		if winner_idx is not None:
 			winner_name = getattr(self.players[winner_idx], 'character_name', f'Player {winner_idx + 1}')
-			print(f"Game Over! {winner_name} wins the match!")
+			console_info(f"游戏结束! {winner_name} 赢得比赛!", "game")
 			self.hud.show_game_result(f"{winner_name} WINS THE MATCH!", "VICTORY")
 		else:
-			print("Game ended in draw")
+			console_info("游戏结束: 平局", "game")
 			self.hud.show_game_result("DRAW MATCH", "DRAW")
 		
 		# Schedule game restart or return to menu
@@ -1712,8 +1755,9 @@ Jump + Attack = Air Attack"""
 					sprite_char.set_facing(False)
 				
 		except Exception as e:
-			if self.frame % 300 == 0:  # Only log every 5 seconds
-				print(f"Enhanced sprite animation update error for player {player_idx}: {e}")
+			# 🔧 大幅降低错误日志频率 - 每5秒最多一次
+			if self.frame % 300 == 0:
+				console_warning(f"精灵动画更新错误 (player {player_idx}): {e}", "sprite")
 
 	def _extract_body_parts(self, player):
 		"""Extract body parts from player model for animation"""
