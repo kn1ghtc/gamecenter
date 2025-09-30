@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
-2.5D动画增强系统测试
-测试动画插值、残影、打击停顿等功能
+2.5D Animation Enhancement System Test
+Test animation interpolation, motion blur, hit stop and other features
 """
 
 import sys
 from pathlib import Path
 
-# 添加项目路径
+# Add project path
 project_root = Path(__file__).resolve().parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
@@ -22,27 +23,27 @@ from gamecenter.streetBattle.twod5.enhanced_vfx import EnhancedVFXSystem
 
 
 def test_animation_enhancer():
-    """测试动画增强系统"""
+    """Test animation enhancement system"""
     print("=" * 80)
-    print("测试动画增强系统")
+    print("Testing Animation Enhancement System")
     print("=" * 80)
     
     pygame.init()
     
-    # 创建测试屏幕
+    # Create test screen
     screen = pygame.display.set_mode((800, 600))
     pygame.display.set_caption("Animation Enhancer Test")
     clock = pygame.time.Clock()
     
-    # 初始化系统
+    # Initialize systems
     enhancer = AnimationEnhancer(screen_size=(800, 600))
     vfx = EnhancedVFXSystem(800, 600)
     
-    # 创建测试精灵
+    # Create test sprite
     test_surface = pygame.Surface((64, 64), pygame.SRCALPHA)
     pygame.draw.circle(test_surface, (255, 100, 100, 255), (32, 32), 30)
     
-    # 测试变量
+    # Test variables
     position = [100.0, 300.0]
     velocity = [300.0, 0.0]
     hit_test_timer = 0.0
@@ -50,21 +51,21 @@ def test_animation_enhancer():
     running = True
     frame_count = 0
     
-    print("\n测试功能列表:")
-    print("1. 残影效果 (Motion Blur) - 自动显示")
-    print("2. 打击停顿 (Hit Stop) - 按 SPACE 触发")
-    print("3. 冲击闪光 (Impact Flash) - 随打击停顿触发")
-    print("4. 出拳轨迹 (Punch Trail) - 按 P 触发")
-    print("5. 出腿轨迹 (Kick Trail) - 按 K 触发")
-    print("6. 冲击波环 (Impact Ring) - 按 R 触发")
-    print("7. ESC 退出")
+    print("\nFeature List:")
+    print("1. Motion Blur - Automatic display")
+    print("2. Hit Stop - Press SPACE to trigger")
+    print("3. Impact Flash - Triggers with hit stop")
+    print("4. Punch Trail - Press P to trigger")
+    print("5. Kick Trail - Press K to trigger")
+    print("6. Impact Ring - Press R to trigger")
+    print("7. ESC to exit")
     print()
     
     while running:
         dt = clock.tick(60) / 1000.0
         frame_count += 1
         
-        # 处理事件
+        # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
@@ -72,40 +73,40 @@ def test_animation_enhancer():
                 if event.key == pygame.K_ESCAPE:
                     running = False
                 elif event.key == pygame.K_SPACE:
-                    # 触发打击效果
-                    print(f"[Frame {frame_count}] 触发 Heavy Hit")
+                    # Trigger hit effect
+                    print(f"[Frame {frame_count}] Triggered Heavy Hit")
                     enhancer.on_hit("heavy", (position[0], position[1]))
                     vfx.create_hit_effect(position[0], position[1], "heavy")
                     vfx.create_impact_ring(position[0], position[1])
                 elif event.key == pygame.K_p:
-                    # 触发出拳轨迹
-                    print(f"[Frame {frame_count}] 触发 Punch Trail")
+                    # Trigger punch trail
+                    print(f"[Frame {frame_count}] Triggered Punch Trail")
                     end_x = position[0] + 100
                     end_y = position[1]
                     vfx.create_punch_trail(position[0], position[1], end_x, end_y)
                 elif event.key == pygame.K_k:
-                    # 触发出腿轨迹
-                    print(f"[Frame {frame_count}] 触发 Kick Trail")
+                    # Trigger kick trail
+                    print(f"[Frame {frame_count}] Triggered Kick Trail")
                     import math
-                    direction = 0  # 向右
+                    direction = 0  # Right
                     vfx.create_kick_trail(position[0], position[1], direction, radius=80)
                 elif event.key == pygame.K_r:
-                    # 触发冲击波
-                    print(f"[Frame {frame_count}] 触发 Impact Ring")
+                    # Trigger impact ring
+                    print(f"[Frame {frame_count}] Triggered Impact Ring")
                     vfx.create_impact_ring(position[0], position[1])
         
-        # 更新系统
+        # Update systems
         modified_dt = enhancer.update(dt)
         vfx.update(dt)
         
-        # 更新位置 (使用修正后的dt)
+        # Update position (using modified dt)
         position[0] += velocity[0] * modified_dt
         
-        # 边界反弹
+        # Boundary bounce
         if position[0] > 700 or position[0] < 100:
             velocity[0] = -velocity[0]
         
-        # 添加残影帧 (每3帧添加一次)
+        # Add motion blur frame (every 3 frames)
         if frame_count % 3 == 0:
             enhancer.add_motion_blur_frame(
                 test_surface,
@@ -114,35 +115,35 @@ def test_animation_enhancer():
                 force=False
             )
         
-        # 自动触发打击测试 (每2秒)
+        # Auto trigger hit test (every 2 seconds)
         hit_test_timer += dt
         if hit_test_timer > 2.0:
             hit_test_timer = 0.0
-            # 随机触发不同强度的打击
+            # Random trigger different intensity hits
             import random
             hit_types = ["light", "medium", "heavy"]
             hit_type = random.choice(hit_types)
-            print(f"[Frame {frame_count}] 自动触发 {hit_type.upper()} Hit")
+            print(f"[Frame {frame_count}] Auto triggered {hit_type.upper()} Hit")
             enhancer.on_hit(hit_type, (position[0], position[1]))
             vfx.create_hit_effect(position[0], position[1], hit_type)
         
-        # 渲染
+        # Render
         screen.fill((20, 20, 30))
         
-        # 渲染残影
+        # Render motion blur
         enhancer.render_motion_blur(screen)
         
-        # 渲染VFX粒子和轨迹
+        # Render VFX particles and trails
         vfx.render(screen)
         
-        # 渲染主精灵
+        # Render main sprite
         sprite_rect = test_surface.get_rect(center=(int(position[0]), int(position[1])))
         screen.blit(test_surface, sprite_rect)
         
-        # 渲染冲击闪光
+        # Render impact flash
         enhancer.render_impact_flash(screen)
         
-        # 显示信息
+        # Display info
         font = pygame.font.Font(None, 24)
         info_texts = [
             f"FPS: {clock.get_fps():.1f}",
@@ -168,13 +169,13 @@ def test_animation_enhancer():
         pygame.display.flip()
     
     pygame.quit()
-    print("\n测试完成!")
+    print("\nTest completed!")
 
 
 def test_easing_functions():
-    """测试缓动函数"""
+    """Test easing functions"""
     print("\n" + "=" * 80)
-    print("测试缓动函数")
+    print("Testing Easing Functions")
     print("=" * 80)
     
     test_values = [0.0, 0.25, 0.5, 0.75, 1.0]
@@ -197,18 +198,18 @@ def test_easing_functions():
 
 
 if __name__ == "__main__":
-    print("2.5D动画增强系统测试套件")
+    print("2.5D Animation Enhancement System Test Suite")
     print("=" * 80)
     
-    # 测试缓动函数
+    # Test easing functions
     test_easing_functions()
     
-    # 测试动画增强系统
+    # Test animation enhancement system
     try:
         test_animation_enhancer()
     except KeyboardInterrupt:
-        print("\n测试被用户中断")
+        print("\nTest interrupted by user")
     except Exception as e:
-        print(f"\n测试出错: {e}")
+        print(f"\nTest error: {e}")
         import traceback
         traceback.print_exc()

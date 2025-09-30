@@ -6,7 +6,9 @@
                 2,
                 3
             ],
-            "hitstop": 0.18
+            "hitstop": 0.18,
+            "vfx_type": "punch",
+            "vfx_strength": "light"
         },
         "heavy_strike": {
             "animation": "attack",
@@ -14,7 +16,9 @@
                 3,
                 4
             ],
-            "hitstop": 0.24
+            "hitstop": 0.24,
+            "vfx_type": "punch",
+            "vfx_strength": "heavy"
         }
     },
     "character_skills": {
@@ -29,6 +33,8 @@
                     "name": "light_strike",
                     "damage": 10,
                     "cooldown": 0.65,
+                    "vfx_type": "punch",
+                    "vfx_strength": "light",
                     "followups": {
                         "special": "heavy_strike"
                     }
@@ -36,7 +42,9 @@
                 {
                     "name": "heavy_strike",
                     "damage": 18,
-                    "cooldown": 1.25
+                    "cooldown": 1.25,
+                    "vfx_type": "kick",
+                    "vfx_strength": "heavy"
                 }
             ]
         },
@@ -51,13 +59,17 @@
                     "name": "dark_flame_strike",
                     "damage": 12,
                     "cooldown": 0.7,
-                    "element": "dark_flame"
+                    "element": "dark_flame",
+                    "vfx_type": "punch",
+                    "vfx_strength": "medium"
                 },
                 {
                     "name": "maiden_masher",
                     "damage": 25,
                     "cooldown": 1.5,
-                    "element": "dark_flame"
+                    "element": "dark_flame",
+                    "vfx_type": "special",
+                    "vfx_strength": "special"
                 }
             ]
         },
@@ -72,13 +84,17 @@
                     "name": "power_wave",
                     "damage": 8,
                     "cooldown": 0.6,
-                    "projectile": true
+                    "projectile": true,
+                    "vfx_type": "special",
+                    "vfx_strength": "medium"
                 },
                 {
                     "name": "burn_knuckle",
                     "damage": 20,
                     "cooldown": 1.3,
-                    "dash_attack": true
+                    "dash_attack": true,
+                    "vfx_type": "punch",
+                    "vfx_strength": "heavy"
                 }
             ]
         }

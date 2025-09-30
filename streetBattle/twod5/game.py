@@ -157,6 +157,12 @@ class SpriteBattleGame:
         self.roster_map, self.roster_order = self._load_roster_config()
         self.current_player_key: Optional[str] = None
         self.current_cpu_key: Optional[str] = None
+        
+        # Initialize VFX and Animation Enhancement System
+        from .enhanced_vfx import EnhancedVFXSystem
+        from .animation_enhancer import AnimationEnhancer
+        self.vfx_system: Optional[EnhancedVFXSystem] = None
+        self.animation_enhancer: Optional[AnimationEnhancer] = None
 
     # ------------------------------------------------------------------
     # Configuration loading helpers
@@ -452,6 +458,12 @@ class SpriteBattleGame:
         self.shake_offset = (0.0, 0.0)
         self.last_player_health = self.player.health if self.player else None
         self.last_cpu_health = self.cpu.health if self.cpu else None
+        
+        # Initialize VFX and Animation Enhancement System
+        from .enhanced_vfx import EnhancedVFXSystem
+        from .animation_enhancer import AnimationEnhancer
+        self.vfx_system = EnhancedVFXSystem(self.width, self.height)
+        self.animation_enhancer = AnimationEnhancer(screen_size=(self.width, self.height))
 
     # ------------------------------------------------------------------
     # Fighter creation
@@ -760,6 +772,32 @@ class SpriteBattleGame:
 
         player_damage = max(0, prev_player_health - self.player.health)
         cpu_damage = max(0, prev_cpu_health - self.cpu.health)
+        
+        # Trigger VFX effects on hit
+        if self.vfx_system:
+            if player_damage > 0:
+                # Player was hit
+                hit_type = "light" if player_damage < 50 else ("medium" if player_damage < 100 else "heavy")
+                self.vfx_system.create_hit_effect(
+                    self.player.position.x, 
+                    self.player.position.y - 90, 
+                    hit_type
+                )
+                # Create attack trails based on CPU's active skill
+                if self.cpu.active_skill:
+                    self._create_skill_vfx(self.cpu, self.player)
+            elif cpu_damage > 0:
+                # CPU was hit
+                hit_type = "light" if cpu_damage < 50 else ("medium" if cpu_damage < 100 else "heavy")
+                self.vfx_system.create_hit_effect(
+                    self.cpu.position.x, 
+                    self.cpu.position.y - 90, 
+                    hit_type
+                )
+                # Create attack trails based on player's active skill
+                if self.player.active_skill:
+                    self._create_skill_vfx(self.player, self.cpu)
+        
         if player_damage > 0:
             self._trigger_camera_shake(player_damage)
         elif cpu_damage > 0:
@@ -779,6 +817,58 @@ class SpriteBattleGame:
                     self._end_match(self.player.name)
                 else:
                     self._end_match(self.cpu.name)
+        
+        # Update VFX and Animation Enhancement systems
+        if self.vfx_system:
+            self.vfx_system.update(dt)
+        if self.animation_enhancer:
+            self.animation_enhancer.update(dt)
+    
+    def _create_skill_vfx(self, attacker: Fighter, target: Fighter) -> None:
+        """Create visual effects based on the active skill"""
+        if not self.vfx_system or not attacker.active_skill:
+            return
+        
+        skill_name = attacker.active_skill.name.lower()
+        attacker_x, attacker_y = attacker.position.x, attacker.position.y - 90
+        target_x, target_y = target.position.x, target.position.y - 90
+        
+        # Try to get VFX configuration from skill config
+        vfx_type = None
+        vfx_strength = "medium"
+        
+        # Search for skill config in character_skills
+        if hasattr(self, 'skill_config') and 'character_skills' in self.skill_config:
+            for char_name, char_config in self.skill_config['character_skills'].items():
+                for skill in char_config.get('skills', []):
+                    if skill.get('name', '').lower() == skill_name:
+                        vfx_type = skill.get('vfx_type', 'punch')
+                        vfx_strength = skill.get('vfx_strength', 'medium')
+                        break
+                if vfx_type:
+                    break
+        
+        # Fallback: Determine VFX type based on skill name if not configured
+        if not vfx_type:
+            if "punch" in skill_name or "jab" in skill_name or "strike" in skill_name:
+                vfx_type = "punch"
+            elif "kick" in skill_name:
+                vfx_type = "kick"
+            elif "special" in skill_name or "super" in skill_name:
+                vfx_type = "special"
+            else:
+                vfx_type = "punch"  # Default
+        
+        # Create VFX based on type
+        if vfx_type == "punch":
+            self.vfx_system.create_punch_trail(attacker_x, attacker_y, target_x, target_y)
+        elif vfx_type == "kick":
+            direction = 0 if attacker.facing > 0 else 180
+            self.vfx_system.create_kick_trail(attacker_x, attacker_y, direction, radius=80)
+        elif vfx_type == "special":
+            self.vfx_system.create_impact_ring(target_x, target_y)
+            if vfx_strength == "special":
+                self.vfx_system.create_hit_effect(target_x, target_y, "special")
 
     def _end_match(self, winner: Optional[str]) -> None:
         self.match_over = True
@@ -795,6 +885,15 @@ class SpriteBattleGame:
         self.hud.draw_background(self.screen, offset)
         self.player.draw(self.screen, self.floor_y, offset)
         self.cpu.draw(self.screen, self.floor_y, offset)
+        
+        # Render VFX particles and trails
+        if self.vfx_system:
+            self.vfx_system.render(self.screen, offset)
+        
+        # Render motion blur
+        if self.animation_enhancer:
+            self.animation_enhancer.render_motion_blur(self.screen)
+        
         self.hud.draw(
             self.screen,
             player=self.player,
@@ -808,6 +907,11 @@ class SpriteBattleGame:
             help_hint=self.help_content.hint,
             banner_text=self.banner_message,
         )
+        
+        # Render impact flash on top
+        if self.animation_enhancer:
+            self.animation_enhancer.render_impact_flash(self.screen)
+        
         pygame.display.flip()
 
 
