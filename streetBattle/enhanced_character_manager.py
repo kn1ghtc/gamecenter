@@ -293,6 +293,11 @@ class EnhancedCharacterManager:
             print(f"[EnhancedCharacterManager] Loaded roster metadata for {len(roster_payload)} characters from {loaded_from.name}")
 
         for char_id, roster_entry in roster_payload.items():
+            # ✅ 跳过disabled角色（NodePath模型）
+            if roster_entry.get('disabled', False):
+                print(f"[CharacterManager] Skipping disabled character: {roster_entry.get('display_name', char_id)} - {roster_entry.get('disabled_reason', 'No reason provided')}")
+                continue
+            
             merged_id = roster_entry.get('id') or char_id
             canonical_key = self._normalise_character_key(merged_id) or merged_id
 

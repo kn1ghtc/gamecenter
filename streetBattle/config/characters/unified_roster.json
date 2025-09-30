@@ -7,7 +7,9 @@
     "model_path": "assets/characters/andy_bogard",
     "has_portrait": true,
     "has_sprite": true,
-    "has_3d_model": false
+    "has_3d_model": false,
+    "disabled": true,
+    "disabled_reason": "NodePath model (not Actor) - removed for 3D animation system"
   },
   "angel": {
     "id": "angel",
@@ -57,7 +59,9 @@
     "model_path": "assets/characters/benimaru_nikaido",
     "has_portrait": false,
     "has_sprite": true,
-    "has_3d_model": false
+    "has_3d_model": false,
+    "disabled": true,
+    "disabled_reason": "NodePath model (not Actor) - removed for 3D animation system"
   },
   "chizuru_kagura": {
     "id": "chizuru_kagura",
@@ -247,7 +251,9 @@
     "model_path": "assets/characters/maps",
     "has_portrait": false,
     "has_sprite": false,
-    "has_3d_model": true
+    "has_3d_model": true,
+    "disabled": true,
+    "disabled_reason": "NodePath model (not Actor) - removed for 3D animation system"
   },
   "mature": {
     "id": "mature",
@@ -427,7 +433,9 @@
     "model_path": "assets/characters/wolfgang",
     "has_portrait": false,
     "has_sprite": true,
-    "has_3d_model": false
+    "has_3d_model": false,
+    "disabled": true,
+    "disabled_reason": "NodePath model (not Actor) - removed for 3D animation system"
   },
   "wolfgang_krauser": {
     "id": "wolfgang_krauser",

@@ -12,6 +12,14 @@ from direct.actor.Actor import Actor
 from panda3d.core import Vec3
 import time
 
+# 🎬 导入程序化动画系统
+try:
+    from gamecenter.streetBattle.procedural_animation_system import ProceduralAnimationSystem
+    PROCEDURAL_ANIMATION_AVAILABLE = True
+except ImportError:
+    print("⚠️  程序化动画系统未找到，将只使用真实动画")
+    PROCEDURAL_ANIMATION_AVAILABLE = False
+
 
 class AnimationState(Enum):
     """3D角色动画状态枚举"""
@@ -58,6 +66,16 @@ class Enhanced3DAnimationStateMachine:
         self.loop_states = set()
         self.animation_callbacks = {}
         
+        # 🎬 初始化程序化动画系统
+        self.procedural_system = None
+        self.use_procedural_animation = False
+        if PROCEDURAL_ANIMATION_AVAILABLE:
+            try:
+                self.procedural_system = ProceduralAnimationSystem()
+                print(f"✅ 程序化动画系统已就绪: {character_name}")
+            except Exception as e:
+                print(f"⚠️  程序化动画系统初始化失败: {e}")
+        
         # 安全性和错误处理
         self.is_valid = self._validate_actor()
         self.error_count = 0
@@ -82,12 +100,20 @@ class Enhanced3DAnimationStateMachine:
                 return False
             
             # 检查可用动画
+            has_real_animations = False
             if hasattr(self.actor, 'getAnimNames'):
                 anim_names = self.actor.getAnimNames()
                 if anim_names:
-                    print(f"📽️ 发现{len(anim_names)}个动画: {list(anim_names)}")
+                    has_real_animations = True
+                    print(f"📽️ 发现{len(anim_names)}个真实动画: {list(anim_names)}")
                 else:
-                    print(f"⚠️  {self.character_name}: 没有发现可用动画")
+                    print(f"⚠️  {self.character_name}: 没有发现真实动画，将使用程序化动画")
+                    self.use_procedural_animation = True
+            else:
+                print(f"⚠️  {self.character_name}: Actor不支持动画，将使用程序化动画")
+                self.use_procedural_animation = True
+            
+            return True
             
             return True
             
@@ -279,13 +305,26 @@ class Enhanced3DAnimationStateMachine:
     def _play_animation_for_state(self, state: AnimationState) -> bool:
         """为指定状态播放动画"""
         try:
+            # 🎬 如果需要使用程序化动画
+            if self.use_procedural_animation and self.procedural_system:
+                return self._play_procedural_animation(state)
+            
+            # 尝试播放真实动画
             if not hasattr(self.actor, 'getAnimNames'):
                 print(f"⚠️  Actor不支持动画播放")
+                # Fallback到程序化动画
+                if self.procedural_system:
+                    self.use_procedural_animation = True
+                    return self._play_procedural_animation(state)
                 return False
             
             available_anims = list(self.actor.getAnimNames())
             if not available_anims:
-                print(f"⚠️  没有可用动画")
+                print(f"⚠️  没有可用真实动画，切换到程序化动画")
+                # Fallback到程序化动画
+                if self.procedural_system:
+                    self.use_procedural_animation = True
+                    return self._play_procedural_animation(state)
                 return False
             
             # 尝试寻找匹配的动画名称
@@ -301,7 +340,7 @@ class Enhanced3DAnimationStateMachine:
                 self.actor.play(anim_name, loop=loop)
                 self.actor.setPlayRate(speed, anim_name)
                 
-                print(f"🎭 播放动画: {anim_name} (循环:{loop}, 速度:{speed})")
+                print(f"🎭 播放真实动画: {anim_name} (循环:{loop}, 速度:{speed})")
                 return True
             else:
                 # 如果没有找到特定动画，播放第一个可用动画
@@ -313,6 +352,51 @@ class Enhanced3DAnimationStateMachine:
                 
         except Exception as e:
             self._handle_error(f"动画播放失败: {e}")
+            # 最后的fallback
+            if self.procedural_system and not self.use_procedural_animation:
+                print(f"⚠️  尝试使用程序化动画作为最后fallback")
+                self.use_procedural_animation = True
+                return self._play_procedural_animation(state)
+            return False
+    
+    def _play_procedural_animation(self, state: AnimationState) -> bool:
+        """播放程序化动画"""
+        if not self.procedural_system:
+            return False
+        
+        try:
+            # 映射AnimationState到程序化动画名称
+            animation_map = {
+                AnimationState.IDLE: 'idle',
+                AnimationState.WALK: 'walk',
+                AnimationState.RUN: 'run',
+                AnimationState.JUMP: 'jump',
+                AnimationState.ATTACK_LIGHT: 'attack_light',
+                AnimationState.ATTACK_HEAVY: 'attack_heavy',
+                AnimationState.HURT: 'hurt',
+                AnimationState.KNOCKDOWN: 'hurt',  # knockdown使用hurt动画
+                AnimationState.VICTORY: 'victory',
+                AnimationState.DEFEAT: 'defeat',
+                AnimationState.BLOCK: 'idle',  # block使用idle动画
+                AnimationState.SPECIAL_MOVE: 'attack_heavy'  # 特殊技使用重攻击动画
+            }
+            
+            anim_name = animation_map.get(state, 'idle')
+            loop = state in self.loop_states
+            
+            # 播放程序化动画
+            self.procedural_system.play_animation(
+                self.actor, 
+                anim_name, 
+                self.character_name,
+                loop=loop
+            )
+            
+            print(f"🎬 播放程序化动画: {anim_name} (循环:{loop})")
+            return True
+            
+        except Exception as e:
+            print(f"❌ 程序化动画播放失败: {e}")
             return False
     
     def _find_animation_for_state(self, state: AnimationState, available_anims: List[str]) -> Optional[str]:
@@ -393,6 +477,11 @@ class Enhanced3DAnimationStateMachine:
         try:
             if self.actor and hasattr(self.actor, 'stop'):
                 self.actor.stop()
+            
+            # 🎬 清理程序化动画系统
+            if self.procedural_system:
+                self.procedural_system.stop_animation(self.character_name)
+            
             self.animation_callbacks.clear()
             self.animation_queue.clear()
             print(f"✅ 3D动画状态机清理完成: {self.character_name}")
