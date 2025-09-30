@@ -396,6 +396,14 @@ class StreetBattleGame(ShowBase):
 		if self.game_initialized:
 			return
 		
+		# 🧹 清理重复的3D模型避免显示4个角色
+		print("🧹 Cleaning up duplicate models before game start...")
+		try:
+			self.char_manager.clear_character_models()
+			self.char_manager.cleanup_scene_duplicates(self.render)
+		except Exception as e:
+			print(f"⚠️  Model cleanup failed: {e}")
+		
 		# Camera
 		self.camera.setPos(0, -20, 6)
 		self.camera.lookAt(0, 0, 2)
@@ -789,6 +797,7 @@ class StreetBattleGame(ShowBase):
 			p0.character_id = char_id_p0
 			p0.sprite_character = sprite_p0 if len(self.sprite_characters) > 0 else None
 			p0.render_mode = "2.5d"
+			p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
 			self.players.append(p0)
 			print(f"Player 1 logic created: {self.selected_character}")
 		except Exception as e:
@@ -800,6 +809,7 @@ class StreetBattleGame(ShowBase):
 			p1.character_id = char_id_p1
 			p1.sprite_character = sprite_p1 if len(self.sprite_characters) > 1 else None
 			p1.render_mode = "2.5d"
+			p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
 			self.players.append(p1)
 			print(f"Player 2 logic created: {self.selected_opponent}")
 		except Exception as e:
@@ -846,6 +856,10 @@ class StreetBattleGame(ShowBase):
 					p0.character_id = char_id_p0
 					p0.render_mode = "3d"
 					p0.model_3d = model_p0
+					
+					# 添加角色数据用于UI显示
+					p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
+					
 					self.players.append(p0)
 					print(f"✅ Player 1 3D model created: {self.selected_character}")
 				except Exception as e:
@@ -855,6 +869,7 @@ class StreetBattleGame(ShowBase):
 					p0.character_name = self.selected_character
 					p0.character_id = char_id_p0
 					p0.render_mode = "fallback"
+					p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
 					self.players.append(p0)
 					print(f"✅ Player 1 fallback created: {self.selected_character}")
 			else:
@@ -864,6 +879,7 @@ class StreetBattleGame(ShowBase):
 				p0.character_name = self.selected_character
 				p0.character_id = char_id_p0
 				p0.render_mode = "fallback"
+				p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
 				self.players.append(p0)
 				print(f"✅ Player 1 fallback created: {self.selected_character}")
 				
@@ -875,23 +891,25 @@ class StreetBattleGame(ShowBase):
 				p0.character_name = self.selected_character
 				p0.character_id = self.selected_character.lower().replace(' ', '_')
 				p0.render_mode = "emergency"
+				p0.character_data = self.char_manager.get_character_by_name(self.selected_character)
 				self.players.append(p0)
 				print(f"✅ Player 1 emergency fallback created")
 			except Exception as fallback_e:
 				print(f"❌ Complete failure creating player 1: {fallback_e}")
 				# 创建最基础的Player对象，不能让players列表为空
 				p0 = Player(self.render, self.loader, name=self.selected_character, pos=Vec3(-3, 0, 0))
+				p0.character_data = {}  # 空数据避免UI错误
 				self.players.append(p0)
 		
 		try:
-			# Player 2 - 3D model only  
+			# Player 2 - 3D model with same enhancements as Player 1  
 			char_id_p1 = self.selected_opponent.lower().replace(' ', '_')
 			model_p1 = self.char_manager.create_character_model(
 				self.selected_opponent, Vec3(3, 0, 0)
 			)
 			
 			if model_p1:
-				# Create Player object with 3D model
+				# Create Player object with 3D model using same logic as Player 1
 				try:
 					p1 = Player(self.render, self.loader, name=self.selected_opponent,
 							   actor_instance=model_p1, pos=Vec3(3, 0, 0))
@@ -899,6 +917,31 @@ class StreetBattleGame(ShowBase):
 					p1.character_id = char_id_p1
 					p1.render_mode = "3d"
 					p1.model_3d = model_p1
+					
+					# 添加角色数据用于UI显示
+					p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
+					
+					# 应用与Player1相同的增强功能
+					if hasattr(p1, 'model_3d') and p1.model_3d:
+						# 确保模型正确显示和缩放（与Player1相同的处理）
+						if not p1.model_3d.isEmpty():
+							# 检查模型是否需要额外的可见性修复
+							if hasattr(self.char_manager, '_ensure_model_visibility'):
+								self.char_manager._ensure_model_visibility(p1.model_3d, self.selected_opponent)
+							
+							# 应用智能缩放（如果尚未应用）
+							current_scale = p1.model_3d.getScale()
+							if abs(current_scale.x - 1.0) < 0.01:  # 如果还是默认缩放
+								bounds = p1.model_3d.getTightBounds()
+								if bounds:
+									min_p, max_p = bounds
+									size = max_p - min_p
+									max_dim = max(size.x, size.y, size.z)
+									if max_dim > 2.5:  # 需要缩放
+										auto_scale = 2.0 / max_dim
+										p1.model_3d.setScale(auto_scale)
+										print(f"🔧 Player2额外缩放应用: {auto_scale:.3f}")
+					
 					self.players.append(p1)
 					print(f"✅ Player 2 3D model created: {self.selected_opponent}")
 				except Exception as e:
@@ -908,6 +951,7 @@ class StreetBattleGame(ShowBase):
 					p1.character_name = self.selected_opponent
 					p1.character_id = char_id_p1
 					p1.render_mode = "fallback"
+					p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
 					self.players.append(p1)
 					print(f"✅ Player 2 fallback created: {self.selected_opponent}")
 			else:
@@ -917,6 +961,7 @@ class StreetBattleGame(ShowBase):
 				p1.character_name = self.selected_opponent
 				p1.character_id = char_id_p1
 				p1.render_mode = "fallback"
+				p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
 				self.players.append(p1)
 				print(f"✅ Player 2 fallback created: {self.selected_opponent}")
 				
@@ -928,12 +973,14 @@ class StreetBattleGame(ShowBase):
 				p1.character_name = self.selected_opponent
 				p1.character_id = self.selected_opponent.lower().replace(' ', '_')
 				p1.render_mode = "emergency"
+				p1.character_data = self.char_manager.get_character_by_name(self.selected_opponent)
 				self.players.append(p1)
 				print(f"✅ Player 2 emergency fallback created")
 			except Exception as fallback_e:
 				print(f"❌ Complete failure creating player 2: {fallback_e}")
 				# 创建最基础的Player对象，不能让players列表只有一个
 				p1 = Player(self.render, self.loader, name=self.selected_opponent, pos=Vec3(3, 0, 0))
+				p1.character_data = {}  # 空数据避免UI错误
 				self.players.append(p1)
 			
 		print(f"🎮 3D Mode: {len(self.players)} players with 3D models")

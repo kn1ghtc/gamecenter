@@ -199,6 +199,92 @@ class Player:
 		skill_damage = self.character_stats_config.get("skill_damage", {})
 		return skill_damage.get(skill_name, 50)
 	
+	def request_animation_state(self, animation_state, force=False):
+		"""请求3D动画状态改变"""
+		try:
+			if hasattr(self, 'animation_state_machine') and self.animation_state_machine:
+				# 使用新的3D动画状态机
+				success = self.animation_state_machine.request_state_change(animation_state, force)
+				if success:
+					console_debug(f"Animation state changed to: {animation_state.value}", "animation")
+				return success
+			else:
+				# 如果没有3D动画状态机，记录调试信息
+				console_debug(f"No 3D animation state machine for {self.name}, requested: {animation_state.value if hasattr(animation_state, 'value') else animation_state}", "animation")
+				return False
+		except Exception as e:
+			console_error(f"Failed to request animation state {animation_state}: {e}", "animation")
+			return False
+	
+	def get_current_animation_state(self):
+		"""获取当前3D动画状态"""
+		try:
+			if hasattr(self, 'animation_state_machine') and self.animation_state_machine:
+				return self.animation_state_machine.get_current_state()
+			else:
+				return None
+		except Exception as e:
+			console_error(f"Failed to get animation state: {e}", "animation")
+			return None
+	
+	def play_animation(self, anim_name, loop=True):
+		"""播放指定的动画"""
+		try:
+			if isinstance(self.node, Actor) and hasattr(self.node, 'play'):
+				available_anims = list(self.node.getAnimNames()) if hasattr(self.node, 'getAnimNames') else []
+				
+				if anim_name in available_anims:
+					self.node.stop()  # 停止当前动画
+					self.node.play(anim_name, loop=loop)
+					console_debug(f"Playing animation: {anim_name} (loop: {loop})", "animation")
+					return True
+				else:
+					# 尝试寻找相似的动画名称
+					for available in available_anims:
+						if anim_name.lower() in available.lower() or available.lower() in anim_name.lower():
+							self.node.stop()
+							self.node.play(available, loop=loop)
+							console_debug(f"Playing similar animation: {available} for requested: {anim_name}", "animation")
+							return True
+					
+					console_debug(f"Animation '{anim_name}' not found. Available: {available_anims}", "animation")
+					return False
+			else:
+				console_debug(f"Node is not an Actor or has no play method: {type(self.node)}", "animation")
+				return False
+		except Exception as e:
+			console_error(f"Failed to play animation {anim_name}: {e}", "animation")
+			return False
+	
+	def update_3d_animation_based_on_state(self):
+		"""根据玩家状态更新3D动画"""
+		try:
+			# 将游戏状态映射到动画状态
+			state_mapping = {
+				'idle': AnimationState.IDLE,
+				'walking': AnimationState.WALK,
+				'running': AnimationState.RUN,
+				'jumping': AnimationState.JUMP,
+				'attacking': AnimationState.ATTACK_LIGHT,
+				'heavy_attack': AnimationState.ATTACK_HEAVY,
+				'hurt': AnimationState.HURT,
+				'blocking': AnimationState.BLOCK,
+				'victory': AnimationState.VICTORY,
+				'defeat': AnimationState.DEFEAT
+			}
+			
+			# 获取对应的动画状态
+			animation_state = state_mapping.get(self.state, AnimationState.IDLE)
+			
+			# 请求动画状态改变
+			if hasattr(self, 'animation_state_machine') and self.animation_state_machine:
+				current_state = self.animation_state_machine.get_current_state()
+				if current_state != animation_state:
+					self.request_animation_state(animation_state)
+			
+		except Exception as e:
+			console_error(f"Failed to update 3D animation for {self.name}: {e}", "animation")
+	
 	def get_attack_frame_data(self, attack_type: str) -> dict:
 		"""Get frame data for attack type"""
 		if not self.character_stats_config:
@@ -465,8 +551,11 @@ class Player:
 				current_model_pos = self.node.getPos() if hasattr(self.node, 'getPos') else None
 				if current_model_pos is None or (current_model_pos - self.pos).length() > 0.01:
 					self.node.setPos(self.pos)
-			except Exception:
-				pass
+				
+				# 🎭 Update 3D animation based on current state
+				self.update_3d_animation_based_on_state()
+			except Exception as e:
+				console_error(f"Failed to update {self.name} node position/animation: {e}", "player")
 		
 		# timers
 		if self.state_timer > 0:
@@ -509,8 +598,9 @@ class Player:
 				if anim_name:
 					try:
 						self.node.play(anim_name)
-					except Exception:
-						pass
+						console_debug(f"Playing animation: {anim_name} for state: {self.state}", "animation")
+					except Exception as e:
+						console_error(f"Failed to play animation {anim_name}: {e}", "animation")
 		# ensure node follows pos
 		# client-side interpolation: only use if no direct input movement is happening
 		if self.target_pos is not None and not hasattr(self, '_direct_movement_frame'):

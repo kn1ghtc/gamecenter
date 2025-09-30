@@ -321,8 +321,13 @@ class PerformanceOptimizer:
                         mgr.setConcurrentSoundLimit(8)  # 限制同时播放音效数量
             
             # 设置合理的帧率限制
-            base_app.globalClock.setMode(base_app.globalClock.MLimited)
-            base_app.globalClock.setFrameRate(self.target_fps)
+            if hasattr(base_app, 'globalClock'):
+                base_app.globalClock.setMode(base_app.globalClock.MLimited)
+                base_app.globalClock.setFrameRate(self.target_fps)
+            elif hasattr(base_app, 'clock'):
+                # 使用 clock 属性作为替代
+                base_app.clock.setMode(base_app.clock.MLimited)
+                base_app.clock.setFrameRate(self.target_fps)
             
             print("⚡ 启动性能优化完成")
             
@@ -337,7 +342,13 @@ class PerformanceOptimizer:
                 return task.done
             
             # 记录帧时间
-            dt = base_app.globalClock.getDt()
+            if hasattr(base_app, 'globalClock'):
+                dt = base_app.globalClock.getDt()
+            elif hasattr(base_app, 'clock'):
+                dt = base_app.clock.getDt()
+            else:
+                dt = 0.016  # 默认60FPS
+                
             self.frame_time_history.append(dt)
             
             # 限制历史记录长度

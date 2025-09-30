@@ -1698,6 +1698,71 @@ class EnhancedCharacterManager:
             fallback_player.render_mode = "fallback"
             return fallback_player
 
+    def clear_character_models(self):
+        """Clear all cached character models and clean up resources"""
+        try:
+            print(f"🧹 Clearing {len(self.character_models)} cached character models...")
+            
+            # Clean up each cached model
+            for char_name, model in self.character_models.items():
+                try:
+                    if model and hasattr(model, 'removeNode'):
+                        model.removeNode()
+                    elif model and hasattr(model, 'cleanup'):
+                        if hasattr(model, 'cleanup'):
+                            model.cleanup()
+                        model.removeNode()
+                except Exception as e:
+                    print(f"⚠️  Failed to clean up model for {char_name}: {e}")
+            
+            # Clear the cache
+            self.character_models.clear()
+            print(f"✅ Character model cache cleared")
+            
+        except Exception as e:
+            print(f"❌ Failed to clear character models: {e}")
+    
+    def cleanup_scene_duplicates(self, render_node):
+        """Clean up duplicate character models from the scene"""
+        try:
+            if not render_node:
+                return
+            
+            print(f"🧹 Cleaning up duplicate models from scene...")
+            
+            # Remove placeholder models
+            placeholders = render_node.findAllMatches("**/*_placeholder")
+            if placeholders.getNumPaths() > 0:
+                print(f"  Removing {placeholders.getNumPaths()} placeholder models")
+                placeholders.removeNode()
+            
+            # Remove tagged 3D models
+            tagged_models = render_node.findAllMatches("**/+Actor")
+            duplicate_count = 0
+            seen_names = set()
+            
+            for i in range(tagged_models.getNumPaths()):
+                model_path = tagged_models.getPath(i)
+                model_name = model_path.getName()
+                
+                # If we've seen this model name before, it's a duplicate
+                if model_name in seen_names:
+                    try:
+                        model_path.removeNode()
+                        duplicate_count += 1
+                    except Exception as e:
+                        print(f"⚠️  Failed to remove duplicate {model_name}: {e}")
+                else:
+                    seen_names.add(model_name)
+            
+            if duplicate_count > 0:
+                print(f"✅ Removed {duplicate_count} duplicate models from scene")
+            else:
+                print(f"✅ No duplicate models found in scene")
+                
+        except Exception as e:
+            print(f"❌ Failed to cleanup scene duplicates: {e}")
+
     def create_character_model(self, character_name: str, pos: Vec3 = Vec3(0, 0, 0)) -> Optional[Actor]:
         """Create 3D character model - compatibility wrapper for main.py"""
         return self.create_enhanced_character_model(character_name, pos, "auto")
