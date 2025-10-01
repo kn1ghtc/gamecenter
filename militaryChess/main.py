@@ -63,22 +63,22 @@ class FontManager:
 		return font
 class BoardTextureRenderer:
 	"""Helper class for drawing textured board elements."""
-	
+
 	@staticmethod
 	def draw_wood_grain(surface: pygame.Surface, rect: pygame.Rect, base_color: Tuple[int, int, int]) -> None:
 		"""Draw wood grain pattern on surface."""
 		import random
 		r, g, b = base_color
-		
+
 		# Create subtle wood grain lines
 		rng = random.Random(42)  # Use seed for consistency
 		for i in range(rect.height // 3):
 			y = rect.y + rng.randint(0, rect.height)
 			darkness = rng.randint(-15, 5)
 			line_color = (max(0, r + darkness), max(0, g + darkness), max(0, b + darkness))
-			pygame.draw.line(surface, line_color, 
+			pygame.draw.line(surface, line_color,
 			               (rect.x, y), (rect.right, y), 1)
-	
+
 	@staticmethod
 	def draw_star_icon(surface: pygame.Surface, center: Tuple[int, int], radius: int, color: Tuple[int, int, int]) -> None:
 		"""Draw a star icon for headquarters."""
@@ -91,7 +91,7 @@ class BoardTextureRenderer:
 			y = cy + r * math.sin(angle)
 			points.append((x, y))
 		pygame.draw.polygon(surface, color, points)
-	
+
 	@staticmethod
 	def draw_tent_pattern(surface: pygame.Surface, rect: pygame.Rect, color: Tuple[int, int, int]) -> None:
 		"""Draw tent/camp pattern."""
@@ -254,6 +254,11 @@ RULES_TEXT = [
 	"• 占领敌军旗或让对手无棋可走即可胜利。",
 	"• 鼠标左键选择己方棋子，再点击合法位置移动或攻击。",
 	"• 右侧日志将记录所有翻面、移动与战斗结果。",
+	"",
+	"快捷键说明：",
+	"• Q - 返回主菜单  |  P - 重新开始",
+	"• H - 打开帮助   |  F - 全屏切换",
+	"• U / Ctrl+Z - 悔棋  |  Enter - 快速开始",
 ]
 
 
@@ -267,7 +272,8 @@ class GameApp:
 		if fullscreen:
 			self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 		else:
-			self.screen = pygame.display.set_mode((1200, 840))
+			# 启用RESIZABLE标志，允许窗口最大化按钮
+			self.screen = pygame.display.set_mode((1200, 840), pygame.RESIZABLE)
 
 		pygame.display.set_caption("中国军棋 - 军旗夺取战")
 
@@ -299,13 +305,14 @@ class GameApp:
 		self.rules_scroll = 0
 		self.settings_scroll = 0
 		self.show_fps = self.settings.get("show_fps", False)
-		
+
 		# Undo system
 		self.move_history: List[Tuple[GameState, str]] = []  # (state_clone, description)
 		self.max_undo_steps = self.settings.get("max_undo_steps", 3)
-		
+
 		# UI state
 		self.hovered_button: Optional[str] = None
+		self._help_from_game = False  # 标记是否从游戏中打开帮助
 
 		self._build_menu()
 		self._build_settings_ui()
@@ -329,7 +336,7 @@ class GameApp:
 		center_x = self.ui.screen_width // 2
 		start_y = self.ui.scaled(200)
 		item_h = self.ui.scaled(60)
-		
+
 		self.settings_items = [
 			{
 				"label": "游戏模式",
@@ -372,7 +379,7 @@ class GameApp:
 				"y": start_y + item_h * 5
 			},
 		]
-		
+
 		# Build back button
 		button_w, button_h = self.ui.scaled(200), self.ui.scaled(60)
 		back_y = start_y + item_h * 7
@@ -407,37 +414,37 @@ class GameApp:
 			self.message = "暗棋模式：请翻开己方棋子后再行动。"
 		else:
 			self.message = "明棋模式：所有棋子可见，开始对弈！"
-	
+
 	def _save_state_for_undo(self, description: str) -> None:
 		"""Save current game state to undo history."""
 		if not self.settings.get("allow_undo", True):
 			return
-		
+
 		# Deep copy current state
 		import copy
 		state_clone = copy.deepcopy(self.game_state)
-		
+
 		self.move_history.append((state_clone, description))
-		
+
 		# Limit history size
 		max_steps = self.settings.get("max_undo_steps", 3)
 		if len(self.move_history) > max_steps:
 			self.move_history.pop(0)
-	
+
 	def undo_move(self) -> bool:
 		"""Undo last move. Returns True if successful."""
 		if not self.settings.get("allow_undo", True):
 			self.message = "悔棋功能已禁用"
 			return False
-		
+
 		if self.ai_thinking:
 			self.message = "AI思考中，无法悔棋"
 			return False
-		
+
 		if not self.move_history:
 			self.message = "没有可以悔棋的步骤"
 			return False
-		
+
 		# Restore previous state
 		self.game_state, description = self.move_history.pop()
 		self.selected = None
@@ -452,19 +459,25 @@ class GameApp:
 		if self.settings.data["fullscreen"]:
 			self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 		else:
-			self.screen = pygame.display.set_mode((1200, 840))
+			# 恢复窗口模式时保持RESIZABLE标志
+			self.screen = pygame.display.set_mode((1200, 840), pygame.RESIZABLE)
 
 		# Reinitialize UI configuration
 		screen_size = self.screen.get_size()
 		self.ui = UIConfig(screen_size[0], screen_size[1], self.settings.data["fullscreen"])
 
 		# Reinitialize fonts with new scaling
+		self._reinit_fonts()
+
+		self._build_menu()
+		self._build_settings_ui()
+	
+	def _reinit_fonts(self) -> None:
+		"""Reinitialize fonts with new scaling."""
 		self.title_font = self.font_manager.get_font(self.ui.title_font_size, bold=True)
 		self.font = self.font_manager.get_font(self.ui.font_size)
 		self.small_font = self.font_manager.get_font(self.ui.small_font_size)
 		self.tiny_font = self.font_manager.get_font(self.ui.tiny_font_size)
-
-		self._build_menu()
 
 	def run(self) -> None:
 		while self.running:
@@ -476,9 +489,24 @@ class GameApp:
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				self.running = False
+			elif event.type == pygame.WINDOWMAXIMIZED:
+				# 窗口最大化时切换到全屏
+				self.toggle_fullscreen()
+			elif event.type == pygame.VIDEORESIZE:
+				# 窗口大小改变时重新调整UI（非全屏状态）
+				if not self.settings.data.get("fullscreen", False):
+					self.screen = pygame.display.set_mode((event.w, event.h), pygame.RESIZABLE)
+					self.ui = UIConfig(event.w, event.h, False)
+					self._reinit_fonts()
+					self._build_menu()
+					self._build_settings_ui()
 			elif event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_F11:
+				# 通用快捷键
+				if event.key == pygame.K_f:
 					self.toggle_fullscreen()
+				elif event.key == pygame.K_h and self.state in {"game", "gameover"}:
+					self._help_from_game = True  # 标记从游戏打开帮助
+					self.state = "rules"  # H键打开帮助
 				elif event.key == pygame.K_z and pygame.key.get_mods() & pygame.KMOD_CTRL:
 					if self.state == "game":
 						self.undo_move()
@@ -514,9 +542,12 @@ class GameApp:
 						self.state = "settings"
 					else:
 						self.running = False
-		elif event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
-			self.reset_game()
-			self.state = "game"
+		elif event.type == pygame.KEYDOWN:
+			if event.key == pygame.K_RETURN:
+				self.reset_game()
+				self.state = "game"
+			elif event.key == pygame.K_q:  # Q键退出
+				self.running = False
 		elif event.type == pygame.MOUSEMOTION:
 			self.hovered_button = None
 			for label, rect, action in self.menu_buttons:
@@ -525,94 +556,101 @@ class GameApp:
 
 	def _handle_settings_event(self, event: pygame.event.Event) -> None:
 		"""Handle settings screen events."""
-		if event.type == pygame.KEYDOWN and event.key in {pygame.K_ESCAPE, pygame.K_BACKSPACE}:
+		if event.type == pygame.KEYDOWN and event.key in {pygame.K_q, pygame.K_BACKSPACE}:
 			self.state = "menu"
 			return
-		
+
 		if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
 			# Check back button
 			if self.settings_back_button.collidepoint(event.pos):
 				self.state = "menu"
 				return
-			
+
 			# Check setting items
 			center_x = self.ui.screen_width // 2
 			for item in self.settings_items:
-				item_rect = pygame.Rect(center_x - self.ui.scaled(300), item["y"], 
+				item_rect = pygame.Rect(center_x - self.ui.scaled(300), item["y"],
 				                       self.ui.scaled(600), self.ui.scaled(50))
-				
+
 				if item_rect.collidepoint(event.pos):
 					if item["type"] == "checkbox":
 						current = self.settings.get(item["key"], False)
 						self.settings.set(item["key"], not current)
-						
+
 						# Special handling
 						if item["key"] == "allow_undo":
 							self.max_undo_steps = self.settings.get("max_undo_steps", 3)
-					
+
 					elif item["type"] == "toggle":
 						current_val = self.settings.get(item["key"])
 						options = item["options"]
-						
+
 						# Find current index and switch to next
 						for i, (label, val) in enumerate(options):
 							if val == current_val:
 								next_idx = (i + 1) % len(options)
 								self.settings.set(item["key"], options[next_idx][1])
-								
+
 								# Special handling for game mode
 								if item["key"] == "game_mode":
 									self.reset_game()
 								break
-					
+
 					elif item["type"] == "slider":
 						# Click on slider to adjust value
 						click_x = event.pos[0] - (center_x - self.ui.scaled(150))
 						slider_width = self.ui.scaled(300)
 						ratio = max(0.0, min(1.0, click_x / slider_width))
-						
+
 						min_val, max_val = item["range"]
 						if isinstance(min_val, int):
 							new_val = int(min_val + ratio * (max_val - min_val))
 						else:
 							new_val = min_val + ratio * (max_val - min_val)
-						
+
 						self.settings.set(item["key"], new_val)
-						
+
 						if item["key"] == "max_undo_steps":
 							self.max_undo_steps = new_val
-		
+
 		elif event.type == pygame.MOUSEMOTION:
 			# Hover effect for back button
 			self.hovered_button = "back" if self.settings_back_button.collidepoint(event.pos) else None
-	
+
 	def _handle_rules_event(self, event: pygame.event.Event) -> None:
 		if event.type == pygame.KEYDOWN:
-			if event.key in {pygame.K_ESCAPE, pygame.K_BACKSPACE}:
-				self.state = "menu"
+			if event.key in {pygame.K_q, pygame.K_h, pygame.K_BACKSPACE}:
+				# 如果是从游戏中按H打开的帮助，返回游戏；否则返回菜单
+				if hasattr(self, '_help_from_game') and self._help_from_game:
+					self._help_from_game = False
+					self.state = "game" if self.game_state.status.outcome.value == 0 else "gameover"
+				else:
+					self.state = "menu"
 			elif event.key == pygame.K_UP:
 				self.rules_scroll = max(0, self.rules_scroll - self.ui.scaled(20))
 			elif event.key == pygame.K_DOWN:
 				self.rules_scroll += self.ui.scaled(20)
 		elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-			self.state = "menu"
+			if hasattr(self, '_help_from_game') and self._help_from_game:
+				self._help_from_game = False
+				self.state = "game" if self.game_state.status.outcome.value == 0 else "gameover"
+			else:
+				self.state = "menu"
 
 	def _handle_game_event(self, event: pygame.event.Event) -> None:
 		if event.type == pygame.KEYDOWN:
-			if event.key == pygame.K_ESCAPE:
+			if event.key == pygame.K_q:
 				self.state = "menu"
-			elif event.key == pygame.K_F5:
+			elif event.key == pygame.K_p:
 				self.reset_game()
 				self.state = "game"  # Ensure we're in game state after reset
-			elif event.key == pygame.K_F3:
-				self.show_fps = not self.show_fps
 		elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state == "game":
 			# Check undo button first
 			if hasattr(self, 'undo_button_rect') and self.undo_button_rect.collidepoint(event.pos):
 				if len(self.move_history) > 0 and not self.ai_thinking:
 					self.undo_move()
 				return
-			
+
 			# Then check board clicks
 			coord = self._coord_from_pos(event.pos)
 			if coord is not None:
@@ -696,7 +734,7 @@ class GameApp:
 				piece = self.game_state.board.tiles[move.src].occupant
 				piece_name = piece.spec.label if piece else "棋子"
 				self._save_state_for_undo(f"{piece_name}移动")
-				
+
 				result = self.game_state.play_move(move)
 				self.sound.play("attack" if move.kind is MoveKind.ATTACK else "move")
 				self.selected = None
@@ -766,7 +804,7 @@ class GameApp:
 			text = self.font.render(label, True, COLORS["text_primary"])
 			self.screen.blit(text, text.get_rect(center=rect.center))
 
-		footer = self.small_font.render("提示：按 Enter 快速开始，F11 切换全屏", True, COLORS["text_dim"])
+		footer = self.small_font.render("提示：Enter 快速开始 | F 切换全屏 | Q 退出", True, COLORS["text_dim"])
 		self.screen.blit(footer, footer.get_rect(center=(self.ui.screen_width // 2, self.ui.screen_height - self.ui.scaled(80))))
 
 	def _draw_rules(self) -> None:
@@ -777,7 +815,6 @@ class GameApp:
 			"• 军旗置于司令部，地雷仅能布在后两排。",
 			"• 工兵拆雷，炸弹对敌自爆；同级对撞同归于尽。",
 			"• 铁路连接的棋子可加速前进，占领对方军旗获胜。",
-			"• 左键返回菜单，方向键上下可滚动列表。",
 		]
 		y = self.ui.scaled(200) - self.rules_scroll
 		for line in instructions + RULES_TEXT:
@@ -785,115 +822,123 @@ class GameApp:
 			rect = surf.get_rect(center=(self.ui.screen_width // 2, y))
 			self.screen.blit(surf, rect)
 			y += self.ui.scaled(60)
-	
+
+		# Footer with return instruction
+		if hasattr(self, '_help_from_game') and self._help_from_game:
+			footer_text = "Q/H 返回游戏 | ↑↓ 滚动"
+		else:
+			footer_text = "Q 返回菜单 | ↑↓ 滚动"
+		footer = self.small_font.render(footer_text, True, COLORS["text_dim"])
+		self.screen.blit(footer, footer.get_rect(center=(self.ui.screen_width // 2, self.ui.screen_height - self.ui.scaled(60))))
+
 	def _draw_settings(self) -> None:
 		"""Draw settings screen with interactive controls."""
 		# Title
 		title = self.title_font.render("游戏设置", True, COLORS["menu_title"])
 		self.screen.blit(title, title.get_rect(center=(self.ui.screen_width // 2, self.ui.scaled(120))))
-		
+
 		center_x = self.ui.screen_width // 2
-		
+
 		# Draw each setting item
 		for item in self.settings_items:
 			y = item["y"]
-			
+
 			# Draw label
 			label_surf = self.font.render(item["label"], True, COLORS["text_primary"])
 			label_rect = label_surf.get_rect(midleft=(center_x - self.ui.scaled(280), y + self.ui.scaled(25)))
 			self.screen.blit(label_surf, label_rect)
-			
+
 			# Draw control based on type
 			if item["type"] == "checkbox":
 				# Checkbox
 				checked = self.settings.get(item["key"], False)
-				checkbox_rect = pygame.Rect(center_x + self.ui.scaled(180), y + self.ui.scaled(10), 
+				checkbox_rect = pygame.Rect(center_x + self.ui.scaled(180), y + self.ui.scaled(10),
 				                           self.ui.scaled(35), self.ui.scaled(35))
-				
+
 				color = COLORS["highlight"] if checked else COLORS["cell_normal"]
 				pygame.draw.rect(self.screen, color, checkbox_rect, border_radius=self.ui.scaled(6))
 				pygame.draw.rect(self.screen, COLORS["button_border"], checkbox_rect, width=2, border_radius=self.ui.scaled(6))
-				
+
 				if checked:
 					# Draw checkmark
-					pygame.draw.line(self.screen, COLORS["background"], 
+					pygame.draw.line(self.screen, COLORS["background"],
 					               (checkbox_rect.x + self.ui.scaled(8), checkbox_rect.centery),
 					               (checkbox_rect.centerx - self.ui.scaled(2), checkbox_rect.y + self.ui.scaled(22)), 3)
 					pygame.draw.line(self.screen, COLORS["background"],
 					               (checkbox_rect.centerx - self.ui.scaled(2), checkbox_rect.y + self.ui.scaled(22)),
 					               (checkbox_rect.right - self.ui.scaled(6), checkbox_rect.y + self.ui.scaled(10)), 3)
-			
+
 			elif item["type"] == "toggle":
 				# Toggle buttons
 				current_val = self.settings.get(item["key"])
 				options = item["options"]
-				
+
 				button_width = self.ui.scaled(80)
 				button_height = self.ui.scaled(35)
 				button_spacing = self.ui.scaled(10)
 				total_width = len(options) * button_width + (len(options) - 1) * button_spacing
 				start_x = center_x + self.ui.scaled(100)
-				
+
 				for i, (label, val) in enumerate(options):
-					button_rect = pygame.Rect(start_x + i * (button_width + button_spacing), 
+					button_rect = pygame.Rect(start_x + i * (button_width + button_spacing),
 					                         y + self.ui.scaled(10), button_width, button_height)
-					
+
 					if val == current_val:
 						button_color = COLORS["highlight"]
 						text_color = COLORS["background"]
 					else:
 						button_color = COLORS["cell_normal"]
 						text_color = COLORS["text_primary"]
-					
+
 					pygame.draw.rect(self.screen, button_color, button_rect, border_radius=self.ui.scaled(6))
 					pygame.draw.rect(self.screen, COLORS["button_border"], button_rect, width=2, border_radius=self.ui.scaled(6))
-					
+
 					btn_text = self.small_font.render(label, True, text_color)
 					self.screen.blit(btn_text, btn_text.get_rect(center=button_rect.center))
-			
+
 			elif item["type"] == "slider":
 				# Slider
-				slider_rect = pygame.Rect(center_x + self.ui.scaled(20), y + self.ui.scaled(20), 
+				slider_rect = pygame.Rect(center_x + self.ui.scaled(20), y + self.ui.scaled(20),
 				                         self.ui.scaled(300), self.ui.scaled(15))
-				
+
 				# Draw slider track
 				pygame.draw.rect(self.screen, COLORS["cell_normal"], slider_rect, border_radius=self.ui.scaled(8))
 				pygame.draw.rect(self.screen, COLORS["button_border"], slider_rect, width=2, border_radius=self.ui.scaled(8))
-				
+
 				# Get current value and calculate position
 				current_val = self.settings.get(item["key"])
 				min_val, max_val = item["range"]
 				ratio = (current_val - min_val) / (max_val - min_val)
-				
+
 				# Draw filled portion
 				filled_width = int(slider_rect.width * ratio)
 				filled_rect = pygame.Rect(slider_rect.x, slider_rect.y, filled_width, slider_rect.height)
 				pygame.draw.rect(self.screen, COLORS["highlight"], filled_rect, border_radius=self.ui.scaled(8))
-				
+
 				# Draw slider handle
 				handle_x = slider_rect.x + filled_width
-				handle_rect = pygame.Rect(handle_x - self.ui.scaled(10), slider_rect.centery - self.ui.scaled(15), 
+				handle_rect = pygame.Rect(handle_x - self.ui.scaled(10), slider_rect.centery - self.ui.scaled(15),
 				                         self.ui.scaled(20), self.ui.scaled(30))
 				pygame.draw.rect(self.screen, COLORS["text_primary"], handle_rect, border_radius=self.ui.scaled(4))
 				pygame.draw.rect(self.screen, COLORS["button_border"], handle_rect, width=2, border_radius=self.ui.scaled(4))
-				
+
 				# Draw value text
 				if isinstance(min_val, int):
 					value_text = self.small_font.render(str(current_val), True, COLORS["text_secondary"])
 				else:
 					value_text = self.small_font.render(f"{current_val:.1f}", True, COLORS["text_secondary"])
 				self.screen.blit(value_text, value_text.get_rect(midleft=(slider_rect.right + self.ui.scaled(15), y + self.ui.scaled(25))))
-		
+
 		# Draw back button
 		button_color = COLORS["button_hover"] if self.hovered_button == "back" else COLORS["button_bg"]
 		pygame.draw.rect(self.screen, button_color, self.settings_back_button, border_radius=self.ui.scaled(12))
 		pygame.draw.rect(self.screen, COLORS["button_border"], self.settings_back_button, width=3, border_radius=self.ui.scaled(12))
-		
+
 		back_text = self.font.render("返回菜单", True, COLORS["text_primary"])
 		self.screen.blit(back_text, back_text.get_rect(center=self.settings_back_button.center))
-		
+
 		# Draw instructions
-		footer = self.small_font.render("提示：点击设置项进行修改，ESC 返回", True, COLORS["text_dim"])
+		footer = self.small_font.render("提示：点击设置项进行修改 | Q 返回菜单", True, COLORS["text_dim"])
 		self.screen.blit(footer, footer.get_rect(center=(self.ui.screen_width // 2, self.ui.screen_height - self.ui.scaled(60))))
 
 	def _draw_game(self) -> None:
@@ -1022,7 +1067,7 @@ class GameApp:
 		lighter = (min(255, r + 30), min(255, g + 30), min(255, b + 30), 40)
 		pygame.draw.ellipse(highlight_surface, lighter, highlight_surface.get_rect())
 		self.screen.blit(highlight_surface, highlight_rect)
-		
+
 		pygame.draw.ellipse(self.screen, (20, 20, 20), rect, width=2)
 		label = piece.spec.label
 		text = self.small_font.render(label, True, COLORS["text_primary"])
@@ -1045,24 +1090,24 @@ class GameApp:
 			msg_y += self.ui.scaled(25)
 
 		self._draw_piece_count(panel_rect.x + self.ui.scaled(20), panel_rect.y + self.ui.scaled(150))
-		
+
 		# Undo button (if enabled and available)
 		if self.settings.get("allow_undo", True) and self.state == "game":
 			undo_y = panel_rect.y + self.ui.scaled(200)
-			undo_button_rect = pygame.Rect(panel_rect.x + self.ui.scaled(20), undo_y, 
+			undo_button_rect = pygame.Rect(panel_rect.x + self.ui.scaled(20), undo_y,
 			                               self.ui.side_panel_width - self.ui.scaled(40), self.ui.scaled(45))
-			
+
 			# Button enabled/disabled state
 			can_undo = len(self.move_history) > 0 and not self.ai_thinking
 			button_color = COLORS["undo_button"] if can_undo else COLORS["cell_normal"]
-			
+
 			pygame.draw.rect(self.screen, button_color, undo_button_rect, border_radius=self.ui.scaled(8))
 			pygame.draw.rect(self.screen, COLORS["button_border"], undo_button_rect, width=2, border_radius=self.ui.scaled(8))
-			
+
 			undo_text = f"悔棋 ({len(self.move_history)}/{self.max_undo_steps})"
 			undo_surf = self.small_font.render(undo_text, True, COLORS["text_primary"])
 			self.screen.blit(undo_surf, undo_surf.get_rect(center=undo_button_rect.center))
-			
+
 			# Store button rect for click detection
 			self.undo_button_rect = undo_button_rect
 
