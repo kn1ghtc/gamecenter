@@ -1,0 +1,166 @@
+# 中国军棋游戏 (Chinese Military Chess)
+
+一个基于 Pygame 的完整中国军棋实现，具有智能 AI 对手、现代化 UI 设计和响应式布局。
+
+## 功能特色
+
+### 🎮 游戏特性
+- **完整的军棋规则**：标准 5×12 棋盘，25 种军衔棋子
+- **智能 AI 对手**：使用 negamax 搜索算法，支持多难度等级
+- **灵活布局系统**：支持随机布局和预设布局
+- **铁路系统**：工兵可任意转弯，其他棋子直线移动
+- **战斗系统**：完整的攻击、防御、特殊棋子交互规则
+
+### 🎨 界面设计
+- **响应式布局**：支持全屏模式和窗口模式，自动缩放适配
+- **现代化 UI**：精美的颜色搭配和圆角设计
+- **实时反馈**：高亮选中棋子，显示可移动位置
+- **游戏日志**：记录所有棋子翻面、移动和战斗结果
+- **音效系统**：移动、攻击、翻棋、胜利音效
+
+### ⚙️ 技术特性
+- **模块化架构**：游戏逻辑、AI 引擎、评估函数分离设计
+- **设置持久化**：音量、难度、布局偏好自动保存
+- **多线程 AI**：后台 AI 计算，不阻塞界面响应
+- **测试覆盖**：包含冒烟测试验证核心功能
+
+## 安装要求
+
+```bash
+pip install pygame
+```
+
+## 快速开始
+
+### 直接运行
+```bash
+cd gamecenter/militaryChess
+python main.py
+```
+
+### 模块导入
+```python
+from gamecenter.militaryChess import run_game
+run_game()
+```
+
+## 游戏操作
+
+| 操作 | 说明 |
+|------|------|
+| 鼠标左键 | 选择己方棋子，点击目标位置移动/攻击 |
+| ESC | 返回主菜单 |
+| F5 | 重新开始游戏 |
+| F11 | 切换全屏模式 |
+| F3 | 显示/隐藏 FPS |
+| Enter | 快速开始游戏（主菜单） |
+
+## 项目结构
+
+```
+militaryChess/
+├── main.py              # 主应用和 UI 界面
+├── game_logic.py        # 游戏核心逻辑、棋盘、棋子
+├── ai_engine.py         # AI 控制器和搜索算法
+├── evaluation.py        # 局面评估函数
+├── test_smoke.py        # 冒烟测试
+├── __init__.py          # 包初始化
+└── settings.json        # 用户设置（自动生成）
+```
+
+## 架构设计
+
+### 游戏逻辑层 (game_logic.py)
+- `JunqiBoard`: 棋盘状态管理，布局生成，移动验证
+- `GameState`: 回合管理，日志记录，胜负判定
+- `Piece`, `Move`, `BattleResolution`: 核心数据结构
+
+### AI 引擎层 (ai_engine.py)
+- `AIController`: 主 AI 控制器，negamax 搜索
+- `AIMovePlanner`: 多线程 AI 计算管理
+- `SettingsManager`: 配置文件读写和管理
+
+### 界面层 (main.py)
+- `GameApp`: 主应用类，事件处理，渲染管理
+- `UIConfig`: 响应式布局配置
+- `SoundManager`: 音效系统
+
+## 游戏规则
+
+### 棋子类型
+- **军旗**：不可移动，被占领即败
+- **地雷**：不可移动，只有工兵能拆除
+- **炸弹**：遇敌同归于尽
+- **工兵**：能拆地雷，可沿铁路任意转弯
+- **军官**：排长 < 连长 < 营长 < 团长 < 旅长 < 师长 < 军长 < 司令
+
+### 特殊规则
+- 军旗必须放在司令部（大本营）
+- 地雷只能放在后两排
+- 营地内的棋子不能被攻击
+- 同等级棋子对撞双双阵亡
+- 铁路可加速移动（工兵任意转弯，其他直线）
+
+### 胜利条件
+1. 占领敌方军旗
+2. 消灭敌方所有可移动棋子
+
+## 开发指南
+
+### 运行测试
+```bash
+cd gamecenter/militaryChess
+python test_smoke.py
+```
+
+### 调试模式
+在代码中修改 AI 配置：
+```python
+# 降低 AI 难度用于调试
+config = AIConfig(difficulty="easy", time_limit=1.0)
+```
+
+### 添加新功能
+1. 游戏逻辑修改 → `game_logic.py`
+2. AI 算法改进 → `ai_engine.py` + `evaluation.py`
+3. 界面优化 → `main.py`
+
+## 技术亮点
+
+### 1. 响应式设计
+```python
+class UIConfig:
+    def __init__(self, screen_width, screen_height, fullscreen=False):
+        self.scale = min(screen_width / 1200, screen_height / 840)
+        self.cell_w = int(90 * self.scale)
+        # 所有 UI 元素根据屏幕大小自动缩放
+```
+
+### 2. 智能搜索算法
+```python
+def _negamax(self, state, depth, alpha, beta, start_time, perspective):
+    # 迭代加深 + alpha-beta 剪枝 + 时间限制
+    # 支持多线程后台计算
+```
+
+### 3. 模块化架构
+- 清晰的职责分离
+- 易于测试和维护
+- 支持独立功能扩展
+
+## 许可证
+
+遵循项目根目录许可证。本游戏实现仅供学习和娱乐使用。
+
+## 更新日志
+
+### v2.0.0 (2025-10-01)
+- 🎯 **重大重构**：拆分为模块化架构
+- 🎨 **UI 升级**：响应式设计，支持全屏自适应
+- 🤖 **AI 优化**：多线程计算，更流畅的用户体验
+- 🎵 **音效增强**：动态音效生成
+- ⚙️ **设置系统**：持久化配置管理
+- 🧪 **测试覆盖**：添加冒烟测试
+
+### v1.0.0
+- 基础游戏实现（单文件架构）
