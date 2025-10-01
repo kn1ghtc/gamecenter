@@ -436,30 +436,28 @@ class JunqiBoard:
 		tile = self.tiles[coord]
 		moves: List[Move] = []
 
-		# Headquarter restriction: pieces can move into HQ but cannot move out once inside.
-		if tile.is_headquarter and piece.code != "FLAG":
-			pass  # They are effectively trapped; no moves available.
-		else:
-			for neighbor in self._adjacent_roads(coord):
-				if not is_inside(neighbor):
+		# 大本营限制：只有军旗无法移动（由movable=False控制），其他棋子可以从大本营移出
+		# Headquarter restriction: only FLAG cannot move (controlled by movable=False), others can move out
+		for neighbor in self._adjacent_roads(coord):
+			if not is_inside(neighbor):
+				continue
+			dest_tile = self.tiles[neighbor]
+			occ = dest_tile.occupant
+			if occ is None:
+				moves.append(Move(MoveKind.MOVE, player, coord, neighbor))
+			elif occ.owner is not player:
+				if dest_tile.is_camp:
 					continue
-				dest_tile = self.tiles[neighbor]
-				occ = dest_tile.occupant
-				if occ is None:
-					moves.append(Move(MoveKind.MOVE, player, coord, neighbor))
-				elif occ.owner is not player:
-					if dest_tile.is_camp:
-						continue
-					moves.append(Move(MoveKind.ATTACK, player, coord, neighbor))
+				moves.append(Move(MoveKind.ATTACK, player, coord, neighbor))
 
-			if tile.on_rail:
-				moves.extend(self._railway_moves(coord))
+		if tile.on_rail:
+			moves.extend(self._railway_moves(coord))
 
 		return moves
 
 	def _adjacent_roads(self, coord: Coord) -> Iterable[Coord]:
-		if tile_is_headquarter(coord):
-			return ()
+		# 大本营坐标也可以有相邻道路，允许非军旗棋子移出
+		# Headquarters can have adjacent roads, allowing non-flag pieces to move out
 		return ROAD_CONNECTIONS.get(coord, ())
 
 	def _rail_neighbors(self, coord: Coord) -> List[Coord]:
@@ -545,7 +543,8 @@ class JunqiBoard:
 			note = "非工兵踩雷被炸毁"
 			return BattleResolution(attacker, defender, defender, False, False, note)
 
-		if attacker.code == "BOMB":
+		# 炸弹：无论作为攻击方还是防守方，都与对方同归于尽
+		if attacker.code == "BOMB" or defender.code == "BOMB":
 			note = "炸弹同归于尽"
 			return BattleResolution(attacker, defender, None, True, False, note)
 
