@@ -471,7 +471,7 @@ class GameApp:
 
 		self._build_menu()
 		self._build_settings_ui()
-	
+
 	def _reinit_fonts(self) -> None:
 		"""Reinitialize fonts with new scaling."""
 		self.title_font = self.font_manager.get_font(self.ui.title_font_size, bold=True)
@@ -501,17 +501,37 @@ class GameApp:
 					self._build_menu()
 					self._build_settings_ui()
 			elif event.type == pygame.KEYDOWN:
-				# 通用快捷键
-				if event.key == pygame.K_f:
+				# 通用快捷键（忽略大小写 - 使用unicode字符判断）
+				key_char = event.unicode.lower() if event.unicode else ''
+				
+				if event.key == pygame.K_f or key_char == 'f':
 					self.toggle_fullscreen()
-				elif event.key == pygame.K_h and self.state in {"game", "gameover"}:
+				elif (event.key == pygame.K_h or key_char == 'h') and self.state in {"game", "gameover"}:
 					self._help_from_game = True  # 标记从游戏打开帮助
 					self.state = "rules"  # H键打开帮助
+				elif event.key == pygame.K_q or key_char == 'q':
+					# Q键：根据当前状态返回或退出
+					if self.state == "menu":
+						self.running = False  # 主菜单退出游戏
+					elif self.state in {"settings", "rules"}:
+						# 从设置或规则界面返回
+						if self.state == "rules" and hasattr(self, '_help_from_game') and self._help_from_game:
+							self._help_from_game = False
+							self.state = "game" if self.game_state.status.outcome.value == 0 else "gameover"
+						else:
+							self.state = "menu"
+					elif self.state in {"game", "gameover"}:
+						self.state = "menu"  # 游戏中返回主菜单
+				elif (event.key == pygame.K_p or key_char == 'p') and self.state in {"game", "gameover"}:
+					# P键：重新开始游戏
+					self.reset_game()
+					self.state = "game"
 				elif event.key == pygame.K_z and pygame.key.get_mods() & pygame.KMOD_CTRL:
 					if self.state == "game":
 						self.undo_move()
-				elif event.key == pygame.K_u and self.state == "game":
-					self.undo_move()
+				elif event.key == pygame.K_u or key_char == 'u':
+					if self.state == "game":
+						self.undo_move()
 			elif self.state == "menu":
 				self._handle_menu_event(event)
 			elif self.state == "settings":
@@ -546,8 +566,6 @@ class GameApp:
 			if event.key == pygame.K_RETURN:
 				self.reset_game()
 				self.state = "game"
-			elif event.key == pygame.K_q:  # Q键退出
-				self.running = False
 		elif event.type == pygame.MOUSEMOTION:
 			self.hovered_button = None
 			for label, rect, action in self.menu_buttons:
@@ -556,7 +574,7 @@ class GameApp:
 
 	def _handle_settings_event(self, event: pygame.event.Event) -> None:
 		"""Handle settings screen events."""
-		if event.type == pygame.KEYDOWN and event.key in {pygame.K_q, pygame.K_BACKSPACE}:
+		if event.type == pygame.KEYDOWN and event.key == pygame.K_BACKSPACE:
 			self.state = "menu"
 			return
 
@@ -619,14 +637,7 @@ class GameApp:
 
 	def _handle_rules_event(self, event: pygame.event.Event) -> None:
 		if event.type == pygame.KEYDOWN:
-			if event.key in {pygame.K_q, pygame.K_h, pygame.K_BACKSPACE}:
-				# 如果是从游戏中按H打开的帮助，返回游戏；否则返回菜单
-				if hasattr(self, '_help_from_game') and self._help_from_game:
-					self._help_from_game = False
-					self.state = "game" if self.game_state.status.outcome.value == 0 else "gameover"
-				else:
-					self.state = "menu"
-			elif event.key == pygame.K_UP:
+			if event.key == pygame.K_UP:
 				self.rules_scroll = max(0, self.rules_scroll - self.ui.scaled(20))
 			elif event.key == pygame.K_DOWN:
 				self.rules_scroll += self.ui.scaled(20)
@@ -638,13 +649,7 @@ class GameApp:
 				self.state = "menu"
 
 	def _handle_game_event(self, event: pygame.event.Event) -> None:
-		if event.type == pygame.KEYDOWN:
-			if event.key == pygame.K_q:
-				self.state = "menu"
-			elif event.key == pygame.K_p:
-				self.reset_game()
-				self.state = "game"  # Ensure we're in game state after reset
-		elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state == "game":
+		if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state == "game":
 			# Check undo button first
 			if hasattr(self, 'undo_button_rect') and self.undo_button_rect.collidepoint(event.pos):
 				if len(self.move_history) > 0 and not self.ai_thinking:
