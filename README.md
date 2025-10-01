@@ -47,10 +47,11 @@ Game Center 集成了五款 Python 游戏（Chess、StreetBattle、Stickman Game
 4. [运行方式概览](#运行方式概览)
 5. [游戏模块总览](#游戏模块总览)
    1. [Chess](#chess)
-   2. [StreetBattle](#streetbattle)
-   3. [Stickman Game](#stickman-game)
-   4. [Super Mario Bros](#super-mario-bros)
-   5. [Tank Battle](#tank-battle)
+   2. [Military Chess（中国军棋）](#military-chess中国军棋)
+   3. [StreetBattle](#streetbattle)
+   4. [Stickman Game](#stickman-game)
+   5. [Super Mario Bros](#super-mario-bros)
+   6. [Tank Battle](#tank-battle)
 6. [工具与自动化脚本](#工具与自动化脚本)
 7. [质量保障与测试](#质量保障与测试)
 8. [贡献流程](#贡献流程)
@@ -73,6 +74,7 @@ Game Center 集成了五款 Python 游戏（Chess、StreetBattle、Stickman Game
 gamecenter/
 ├─ README.md                 # 本文档（唯一项目文档）
 ├─ chess/                    # 国际象棋 + AI 陪伴系统
+├─ militaryChess/            # 中国军棋（陆战棋）+ 智能 AI
 ├─ streetBattle/             # 3D/2.5D 格斗平台
 ├─ stickman_game/            # 火柴人动作冒险
 ├─ superMario/               # 超级玛丽平台跳跃
@@ -101,6 +103,33 @@ python -m pip install -U pip wheel
 
 各子项目提供独立的 `requirements*.txt` 时，请优先参考对应文件。
 
+### macOS（Homebrew + zsh）快速开始
+
+> 建议始终在项目本地虚拟环境中安装依赖，避免触发 Homebrew 的 PEP 668 保护（externally-managed-environment）。以下步骤在 zsh 下验证通过。
+
+1) 准备 Python 3.13（通过 Homebrew 安装或已存在于 `/usr/local/bin/python3`）
+
+2) 在仓库根目录创建并激活虚拟环境
+
+- 使用绝对路径调用 Python 创建 `.venv`，激活后用 `python -V` 确认为 3.13。
+
+3) 安装通用依赖（示例：pygame）
+
+- 在已激活的虚拟环境中，先升级 pip，再安装 pygame；不要在系统环境直接使用 pip。
+
+4) 运行冒烟测试（以军棋模块为例）
+
+- 在虚拟环境中安装 pytest 后运行 `gamecenter/militaryChess/test_smoke.py`，应全部通过。
+
+常见问题与排查：
+- 出现 “error: externally-managed-environment / PEP 668” 提示：说明你在系统环境中使用 pip，需先激活 `.venv` 再安装；不建议使用 `--break-system-packages` 强行写入系统环境。
+- `pip` 指向已卸载的旧解释器（例如 3.11）导致 “bad interpreter” 错误：
+   - 检查 shebang（pip 文件前两行）确认目标解释器。
+   - 如指向 3.11，可重建链接：将系统级 `/usr/local/bin/pip` 链接到 3.13 的 `pip3`；更推荐直接在 `.venv` 中使用 `python -m pip ...`，彻底避免系统级冲突。
+
+VS Code 提示：
+- 通过命令面板选择解释器为仓库根目录的 `.venv/bin/python`，终端与测试任务将继承该解释器，体验更稳定。
+
 ---
 
 ## 运行方式概览
@@ -108,6 +137,7 @@ python -m pip install -U pip wheel
 1. 在 `gamecenter/` 根目录激活虚拟环境。
 2. 根据目标游戏进入其子目录并执行主入口：
    - Chess：`python chess/main.py`（或 `python -m chess.game`）
+   - Military Chess（军棋）：`cd militaryChess; python main.py` 或 `python -c "from gamecenter.militaryChess import run_game; run_game()"`
    - StreetBattle：`cd streetBattle; python main.py`
    - Stickman Game：`cd stickman_game; python main.py`
    - Super Mario：`cd superMario; python main.py`
@@ -145,6 +175,69 @@ python tools/training.py --episodes 100  # 示例训练脚本
 - `ai/`: 记忆、规划、工具、语音、ML AI 模块。
 - `assets/`: 棋子图像、音效、语音缓存。
 - `config/`: UI/颜色/字体/路径等集中配置。
+
+---
+
+### Military Chess（中国军棋）
+
+**概览**：完整的中国军棋（陆战棋）实现，具备智能 AI 对手与现代化 Pygame 界面。采用模块化架构，分离游戏逻辑、AI 引擎和评估函数，支持多种运行方式。
+
+**核心特性**
+- **完整规则实现**：标准中国军棋规则，包括棋子等级、行营铁路、司令部等要素。
+- **智能 AI 引擎**：基于 negamax 搜索算法，支持迭代加深、时间限制和多种难度设置。
+- **现代化 UI**：响应式 Pygame 界面，支持菜单、规则说明、游戏进行和结束画面。
+- **暗棋模式**：开局全盘随机、全部棋子朝下，玩家与 AI 需先翻子再行动，AI 会自动翻找可行动的棋子。
+- **中文字体引擎升级**：FontManager 直接解析系统字体文件（PingFang、Microsoft YaHei、Noto Sans CJK 等），彻底解决窗口内中文乱码问题。
+- **跨平台中文字体**：智能字体管理器，自动检测并使用系统最佳中文字体（macOS: PingFang SC, Windows: Microsoft YaHei）。
+- **音效系统**：内置移动、攻击、胜利音效，支持音量调节和静音模式。
+- **多线程 AI**：AI 思考过程在后台线程运行，保持界面响应性。
+- **绝对导入架构**：统一的模块导入系统，支持直接运行和包导入两种方式。
+
+**运行方式**
+```zsh
+# 方式 1：直接运行（推荐用于开发调试）
+cd gamecenter/militaryChess
+python main.py
+
+# 方式 2：包导入运行
+python -c "from gamecenter.militaryChess import run_game; run_game()"
+
+# 方式 3：模块内测试
+python test_smoke.py
+```
+
+**控制说明**
+- 鼠标点击选择和移动棋子
+- 暗棋模式下首次点击己方棋子会翻面，再次点击合法目的地即可完成行动
+- ESC 键返回主菜单
+- F11 切换全屏模式
+- F4 切换字体调试信息（显示当前使用的字体）
+- 音量调节：设置菜单中调整
+- AI 难度：可在设置中切换简单/标准/困难
+
+**字体和显示**
+- 自动检测并使用系统最佳中文字体
+- macOS：直接加载 `/System/Library/Fonts/PingFang.ttc` 等中文字体，确保 glyph 完整
+- Windows：优先匹配 `Microsoft YaHei`、`SimHei` 等字体文件
+- Linux：支持 Noto Sans CJK SC、WenQuanYi 系列字体，优先使用对应 `.ttc/.otf`
+- 如遇到中文显示问题，请确保系统已安装中文字体
+
+**技术架构**
+- `main.py`：游戏 UI、渲染、事件处理和主循环
+- `game_logic.py`：棋盘表示、移动生成、战斗解算和游戏状态管理
+- `ai_engine.py`：AI 控制器、搜索算法和设置管理
+- `settings.json`：保存音量、难度、暗棋模式（`dark_mode`）等持久化配置
+- `evaluation.py`：位置评估、启发式函数和策略分析
+- `__init__.py`：包接口和公开 API
+
+**测试与质量保证**
+```zsh
+# 冒烟测试（验证核心功能）
+python test_smoke.py
+
+# 包导入测试
+python -c "from gamecenter.militaryChess import create_logic_state; print('导入成功')"
+```
 
 ---
 
@@ -294,6 +387,7 @@ python main.py --smoke-test --frames 300
 
 ## 质量保障与测试
 
+- **Military Chess（军棋）**：`python test_smoke.py` 验证游戏逻辑、AI 引擎和包导入；支持直接运行和包导入两种方式的测试。
 - **StreetBattle**：`python -m pytest streetBattle/tests/test_smoke.py`（验证 manifest、技能、设置）；建议定期运行 `test_combat.py` 和 `test_rollback_sim.py`。
 - **Chess**：`python -m pytest` 覆盖 GUI、规则、AI 接口；训练脚本支持离线验证。
 - **Tank Battle**：提供 `--smoke-test` 模式快速回归，训练脚本内置日志。
