@@ -734,20 +734,27 @@ class GameState:
 		self._log(battle.note)
 
 	def _evaluate_status(self, battle: Optional[BattleResolution]) -> GameStatus:
+		# Primary victory condition: flag capture
 		if battle and battle.captured_flag:
 			winner = battle.attacker.owner
 			return GameStatus(GameTermination.VICTORY, winner, "夺旗胜利")
 
+		# Check if either player's flag is missing (captured in previous moves)
+		for player in (Player.RED, Player.BLUE):
+			flag_pos = self.board.flag_position(player)
+			if flag_pos is None:
+				winner = player.opponent
+				return GameStatus(GameTermination.VICTORY, winner, "夺旗胜利")
+
+		# Secondary condition: opponent has no legal moves (stalemate leads to victory)
 		opponent = self.current_player.opponent
 		opponent_moves = self.all_legal_moves(opponent)
 		if not opponent_moves:
-			# Check if opponent still has movable pieces
 			mobility = self.board.mobility(opponent)
 			if mobility == 0:
 				return GameStatus(GameTermination.VICTORY, self.current_player, "对手无子可动")
-			return GameStatus(GameTermination.STALEMATE, None, "双方僵持")
 
-		# Simple 60-turn rule for draws without captures.
+		# Draw condition: long game without captures
 		if self.turn_index - self.board.last_capture_turn > 120:
 			return GameStatus(GameTermination.DRAW, None, "长回合无战斗判和")
 

@@ -32,145 +32,24 @@ from gamecenter.militaryChess.game_logic import (
 
 
 class FontManager:
-	"""Cross-platform Chinese font manager for consistent text rendering."""
-
-	CHINESE_SAMPLE = "测试中文"
+	"""Simplified cross-platform Chinese font manager."""
 
 	def __init__(self) -> None:
 		if not pygame.font.get_init():
 			pygame.font.init()
+		
 		self.system = platform.system()
 		self.fonts: Dict[Tuple[int, bool], pygame.font.Font] = {}
-		self.font_path: Optional[str]
-		self.font_name: Optional[str]
-		self.available_fonts: List[str] = []
-		self.font_path, self.font_name = self._resolve_font()
-		if self.font_name:
-			self.available_fonts.append(self.font_name)
-		if not self.font_path:
-			self.font_path = self._fallback_font_path()
-			if self.font_path:
-				self.font_name = Path(self.font_path).name
-				self.available_fonts = [self.font_name]
-		elif not Path(self.font_path).exists():
-			self.font_path = self._fallback_font_path()
-			if self.font_path:
-				self.font_name = Path(self.font_path).name
-				self.available_fonts = [self.font_name]
-		if not self.font_path:
-			print("FontManager: ⚠️ 未找到合适的中文字体，使用 Pygame 默认字体，可能仍有乱码风险。")
-
-	def _resolve_font(self) -> Tuple[Optional[str], Optional[str]]:
-		for candidate in self._candidate_font_paths():
-			if candidate.exists() and self._font_supports_chinese(candidate):
-				return str(candidate), candidate.name
-		for name in self._candidate_font_names():
-			match = pygame.font.match_font(name)
-			if match and self._font_supports_chinese(Path(match)):
-				return match, name
-		return None, None
-
-	def _candidate_font_paths(self) -> List[Path]:
-		candidates: List[Path] = []
+		self.font_name = self._get_platform_font()
+		
+	def _get_platform_font(self) -> str:
+		"""Get the best Chinese font for current platform."""
 		if self.system == "Darwin":
-			roots = [
-				Path("/System/Library/Fonts"),
-				Path("/System/Library/Fonts/Supplemental"),
-				Path.home() / "Library/Fonts",
-			]
-			names = [
-				"PingFang.ttc",
-				"PingFang SC.ttf",
-				"PingFangSC-Regular.ttf",
-				"Hiragino Sans GB.ttc",
-				"STSong.ttc",
-				"Songti.ttc",
-				"STHeiti Medium.ttc",
-				"AppleGothic.ttf",
-				"Arial Unicode.ttf",
-			]
+			return "PingFang SC"
 		elif self.system == "Windows":
-			roots = [Path("C:/Windows/Fonts")]
-			names = [
-				"msyh.ttc",
-				"msyhbd.ttc",
-				"simhei.ttf",
-				"simsun.ttc",
-				"simkai.ttf",
-				"msjh.ttc",
-			]
-		else:
-			roots = [
-				Path("/usr/share/fonts"),
-				Path("/usr/local/share/fonts"),
-				Path.home() / ".local/share/fonts",
-				Path.home() / ".fonts",
-			]
-			names = [
-				"NotoSansCJK-Regular.ttc",
-				"NotoSansCJKsc-Regular.otf",
-				"SourceHanSansCN-Regular.otf",
-				"SourceHanSerifCN-Regular.otf",
-				"WenQuanYiMicroHei.ttf",
-				"WenQuanYiZenHei.ttf",
-				"DroidSansFallbackFull.ttf",
-			]
-		for root in roots:
-			for name in names:
-				path = root / name
-				candidates.append(path)
-		return candidates
-
-	def _candidate_font_names(self) -> List[str]:
-		if self.system == "Darwin":
-			return [
-				"PingFang SC",
-				"Hiragino Sans GB",
-				"STHeiti",
-				"Songti SC",
-				"Heiti SC",
-				"Arial Unicode MS",
-			]
-		if self.system == "Windows":
-			return [
-				"Microsoft YaHei",
-				"SimHei",
-				"SimSun",
-				"KaiTi",
-				"FangSong",
-				"Microsoft JhengHei",
-			]
-		return [
-			"Noto Sans CJK SC",
-			"Source Han Sans CN",
-			"WenQuanYi Micro Hei",
-			"WenQuanYi Zen Hei",
-			"Droid Sans Fallback",
-		]
-
-	def _font_supports_chinese(self, font_path: Path) -> bool:
-		try:
-			font = pygame.font.Font(str(font_path), 32)
-			surface = font.render(self.CHINESE_SAMPLE, True, (255, 255, 255))
-			if surface.get_width() <= len(self.CHINESE_SAMPLE) * 6:
-				return False
-			metrics = font.metrics(self.CHINESE_SAMPLE)
-			return bool(metrics) and all(metric is not None for metric in metrics)
-		except Exception:
-			return False
-
-	def _fallback_font_path(self) -> Optional[str]:
-		fallback_names = [
-			"Arial Unicode MS",
-			"Noto Sans CJK SC",
-			"WenQuanYi Micro Hei",
-			"SimHei",
-		]
-		for name in fallback_names:
-			match = pygame.font.match_font(name)
-			if match and self._font_supports_chinese(Path(match)):
-				return match
-		return pygame.font.match_font(pygame.font.get_default_font())
+			return "Microsoft YaHei"
+		else:  # Linux and others
+			return "Noto Sans CJK SC"
 
 	def get_font(self, size: int, bold: bool = False) -> pygame.font.Font:
 		"""Get a Chinese-compatible font with given size and style."""
@@ -178,13 +57,7 @@ class FontManager:
 		if key in self.fonts:
 			return self.fonts[key]
 
-		font: pygame.font.Font
-		if self.font_path:
-			font = pygame.font.Font(self.font_path, size)
-		else:
-			font = pygame.font.Font(None, size)
-		if bold:
-			font.set_bold(True)
+		font = pygame.font.SysFont(self.font_name, size, bold=bold)
 		self.fonts[key] = font
 		return font
 class SoundManager:
@@ -291,7 +164,7 @@ class UIConfig:
 		return int(value * self.scale)
 
 
-# Enhanced color scheme
+# Enhanced modern color scheme
 COLORS = {
 	"background": (15, 20, 30),
 	"board_bg": (45, 60, 85),
@@ -301,9 +174,12 @@ COLORS = {
 	"face_down": (55, 70, 95),
 	"highlight": (255, 220, 100),
 	"move_target": (120, 220, 140),
-	"camp": (160, 200, 170),
-	"hq": (140, 95, 95),
-	"rail": (75, 75, 75),
+	"camp": (140, 180, 140),
+	"camp_border": (100, 150, 100),
+	"hq": (180, 120, 120),
+	"hq_border": (150, 80, 80),
+	"rail": (200, 200, 200),
+	"rail_bg": (65, 80, 105),
 	"panel_bg": (35, 45, 65),
 	"text_primary": (240, 240, 240),
 	"text_secondary": (200, 200, 200),
@@ -312,6 +188,7 @@ COLORS = {
 	"button_border": (220, 230, 240),
 	"menu_title": (240, 225, 180),
 	"menu_subtitle": (210, 200, 170),
+	"shadow": (0, 0, 0, 80),
 }
 
 RULES_TEXT = [
@@ -386,10 +263,17 @@ class GameApp:
 	def reset_game(self, randomize: Optional[bool] = None) -> None:
 		rng = random.Random()
 		board = JunqiBoard()
+		
+		# Use configuration to determine randomization
 		use_random = self.settings.data.get("random_layout", True) if randomize is None else randomize
-		if self.settings.data.get("dark_mode", True):
-			use_random = True
 		board.reset(rng, randomize=use_random)
+		
+		# Initialize all pieces as face up or face down based on dark_mode setting
+		dark_mode = self.settings.data.get("dark_mode", True)
+		for tile in board.tiles.values():
+			if tile.occupant and dark_mode:
+				tile.occupant.face_up = False
+		
 		self.game_state = GameState(board)
 		self.game_state.current_player = Player.RED
 		self.game_state.logs = []
@@ -398,7 +282,11 @@ class GameApp:
 		self.highlight_moves = []
 		self.ai_thinking = False
 		self.ai_start_time = 0.0
-		self.message = "暗棋模式：请翻开己方棋子后再行动。"
+		
+		if dark_mode:
+			self.message = "暗棋模式：请翻开己方棋子后再行动。"
+		else:
+			self.message = "明棋模式：所有棋子可见，开始对弈！"
 
 	def toggle_fullscreen(self) -> None:
 		self.settings.data["fullscreen"] = not self.settings.data.get("fullscreen", False)
@@ -434,10 +322,6 @@ class GameApp:
 			elif event.type == pygame.KEYDOWN:
 				if event.key == pygame.K_F11:
 					self.toggle_fullscreen()
-				elif event.key == pygame.K_F4:
-					# Toggle font debug mode
-					self.settings.data["debug_font"] = not self.settings.data.get("debug_font", False)
-					self.settings.save()
 			elif self.state == "menu":
 				self._handle_menu_event(event)
 			elif self.state == "rules":
@@ -487,6 +371,7 @@ class GameApp:
 				self.state = "menu"
 			elif event.key == pygame.K_F5:
 				self.reset_game()
+				self.state = "game"  # Ensure we're in game state after reset
 			elif event.key == pygame.K_F3:
 				self.show_fps = not self.show_fps
 		elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1 and self.state == "game":
@@ -628,20 +513,6 @@ class GameApp:
 		sub_surface = self.font.render("军旗夺取战", True, COLORS["menu_subtitle"])
 		self.screen.blit(sub_surface, sub_surface.get_rect(center=(self.ui.screen_width // 2, self.ui.scaled(240))))
 
-		# Debug info for font rendering (can be removed later)
-		if self.settings.data.get("debug_font", False):
-			debug_font = self.tiny_font
-			debug_y = self.ui.scaled(50)
-			debug_texts = [
-				f"字体系统: {self.font_manager.system}",
-				f"可用字体: {len(self.font_manager.available_fonts)}个",
-				f"当前字体: {self.font_manager.available_fonts[0] if self.font_manager.available_fonts else 'None'}"
-			]
-			for text in debug_texts:
-				debug_surface = debug_font.render(text, True, COLORS["text_dim"])
-				self.screen.blit(debug_surface, (10, debug_y))
-				debug_y += self.ui.scaled(20)
-
 		for label, rect, _ in self.menu_buttons:
 			# Draw button with rounded corners effect
 			pygame.draw.rect(self.screen, COLORS["button_bg"], rect, border_radius=self.ui.scaled(16))
@@ -679,6 +550,16 @@ class GameApp:
 	def _draw_board(self) -> None:
 		bx, by = self.ui.board_origin
 		board_rect = pygame.Rect(bx, by, self.ui.board_width, self.ui.board_height)
+		
+		# Draw board shadow for depth
+		shadow_rect = board_rect.copy()
+		shadow_rect.x += self.ui.scaled(4)
+		shadow_rect.y += self.ui.scaled(4)
+		shadow_surface = pygame.Surface((shadow_rect.width, shadow_rect.height), pygame.SRCALPHA)
+		pygame.draw.rect(shadow_surface, COLORS["shadow"], shadow_surface.get_rect(), border_radius=self.ui.scaled(16))
+		self.screen.blit(shadow_surface, shadow_rect)
+		
+		# Draw board background
 		pygame.draw.rect(self.screen, COLORS["board_bg"], board_rect, border_radius=self.ui.scaled(16))
 
 		for r in range(BOARD_ROWS):
@@ -690,17 +571,56 @@ class GameApp:
 				coord = (r, c)
 				tile = self.game_state.board.tiles[coord]
 
-				color = COLORS["cell_normal"]
-				if tile.is_camp:
-					color = COLORS["camp"]
-				elif tile.is_headquarter:
-					color = COLORS["hq"]
-
-				pygame.draw.rect(self.screen, color, rect, border_radius=self.ui.scaled(10))
-
+				# Determine cell appearance based on tile type
 				if tile.on_rail:
-					pygame.draw.rect(self.screen, COLORS["rail"], rect, width=2, border_radius=self.ui.scaled(10))
+					# Railway cells with special styling
+					color = COLORS["rail_bg"]
+					pygame.draw.rect(self.screen, color, rect, border_radius=self.ui.scaled(8))
+					# Draw railway pattern (cross lines)
+					center_x = rect.centerx
+					center_y = rect.centery
+					line_length = self.ui.scaled(20)
+					pygame.draw.line(self.screen, COLORS["rail"], 
+								   (center_x - line_length // 2, center_y),
+								   (center_x + line_length // 2, center_y), 2)
+					pygame.draw.line(self.screen, COLORS["rail"],
+								   (center_x, center_y - line_length // 2),
+								   (center_x, center_y + line_length // 2), 2)
+				elif tile.is_camp:
+					# Camp with gradient effect
+					color = COLORS["camp"]
+					pygame.draw.rect(self.screen, color, rect, border_radius=self.ui.scaled(10))
+					pygame.draw.rect(self.screen, COLORS["camp_border"], rect, width=2, border_radius=self.ui.scaled(10))
+					# Draw camp symbol (four corners)
+					corner_size = self.ui.scaled(6)
+					offset = self.ui.scaled(8)
+					for dx, dy in [(offset, offset), (rect.width - offset, offset), 
+								 (offset, rect.height - offset), (rect.width - offset, rect.height - offset)]:
+						corner_rect = pygame.Rect(rect.x + dx - corner_size // 2, rect.y + dy - corner_size // 2,
+												corner_size, corner_size)
+						pygame.draw.rect(self.screen, COLORS["camp_border"], corner_rect, border_radius=2)
+				elif tile.is_headquarter:
+					# Headquarters with special styling
+					color = COLORS["hq"]
+					pygame.draw.rect(self.screen, color, rect, border_radius=self.ui.scaled(10))
+					pygame.draw.rect(self.screen, COLORS["hq_border"], rect, width=3, border_radius=self.ui.scaled(10))
+					# Draw HQ symbol (star shape simplified as diamond)
+					center_x = rect.centerx
+					center_y = rect.centery
+					star_size = self.ui.scaled(8)
+					points = [
+						(center_x, center_y - star_size),
+						(center_x + star_size, center_y),
+						(center_x, center_y + star_size),
+						(center_x - star_size, center_y)
+					]
+					pygame.draw.polygon(self.screen, COLORS["hq_border"], points, width=2)
+				else:
+					# Normal cells
+					color = COLORS["cell_normal"]
+					pygame.draw.rect(self.screen, color, rect, border_radius=self.ui.scaled(10))
 
+				# Highlight selected piece
 				if self.selected == coord:
 					pygame.draw.rect(self.screen, COLORS["highlight"], rect, width=4, border_radius=self.ui.scaled(10))
 
