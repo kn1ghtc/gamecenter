@@ -37,19 +37,20 @@ class FontManager:
 	def __init__(self) -> None:
 		if not pygame.font.get_init():
 			pygame.font.init()
-		
+
 		self.system = platform.system()
 		self.fonts: Dict[Tuple[int, bool], pygame.font.Font] = {}
 		self.font_name = self._get_platform_font()
-		
+
 	def _get_platform_font(self) -> str:
 		"""Get the best Chinese font for current platform."""
 		if self.system == "Darwin":
-			return "PingFang SC"
+			# Use pygame font name (lowercase without spaces) for macOS
+			return "hiraginosansgb"  # Hiragino Sans GB - best Chinese support on macOS
 		elif self.system == "Windows":
-			return "Microsoft YaHei"
+			return "microsoftyahei"
 		else:  # Linux and others
-			return "Noto Sans CJK SC"
+			return "notosanscjksc"
 
 	def get_font(self, size: int, bold: bool = False) -> pygame.font.Font:
 		"""Get a Chinese-compatible font with given size and style."""
@@ -263,17 +264,18 @@ class GameApp:
 	def reset_game(self, randomize: Optional[bool] = None) -> None:
 		rng = random.Random()
 		board = JunqiBoard()
-		
+
 		# Use configuration to determine randomization
 		use_random = self.settings.data.get("random_layout", True) if randomize is None else randomize
 		board.reset(rng, randomize=use_random)
-		
+
 		# Initialize all pieces as face up or face down based on dark_mode setting
 		dark_mode = self.settings.data.get("dark_mode", True)
 		for tile in board.tiles.values():
-			if tile.occupant and dark_mode:
-				tile.occupant.face_up = False
-		
+			if tile.occupant:
+				# In dark mode: face down (False), in light mode: face up (True)
+				tile.occupant.face_up = not dark_mode
+
 		self.game_state = GameState(board)
 		self.game_state.current_player = Player.RED
 		self.game_state.logs = []
@@ -282,7 +284,7 @@ class GameApp:
 		self.highlight_moves = []
 		self.ai_thinking = False
 		self.ai_start_time = 0.0
-		
+
 		if dark_mode:
 			self.message = "暗棋模式：请翻开己方棋子后再行动。"
 		else:
@@ -550,7 +552,7 @@ class GameApp:
 	def _draw_board(self) -> None:
 		bx, by = self.ui.board_origin
 		board_rect = pygame.Rect(bx, by, self.ui.board_width, self.ui.board_height)
-		
+
 		# Draw board shadow for depth
 		shadow_rect = board_rect.copy()
 		shadow_rect.x += self.ui.scaled(4)
@@ -558,7 +560,7 @@ class GameApp:
 		shadow_surface = pygame.Surface((shadow_rect.width, shadow_rect.height), pygame.SRCALPHA)
 		pygame.draw.rect(shadow_surface, COLORS["shadow"], shadow_surface.get_rect(), border_radius=self.ui.scaled(16))
 		self.screen.blit(shadow_surface, shadow_rect)
-		
+
 		# Draw board background
 		pygame.draw.rect(self.screen, COLORS["board_bg"], board_rect, border_radius=self.ui.scaled(16))
 
@@ -580,7 +582,7 @@ class GameApp:
 					center_x = rect.centerx
 					center_y = rect.centery
 					line_length = self.ui.scaled(20)
-					pygame.draw.line(self.screen, COLORS["rail"], 
+					pygame.draw.line(self.screen, COLORS["rail"],
 								   (center_x - line_length // 2, center_y),
 								   (center_x + line_length // 2, center_y), 2)
 					pygame.draw.line(self.screen, COLORS["rail"],
@@ -594,7 +596,7 @@ class GameApp:
 					# Draw camp symbol (four corners)
 					corner_size = self.ui.scaled(6)
 					offset = self.ui.scaled(8)
-					for dx, dy in [(offset, offset), (rect.width - offset, offset), 
+					for dx, dy in [(offset, offset), (rect.width - offset, offset),
 								 (offset, rect.height - offset), (rect.width - offset, rect.height - offset)]:
 						corner_rect = pygame.Rect(rect.x + dx - corner_size // 2, rect.y + dy - corner_size // 2,
 												corner_size, corner_size)
