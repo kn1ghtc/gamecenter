@@ -1,0 +1,16 @@
+{
+  "game_mode": "light",
+  "board_style": "classic",
+  "allow_undo": true,
+  "max_undo_steps": 3,
+  "volume": 0.6,
+  "difficulty": "standard",
+  "show_fps": false,
+  "fullscreen": false,
+  "ai_time_limit": 2.0,
+  "ai_random_factor": 0.05,
+  "random_layout": true,
+  "show_legal_moves": true,
+  "animation_speed": 1.0,
+  "board_theme": "wooden"
+}

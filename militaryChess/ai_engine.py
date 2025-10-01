@@ -237,38 +237,48 @@ class AIMovePlanner:
 
 
 DEFAULT_SETTINGS = {
+	"game_mode": "dark",  # "dark" or "light"
+	"board_style": "classic",
+	"allow_undo": True,
+	"max_undo_steps": 3,
 	"volume": 0.6,
 	"difficulty": "standard",
 	"show_fps": False,
+	"fullscreen": False,
 	"ai_time_limit": 2.0,
 	"ai_random_factor": 0.05,
 	"random_layout": True,
-	"dark_mode": True,
-	"fullscreen": False,
-	"scale_factor": 1.0,
+	"show_legal_moves": True,
+	"animation_speed": 1.0,
+	"board_theme": "wooden",
 }
 
 
 class SettingsManager:
 	def __init__(self, path: Optional[Path] = None) -> None:
 		if path is None:
-			path = Path(__file__).resolve().with_name("settings.json")
+			path = Path(__file__).resolve().with_name("config.json")
 		self.path = path
 		self.data = DEFAULT_SETTINGS.copy()
 		self.load()
 
 	def load(self) -> None:
 		if not self.path.exists():
+			self.save()  # Create default config
 			return
 		try:
 			with self.path.open("r", encoding="utf-8") as fh:
 				payload = json.load(fh)
 			if isinstance(payload, dict):
+				# Update with loaded values, keep defaults for missing keys
 				for key in DEFAULT_SETTINGS:
 					if key in payload:
 						self.data[key] = payload[key]
+				# Save to ensure all new keys are added
+				self.save()
 		except Exception:
 			self.data = DEFAULT_SETTINGS.copy()
+			self.save()
 
 	def save(self) -> None:
 		try:
@@ -276,6 +286,13 @@ class SettingsManager:
 				json.dump(self.data, fh, indent=2, ensure_ascii=False)
 		except Exception:
 			pass
+
+	def get(self, key: str, default=None):
+		return self.data.get(key, default)
+
+	def set(self, key: str, value) -> None:
+		self.data[key] = value
+		self.save()
 
 	def as_config(self) -> AIConfig:
 		return AIConfig(
