@@ -746,13 +746,20 @@ class GameState:
 				winner = player.opponent
 				return GameStatus(GameTermination.VICTORY, winner, "夺旗胜利")
 
-		# Secondary condition: opponent has no legal moves (stalemate leads to victory)
+		# Secondary condition: opponent has no legal moves AND no face-down pieces
 		opponent = self.current_player.opponent
 		opponent_moves = self.all_legal_moves(opponent)
 		if not opponent_moves:
-			mobility = self.board.mobility(opponent)
-			if mobility == 0:
-				return GameStatus(GameTermination.VICTORY, self.current_player, "对手无子可动")
+			# Check if opponent has any face-down pieces that could be flipped
+			has_face_down = any(
+				tile.occupant and tile.occupant.owner is opponent and not tile.occupant.face_up
+				for tile in self.board.tiles.values()
+			)
+			# Only declare victory if opponent has no moves AND no face-down pieces
+			if not has_face_down:
+				mobility = self.board.mobility(opponent)
+				if mobility == 0:
+					return GameStatus(GameTermination.VICTORY, self.current_player, "对手无子可动")
 
 		# Draw condition: long game without captures
 		if self.turn_index - self.board.last_capture_turn > 120:
