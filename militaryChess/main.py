@@ -503,7 +503,7 @@ class GameApp:
 			elif event.type == pygame.KEYDOWN:
 				# 通用快捷键（忽略大小写 - 使用unicode字符判断）
 				key_char = event.unicode.lower() if event.unicode else ''
-				
+
 				if event.key == pygame.K_f or key_char == 'f':
 					self.toggle_fullscreen()
 				elif (event.key == pygame.K_h or key_char == 'h') and self.state in {"game", "gameover"}:
