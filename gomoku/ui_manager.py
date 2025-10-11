@@ -9,14 +9,54 @@ from __future__ import annotations
 import math
 import random
 import time
-from typing import List, Optional, Tuple
+from dataclasses import dataclass
+from typing import List, Optional, Tuple, Sequence
 
 import pygame
 
-from gamecenter.gomoku.config.constants import COLORS, BOARD_SIZE, CELL_SIZE
-from gamecenter.gomoku.config.ui_config import LAYOUT, FONTS, ANIMATION, RENDERING, INTERACTION
+from gamecenter.gomoku.config.config_manager import get_config_manager
 from gamecenter.gomoku.font_manager import get_font_manager
 from gamecenter.gomoku.game_logic import Board, Player, GameState
+
+
+_CONFIG = get_config_manager()
+_UI_CONFIG = _CONFIG.get_ui_config()
+LAYOUT = _UI_CONFIG.get('layout', {})
+FONTS = _UI_CONFIG.get('fonts', {})
+ANIMATION = _UI_CONFIG.get('animation', {})
+RENDERING = _UI_CONFIG.get('rendering', {})
+INTERACTION = _UI_CONFIG.get('interaction', {})
+COLORS = _CONFIG.get_colors()
+BOARD_SIZE = _CONFIG.get_gameplay_config().get('board_size', 15)
+
+
+@dataclass(frozen=True)
+class PlayerPanelData:
+    """Player panel rendering data."""
+
+    name: str
+    player: Player
+    score: int
+    last_move: Optional[str]
+    last_move_time: Optional[float]
+    total_time: float
+    status_line: str
+    is_active: bool
+    is_ai: bool
+    is_thinking: bool
+    thinking_time: float
+
+
+@dataclass(frozen=True)
+class UISidebarState:
+    """Aggregated sidebar state for rendering."""
+
+    game_mode_label: str
+    current_turn_text: str
+    status_type: str
+    move_count: int
+    players: Sequence[PlayerPanelData]
+    info_lines: Sequence[str]
 
 
 class AdaptiveLayout:
@@ -41,31 +81,57 @@ class AdaptiveLayout:
     
     def _calculate_layout(self) -> None:
         """计算布局参数"""
-        # 计算棋盘可用空间
-        available_width = self.window_width - self.ui_panel_width - self.board_margin * 2
-        available_height = self.window_height - self.board_margin * 2
-        
-        # 计算格子大小（保持正方形）
-        max_cell_size = min(
-            available_width // (self.board_size - 1),
-            available_height // (self.board_size - 1)
-        )
-        
-        self.cell_size = max(20, max_cell_size)  # 最小20像素
-        
-        # 计算棋盘实际大小
-        self.board_width = self.cell_size * (self.board_size - 1)
-        self.board_height = self.cell_size * (self.board_size - 1)
-        
-        # 计算棋盘起始位置（居中）
-        self.board_x = (self.window_width - self.ui_panel_width - self.board_width) // 2
-        self.board_y = (self.window_height - self.board_height) // 2
+        effective_width = self.window_width - self.ui_panel_width - self.board_margin * 2
+        effective_height = self.window_height - self.board_margin * 2
+
+        max_width = max(1.0, float(effective_width))
+        max_height = max(1.0, float(effective_height))
+        divisor = float(max(1, self.board_size - 1))
+
+        width_limit = max_width / divisor
+        height_limit = max_height / divisor
+        is_width_limited = width_limit <= height_limit
+        if is_width_limited:
+            self.cell_size = max(1.0, width_limit)
+        else:
+            self.cell_size = max(1.0, height_limit)
+
+        self.board_width = self.cell_size * divisor
+        self.board_height = self.cell_size * divisor
+
+        # 计算右侧面板起点，确保不会出现负值
+        self.panel_x = max(0, self.window_width - self.ui_panel_width)
+
+        # 左侧保留边距，必要时向左压缩以保证棋盘完全可见
+        left_bound = self.board_margin
+        right_bound = self.panel_x - self.board_margin
+
+        if right_bound <= left_bound:
+            # 面板占据多数宽度时退化为贴边展示
+            available_x = self.panel_x - self.board_width - self.board_margin
+            self.board_x = max(0.0, available_x)
+        else:
+            usable_width = right_bound - left_bound
+            if is_width_limited and self.board_width <= usable_width:
+                # 左右同时贴合可用区域
+                self.board_x = left_bound
+                self.board_width = usable_width
+                self.cell_size = self.board_width / divisor
+                self.board_height = self.cell_size * divisor
+            else:
+                # 宽度不足时仍保持右缘贴近面板并防止超出左界
+                self.board_x = max(0.0, right_bound - self.board_width)
+
+        vertical_space = self.window_height - self.board_height - self.board_margin * 2
+        if vertical_space > 0:
+            self.board_y = self.board_margin + vertical_space // 2
+        else:
+            self.board_y = self.board_margin
         
         # 棋子半径
-        self.stone_radius = int(self.cell_size * 0.45)
+        self.stone_radius = max(2, int(self.cell_size * 0.45))
         
         # UI面板区域
-        self.panel_x = self.window_width - self.ui_panel_width
         self.panel_y = 0
     
     def board_to_pixel(self, row: int, col: int) -> Tuple[int, int]:
@@ -79,7 +145,7 @@ class AdaptiveLayout:
         """
         x = self.board_x + col * self.cell_size
         y = self.board_y + row * self.cell_size
-        return (x, y)
+        return (int(round(x)), int(round(y)))
     
     def pixel_to_board(self, x: int, y: int) -> Optional[Tuple[int, int]]:
         """将像素坐标转换为棋盘坐标
@@ -93,10 +159,10 @@ class AdaptiveLayout:
         # 计算相对于棋盘的坐标
         rel_x = x - self.board_x
         rel_y = y - self.board_y
-        
+
         # 转换为棋盘坐标
-        col = round(rel_x / self.cell_size)
-        row = round(rel_y / self.cell_size)
+        col = int(round(rel_x / self.cell_size))
+        row = int(round(rel_y / self.cell_size))
         
         # 检查有效性
         if 0 <= row < self.board_size and 0 <= col < self.board_size:
@@ -123,9 +189,9 @@ class BoardRenderer:
     
     def _generate_wood_texture(self) -> pygame.Surface:
         """生成木纹纹理"""
-        width = self.layout.board_width + self.layout.board_margin * 2
-        height = self.layout.board_height + self.layout.board_margin * 2
-        
+        width = int(math.ceil(self.layout.board_width + self.layout.board_margin * 2))
+        height = int(math.ceil(self.layout.board_height + self.layout.board_margin * 2))
+
         surface = pygame.Surface((width, height))
         base_color = COLORS['board_bg']
         surface.fill(base_color)
@@ -133,8 +199,8 @@ class BoardRenderer:
         if RENDERING['board_wood_texture']:
             # 添加木纹效果
             rng = random.Random(42)  # 使用固定种子保持一致性
-            for i in range(height // 3):
-                y = rng.randint(0, height)
+            for _ in range(height // 3):
+                y = rng.randint(0, max(0, height - 1))
                 darkness = rng.randint(-15, 5)
                 line_color = tuple(max(0, min(255, c + darkness)) for c in base_color)
                 pygame.draw.line(surface, line_color, (0, y), (width, y), 1)
@@ -149,10 +215,10 @@ class BoardRenderer:
         """
         # 绘制木纹背景
         board_rect = pygame.Rect(
-            self.layout.board_x - self.layout.board_margin,
-            self.layout.board_y - self.layout.board_margin,
-            self.layout.board_width + self.layout.board_margin * 2,
-            self.layout.board_height + self.layout.board_margin * 2
+            int(round(self.layout.board_x - self.layout.board_margin)),
+            int(round(self.layout.board_y - self.layout.board_margin)),
+            int(math.ceil(self.layout.board_width + self.layout.board_margin * 2)),
+            int(math.ceil(self.layout.board_height + self.layout.board_margin * 2))
         )
         screen.blit(self.wood_texture, board_rect.topleft)
         
@@ -382,20 +448,20 @@ class UIManager:
     def _create_buttons(self) -> None:
         """创建UI按钮"""
         panel_x = self.layout.panel_x + LAYOUT['panel_padding']
-        start_y = 100
         spacing = LAYOUT['button_spacing']
         btn_width = LAYOUT['button_width']
         btn_height = LAYOUT['button_height']
-        
+
+        # 初始位置占位，实际布局在绘制面板时动态调整
+        base_y = self.layout.window_height // 2
         self.buttons = {
-            'new_game': Button(panel_x, start_y, btn_width, btn_height, '新游戏'),
-            'undo': Button(panel_x, start_y + (btn_height + spacing), 
-                          btn_width, btn_height, '悔棋'),
-            'difficulty': Button(panel_x, start_y + (btn_height + spacing) * 2,
-                               btn_width, btn_height, '难度: 中等'),
-            'save': Button(panel_x, start_y + (btn_height + spacing) * 3,
-                          btn_width, btn_height, '保存'),
+            'new_game': Button(panel_x, base_y, btn_width, btn_height, '新游戏'),
+            'undo': Button(panel_x, base_y + (btn_height + spacing), btn_width, btn_height, '悔棋'),
+            'difficulty': Button(panel_x, base_y + (btn_height + spacing) * 2, btn_width, btn_height, 'AI难度: 中等'),
+            'mode': Button(panel_x, base_y + (btn_height + spacing) * 3, btn_width, btn_height, '模式: 人机对战'),
+            'save': Button(panel_x, base_y + (btn_height + spacing) * 4, btn_width, btn_height, '保存棋局'),
         }
+        self._button_order = ['new_game', 'undo', 'difficulty', 'mode', 'save']
     
     def update(self, dt: float) -> None:
         """更新动画
@@ -416,12 +482,13 @@ class UIManager:
             self.winning_line_blink_state = not self.winning_line_blink_state
             self.winning_line_blink_time = current_time
     
-    def draw(self, screen: pygame.Surface, board: Board) -> None:
+    def draw(self, screen: pygame.Surface, board: Board, sidebar_state: UISidebarState) -> None:
         """绘制完整UI
         
         Args:
             screen: Pygame屏幕Surface
             board: 棋盘实例
+            sidebar_state: 侧边栏渲染状态
         """
         # 清屏
         screen.fill(COLORS['ui_bg'])
@@ -463,57 +530,159 @@ class UIManager:
                 self.board_renderer.draw_stone(screen, row, col, board.current_player, alpha=0.5)
         
         # 绘制UI面板
-        self._draw_ui_panel(screen, board)
+        self._draw_ui_panel(screen, board, sidebar_state)
     
-    def _draw_ui_panel(self, screen: pygame.Surface, board: Board) -> None:
+    def _draw_ui_panel(self, screen: pygame.Surface, board: Board, sidebar_state: UISidebarState) -> None:
         """绘制UI面板"""
-        panel_rect = pygame.Rect(self.layout.panel_x, 0, 
-                                self.layout.ui_panel_width, self.layout.window_height)
+        panel_rect = pygame.Rect(
+            self.layout.panel_x,
+            0,
+            self.layout.ui_panel_width,
+            self.layout.window_height,
+        )
         pygame.draw.rect(screen, COLORS['ui_panel'], panel_rect)
-        
-        # 绘制标题
-        title_surf = self.font_mgr.render_text("五子棋", FONTS['title'], 
-                                              COLORS['ui_text'], bold=True)
-        title_rect = title_surf.get_rect(centerx=panel_rect.centerx, top=30)
+
+        padding = LAYOUT.get('panel_padding', 15)
+        player_height = LAYOUT.get('player_info_height', 140)
+        panel_spacing = LAYOUT.get('player_panel_spacing', 18)
+        info_margin = LAYOUT.get('info_section_margin', 20)
+
+        # 标题
+        title_surf = self.font_mgr.render_text("五子棋", FONTS['title'], COLORS['ui_text'], bold=True)
+        title_rect = title_surf.get_rect(
+            centerx=panel_rect.centerx,
+            top=panel_rect.top + padding,
+        )
         screen.blit(title_surf, title_rect)
-        
-        # 绘制按钮
-        for button in self.buttons.values():
-            button.draw(screen)
-        
-        # 绘制游戏状态
-        self._draw_game_status(screen, board, panel_rect)
-    
-    def _draw_game_status(self, screen: pygame.Surface, board: Board, panel_rect: pygame.Rect) -> None:
+
+        # 玩家面板
+        panel_width = self.layout.ui_panel_width - padding * 2
+        panel_x = panel_rect.left + padding
+        current_y = title_rect.bottom + panel_spacing
+
+        for player_data in sidebar_state.players:
+            player_rect = pygame.Rect(panel_x, current_y, panel_width, player_height)
+            self._draw_player_panel(screen, player_rect, player_data)
+            current_y = player_rect.bottom + panel_spacing
+
+        # 布局按钮
+        button_start_y = current_y + info_margin
+        self._layout_buttons(panel_rect, button_start_y)
+        for name in self._button_order:
+            self.buttons[name].draw(screen)
+
+        # 游戏状态信息
+        status_start_y = self._button_bottom() + info_margin
+        self._draw_game_status(screen, panel_rect, sidebar_state, status_start_y)
+
+    def _draw_player_panel(self, screen: pygame.Surface, rect: pygame.Rect, data: PlayerPanelData) -> None:
+        """绘制单个玩家信息面板"""
+        active_bg = COLORS.get('panel_active_bg', self._shift_color(COLORS['ui_panel'], 20))
+        inactive_bg = COLORS.get('panel_inactive_bg', self._shift_color(COLORS['ui_panel'], -5))
+        border_active = COLORS.get('panel_border_active', COLORS['info'])
+        border_inactive = COLORS.get('panel_border_inactive', COLORS['ui_text_dim'])
+
+        bg_color = active_bg if data.is_active else inactive_bg
+        border_color = border_active if data.is_active else border_inactive
+
+        pygame.draw.rect(screen, bg_color, rect, border_radius=12)
+        pygame.draw.rect(screen, border_color, rect, 2, border_radius=12)
+
+        indicator_radius = 12
+        indicator_color = (20, 20, 20) if data.player == Player.BLACK else (240, 240, 240)
+        indicator_pos = (rect.left + 24, rect.top + 28)
+        pygame.draw.circle(screen, indicator_color, indicator_pos, indicator_radius)
+        pygame.draw.circle(screen, COLORS['board_border'], indicator_pos, indicator_radius, 2)
+
+        text_x = indicator_pos[0] + indicator_radius + 14
+        current_y = rect.top + 12
+
+        title_text = f"{data.name}  |  积分 {data.score}"
+        title_color = COLORS['ui_text']
+        title_surf = self.font_mgr.render_text(title_text, FONTS['large'], title_color, bold=True)
+        screen.blit(title_surf, (text_x, current_y))
+        current_y += title_surf.get_height() + 6
+
+        status_color = COLORS['info'] if data.is_thinking else COLORS['ui_text']
+        status_text = data.status_line
+        status_surf = self.font_mgr.render_text(status_text, FONTS['normal'], status_color)
+        screen.blit(status_surf, (text_x, current_y))
+        current_y += status_surf.get_height() + 6
+
+        last_move = data.last_move or "--"
+        last_move_time = self._format_time_text(data.last_move_time)
+        move_line = f"最近落子: {last_move}  |  用时 {last_move_time}"
+        move_surf = self.font_mgr.render_text(move_line, FONTS['small'], COLORS['ui_text_dim'])
+        screen.blit(move_surf, (text_x, current_y))
+        current_y += move_surf.get_height() + 4
+
+        total_time_text = self._format_time_text(data.total_time)
+        total_line = f"累计用时: {total_time_text}"
+        total_surf = self.font_mgr.render_text(total_line, FONTS['small'], COLORS['ui_text_dim'])
+        screen.blit(total_surf, (text_x, current_y))
+
+        if data.is_thinking and data.thinking_time > 0:
+            thinking_text = f"思考中: {self._format_time_text(data.thinking_time)}"
+            thinking_surf = self.font_mgr.render_text(thinking_text, FONTS['small'], COLORS['info'])
+            screen.blit(thinking_surf, (text_x, current_y + total_surf.get_height() + 4))
+
+    def _layout_buttons(self, panel_rect: pygame.Rect, start_y: int) -> None:
+        panel_x = panel_rect.left + LAYOUT.get('panel_padding', 15)
+        spacing = LAYOUT.get('button_spacing', 12)
+        for index, name in enumerate(self._button_order):
+            button = self.buttons[name]
+            button.rect.x = panel_x
+            button.rect.y = start_y + index * (button.rect.height + spacing)
+
+    def _button_bottom(self) -> int:
+        last_button = self.buttons[self._button_order[-1]]
+        return last_button.rect.bottom
+
+    def _draw_game_status(self, screen: pygame.Surface, panel_rect: pygame.Rect,
+                           sidebar_state: UISidebarState, start_y: int) -> None:
         """绘制游戏状态信息"""
-        y = panel_rect.bottom - 300
-        x = panel_rect.centerx
-        
-        # 当前回合
-        if board.state == GameState.ONGOING:
-            player_text = "黑方" if board.current_player == Player.BLACK else "白方"
-            status_text = f"当前回合: {player_text}"
-            color = COLORS['ui_text']
-        elif board.state == GameState.BLACK_WIN:
-            status_text = "黑方胜利！"
-            color = COLORS['success']
-        elif board.state == GameState.WHITE_WIN:
-            status_text = "白方胜利！"
-            color = COLORS['success']
-        else:
-            status_text = "平局"
-            color = COLORS['warning']
-        
-        status_surf = self.font_mgr.render_text(status_text, FONTS['normal'], color, bold=True)
-        status_rect = status_surf.get_rect(centerx=x, top=y)
+        text_x = panel_rect.left + LAYOUT.get('panel_padding', 15)
+        center_x = panel_rect.centerx
+
+        mode_surf = self.font_mgr.render_text(sidebar_state.game_mode_label, FONTS['normal'], COLORS['ui_text_dim'])
+        mode_rect = mode_surf.get_rect(topleft=(text_x, start_y))
+        screen.blit(mode_surf, mode_rect)
+
+        status_color = self._get_status_color(sidebar_state.status_type)
+        status_surf = self.font_mgr.render_text(sidebar_state.current_turn_text, FONTS['large'], status_color, bold=True)
+        status_rect = status_surf.get_rect(centerx=center_x, top=mode_rect.bottom + 6)
         screen.blit(status_surf, status_rect)
-        
-        # 步数
-        y += 40
-        moves_text = f"步数: {len(board.history)}"
-        moves_surf = self.font_mgr.render_text(moves_text, FONTS['small'], COLORS['ui_text_dim'])
-        moves_rect = moves_surf.get_rect(centerx=x, top=y)
+
+        moves_text = f"总步数: {sidebar_state.move_count}"
+        moves_surf = self.font_mgr.render_text(moves_text, FONTS['normal'], COLORS['ui_text_dim'])
+        moves_rect = moves_surf.get_rect(centerx=center_x, top=status_rect.bottom + 6)
         screen.blit(moves_surf, moves_rect)
+
+        info_y = moves_rect.bottom + 10
+        for line in sidebar_state.info_lines:
+            info_surf = self.font_mgr.render_text(line, FONTS['small'], COLORS['ui_text_dim'])
+            info_rect = info_surf.get_rect(centerx=center_x, top=info_y)
+            screen.blit(info_surf, info_rect)
+            info_y += info_surf.get_height() + 4
+
+    def _get_status_color(self, status_type: str) -> tuple:
+        if status_type in {GameState.BLACK_WIN.value, 'black_win'}:
+            return COLORS.get('success', COLORS['ui_text'])
+        if status_type in {GameState.WHITE_WIN.value, 'white_win'}:
+            return COLORS.get('success', COLORS['ui_text'])
+        if status_type in {GameState.DRAW.value, 'draw'}:
+            return COLORS.get('warning', COLORS['ui_text'])
+        return COLORS['ui_text']
+
+    @staticmethod
+    def _shift_color(color: tuple, delta: int) -> tuple:
+        return tuple(max(0, min(255, c + delta)) for c in color)
+
+    @staticmethod
+    def _format_time_text(value: Optional[float]) -> str:
+        if value is None:
+            return "--"
+        return f"{value:.2f}s"
     
     def add_stone_animation(self, row: int, col: int) -> None:
         """添加落子动画

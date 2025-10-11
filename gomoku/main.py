@@ -6,11 +6,15 @@ Gomoku (Five in a Row) - Main Entry Point
 
 from __future__ import annotations
 
+import copy
 import json
 import os
 import sys
+import time
+from collections import deque
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Deque, Dict, Optional, Tuple
 
 import pygame
 
@@ -25,13 +29,51 @@ if str(PROJECT_ROOT) not in sys.path:
 
 # 绝对导入
 from gamecenter.gomoku.ai_engine_manager import create_ai_engine
-from gamecenter.gomoku.config.constants import (
-    WINDOW_DEFAULT_HEIGHT, WINDOW_DEFAULT_WIDTH, WINDOW_MIN_HEIGHT,
-    WINDOW_MIN_WIDTH, MAX_UNDO_COUNT, SETTINGS_FILE, AI_ENGINE_TYPE, AI_DEFAULT_DIFFICULTY
-)
+from gamecenter.gomoku.config.config_manager import get_config_manager
 from gamecenter.gomoku.font_manager import get_font_manager
 from gamecenter.gomoku.game_logic import Board, GameManager, GameState, Player
-from gamecenter.gomoku.ui_manager import UIManager
+from gamecenter.gomoku.ui_manager import UIManager, UISidebarState, PlayerPanelData
+
+
+_CONFIG = get_config_manager()
+_WINDOW_CONFIG = _CONFIG.get_window_config()
+_GAMEPLAY_CONFIG = _CONFIG.get_gameplay_config()
+_ENGINE_DEFAULTS = _CONFIG.get_engine_defaults()
+_DEFAULT_SETTINGS = _CONFIG.get_default_settings()
+_SETTINGS_FILENAME = _CONFIG.get_path('settings_file', 'user_settings.json')
+_SAVE_DIR = _CONFIG.get_path('save_dir', 'saves')
+_AUDIO_CONFIG = _CONFIG.get_audio_config()
+
+WINDOW_MIN_WIDTH = _WINDOW_CONFIG.get('min_width', 800)
+WINDOW_MIN_HEIGHT = _WINDOW_CONFIG.get('min_height', 700)
+WINDOW_DEFAULT_WIDTH = _WINDOW_CONFIG.get('default_width', 1000)
+WINDOW_DEFAULT_HEIGHT = _WINDOW_CONFIG.get('default_height', 900)
+MAX_UNDO_COUNT = _GAMEPLAY_CONFIG.get('max_undo_count', 3)
+AI_DEFAULT_DIFFICULTY = _ENGINE_DEFAULTS.get('difficulty', 'medium')
+AI_ENGINE_TYPE = _ENGINE_DEFAULTS.get('type', 'auto')
+AI_TIME_LIMIT = _ENGINE_DEFAULTS.get('time_limit', _GAMEPLAY_CONFIG.get('ai_time_limit', 5.0))
+DEFAULT_VOLUME = _AUDIO_CONFIG.get('default_volume', 0.7)
+
+
+@dataclass
+class PlayerRuntimeState:
+    """Runtime information tracked for each player."""
+
+    name: str
+    is_ai: bool
+    score: int = 0
+    last_move: Optional[Tuple[int, int]] = None
+    last_move_time: Optional[float] = None
+    total_time: float = 0.0
+    thinking: bool = False
+    thinking_duration: float = 0.0
+
+    def reset_round(self) -> None:
+        """Clear per-round data while preserving cumulative score."""
+        self.last_move = None
+        self.last_move_time = None
+        self.thinking = False
+        self.thinking_duration = 0.0
 
 
 class GomokuGame:
@@ -40,6 +82,7 @@ class GomokuGame:
     def __init__(self):
         """初始化游戏"""
         pygame.init()
+        self.settings_path = Path(__file__).parent / _SETTINGS_FILENAME
         
         # 加载设置
         self.settings = self._load_settings()
@@ -54,16 +97,33 @@ class GomokuGame:
         pygame.display.set_caption("五子棋 Gomoku - Modern Edition")
         
         # 创建游戏对象
-        self.game_manager = GameManager(max_undo=MAX_UNDO_COUNT)
+        max_undo = self.settings['game'].get('max_undo_count', MAX_UNDO_COUNT)
+        self.game_manager = GameManager(max_undo=max_undo)
         self.ui_manager = UIManager(width, height)
         
         # AI设置（使用AI引擎管理器）
         difficulty_name = self.settings['game'].get('ai_difficulty', AI_DEFAULT_DIFFICULTY)
         engine_type = self.settings['game'].get('ai_engine_type', AI_ENGINE_TYPE)
-        self.ai_controller = create_ai_engine(engine_type, difficulty_name, time_limit=5.0)
+        time_limit = self.settings['game'].get('ai_time_limit', AI_TIME_LIMIT)
+        self.ai_controller = create_ai_engine(engine_type, difficulty_name, time_limit=time_limit)
         self.ai_thinking = False
         self.ai_player = Player.WHITE  # AI默认执白
         self.game_mode = 'pvc'  # 默认人机对战 'pvp'双人 或 'pvc'人机
+        self.player_states: Dict[Player, PlayerRuntimeState] = {
+            Player.BLACK: PlayerRuntimeState(name="玩家", is_ai=False),
+            Player.WHITE: PlayerRuntimeState(name="AI", is_ai=True),
+        }
+        self.status_messages: Deque[str] = deque(maxlen=3)
+        self.turn_start_time: float = time.time()
+        self.ai_think_start: Optional[float] = None
+        self.game_result_recorded = False
+        self._sync_player_profiles()
+        self._log_info("新局初始化完成")
+
+        difficulty_configs = _CONFIG.get_difficulty_names()
+        difficulty_config = difficulty_configs.get(difficulty_name)
+        if 'difficulty' in self.ui_manager.buttons and difficulty_config:
+            self.ui_manager.buttons['difficulty'].text = f"AI难度: {difficulty_config.display_name}"
         
         # 时钟
         self.clock = pygame.time.Clock()
@@ -72,39 +132,214 @@ class GomokuGame:
     
     def _load_settings(self) -> dict:
         """加载设置"""
-        settings_path = Path(__file__).parent / SETTINGS_FILE
         try:
-            with open(settings_path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            with open(self.settings_path, 'r', encoding='utf-8') as f:
+                loaded = json.load(f)
         except Exception:
-            # 返回默认设置
-            return {
-                'game': {
-                    'ai_difficulty': AI_DEFAULT_DIFFICULTY,
-                    'ai_engine_type': AI_ENGINE_TYPE,
-                    'max_undo_count': 3
-                },
-                'display': {
-                    'window_width': WINDOW_DEFAULT_WIDTH,
-                    'window_height': WINDOW_DEFAULT_HEIGHT,
-                    'fullscreen': False
-                },
-                'audio': {'sound_enabled': True, 'volume': 0.7},
-                'ui': {
-                    'show_coordinates': False,
-                    'hover_preview': True,
-                    'ui_panel_width': 300  # 添加缺失的参数
-                }
-            }
-    
+            return copy.deepcopy(_DEFAULT_SETTINGS)
+
+        defaults = copy.deepcopy(_DEFAULT_SETTINGS)
+        for section, value in loaded.items():
+            if isinstance(value, dict):
+                defaults.setdefault(section, {}).update(value)
+            else:
+                defaults[section] = value
+        return defaults
+
     def _save_settings(self) -> None:
-        """保存设置"""
-        settings_path = Path(__file__).parent / SETTINGS_FILE
+        """保存当前设置到磁盘"""
         try:
-            with open(settings_path, 'w', encoding='utf-8') as f:
-                json.dump(self.settings, f, indent=2, ensure_ascii=False)
-        except Exception as e:
-            print(f"保存设置失败: {e}")
+            self.settings_path.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.settings_path, 'w', encoding='utf-8') as fp:
+                json.dump(self.settings, fp, indent=2, ensure_ascii=False)
+        except Exception as exc:  # pragma: no cover - 仅日志输出
+            print(f"保存设置失败: {exc}")
+
+    def _log_info(self, message: str) -> None:
+        """记录状态信息供侧边栏显示"""
+        self.status_messages.appendleft(message)
+
+    def _sync_player_profiles(self) -> None:
+        """根据当前模式刷新玩家名称和AI标志"""
+        if self.game_mode == 'pvc':
+            self.player_states[Player.BLACK].name = "玩家"
+            self.player_states[Player.BLACK].is_ai = False
+            self.player_states[Player.WHITE].name = "AI"
+            self.player_states[Player.WHITE].is_ai = True
+            self.ai_player = Player.WHITE
+        else:
+            self.player_states[Player.BLACK].name = "玩家一"
+            self.player_states[Player.BLACK].is_ai = False
+            self.player_states[Player.WHITE].name = "玩家二"
+            self.player_states[Player.WHITE].is_ai = False
+            self.ai_player = Player.WHITE
+
+        for state in self.player_states.values():
+            state.thinking = False
+            state.thinking_duration = 0.0
+
+    @staticmethod
+    def _format_move(move: Optional[Tuple[int, int]]) -> Optional[str]:
+        """将落子坐标转换为棋谱表示"""
+        if move is None:
+            return None
+        row, col = move
+        col_char = chr(ord('A') + col)
+        return f"{col_char}{row + 1}"
+    
+    def _refresh_last_moves_from_history(self) -> None:
+        """根据当前棋谱刷新最近落子信息"""
+        latest: Dict[Player, Optional[Tuple[int, int]]] = {
+            Player.BLACK: None,
+            Player.WHITE: None,
+        }
+        for move in self.game_manager.board.history:
+            latest[move.player] = (move.row, move.col)
+
+        for player, state in self.player_states.items():
+            state.last_move = latest[player]
+            state.last_move_time = None
+            state.thinking = False
+            state.thinking_duration = 0.0
+
+    def _build_sidebar_state(self) -> UISidebarState:
+        board = self.game_manager.board
+
+        if board.state == GameState.ONGOING:
+            turn_label = "当前回合: " + ("黑方" if board.current_player == Player.BLACK else "白方")
+            status_type = 'ongoing'
+        elif board.state == GameState.BLACK_WIN:
+            turn_label = "黑方胜利！"
+            status_type = GameState.BLACK_WIN.value
+        elif board.state == GameState.WHITE_WIN:
+            turn_label = "白方胜利！"
+            status_type = GameState.WHITE_WIN.value
+        else:
+            turn_label = "平局"
+            status_type = GameState.DRAW.value
+
+        players_data = []
+        for player in (Player.BLACK, Player.WHITE):
+            state = self.player_states[player]
+            status_line = self._describe_player_status(player, state, board)
+            players_data.append(
+                PlayerPanelData(
+                    name=state.name,
+                    player=player,
+                    score=state.score,
+                    last_move=self._format_move(state.last_move),
+                    last_move_time=state.last_move_time,
+                    total_time=state.total_time,
+                    status_line=status_line,
+                    is_active=(board.state == GameState.ONGOING and board.current_player == player),
+                    is_ai=state.is_ai,
+                    is_thinking=state.thinking,
+                    thinking_time=state.thinking_duration,
+                )
+            )
+
+        info_lines = tuple(self.status_messages)
+        mode_label = "模式: " + ("人机对战" if self.game_mode == 'pvc' else "双人对战")
+
+        return UISidebarState(
+            game_mode_label=mode_label,
+            current_turn_text=turn_label,
+            status_type=status_type,
+            move_count=len(board.history),
+            players=tuple(players_data),
+            info_lines=info_lines,
+        )
+
+    def _describe_player_status(self, player: Player, state: PlayerRuntimeState, board: Board) -> str:
+        """生成玩家状态文本"""
+        if board.state != GameState.ONGOING:
+            if (board.state == GameState.BLACK_WIN and player == Player.BLACK) or (
+                board.state == GameState.WHITE_WIN and player == Player.WHITE
+            ):
+                return "已获胜"
+            if board.state == GameState.DRAW:
+                return "本局平局"
+            return "对局结束"
+
+        if state.thinking:
+            return "思考中..."
+
+        if board.current_player == player:
+            return "等待落子" if not state.is_ai else "等待AI选择"
+
+        return "等待对手"
+
+    def _check_game_conclusion(self) -> None:
+        """检测并记录胜负结果"""
+        board = self.game_manager.board
+        if board.state == GameState.ONGOING or self.game_result_recorded:
+            return
+
+        if board.state == GameState.BLACK_WIN:
+            self.player_states[Player.BLACK].score += 1
+            self._log_info(f"{self.player_states[Player.BLACK].name} 获胜")
+        elif board.state == GameState.WHITE_WIN:
+            self.player_states[Player.WHITE].score += 1
+            self._log_info(f"{self.player_states[Player.WHITE].name} 获胜")
+        else:
+            self._log_info("本局为平局")
+
+        for state in self.player_states.values():
+            state.thinking = False
+            state.thinking_duration = 0.0
+
+        self.game_result_recorded = True
+
+    def _reset_scores(self) -> None:
+        for state in self.player_states.values():
+            state.score = 0
+
+    def _log_ai_stats(self, engine_name: str, stats: Dict[str, float]) -> None:
+        parts = []
+        nodes = stats.get('nodes_searched')
+        if nodes is not None:
+            parts.append(f"{int(nodes)} 节点")
+        search_time = stats.get('search_time')
+        if search_time:
+            parts.append(f"{search_time:.3f} 秒")
+        nps = stats.get('nodes_per_second')
+        if nps:
+            parts.append(f"{int(nps)} nps")
+        tt_rate = stats.get('tt_hit_rate')
+        if tt_rate:
+            parts.append(f"TT命中率 {tt_rate:.1%}")
+        message_detail = "，".join(parts) if parts else "无统计"
+        console_message = f"[{engine_name}] AI搜索: {message_detail}"
+        print(console_message)
+        self._log_info(console_message)
+
+    @staticmethod
+    def _select_fallback_move(board: Board, ai_player: Player) -> Optional[Tuple[int, int]]:
+        """当主搜索失败时选择一个安全的备用落点"""
+        # 优先考虑当前已落子附近的位置
+        neighbors = board.get_empty_neighbors(distance=1)
+        if neighbors:
+            # 简单评分：偏好连续棋子更多的位置
+            best_move = None
+            best_score = -1
+            for row, col in neighbors:
+                score = 0
+                for dr, dc in Board.DIRECTIONS:
+                    r, c = row + dr, col + dc
+                    if board.is_valid_pos(r, c) and board.get_stone(r, c) == ai_player:
+                        score += 1
+                if score > best_score:
+                    best_score = score
+                    best_move = (row, col)
+            if best_move:
+                return best_move
+
+        # 若附近没有合适位置，退化为选择任意可用空位
+        for r in range(board.size):
+            for c in range(board.size):
+                if board.is_empty(r, c):
+                    return (r, c)
+        return None
     
     def handle_events(self) -> None:
         """处理事件"""
@@ -168,15 +403,22 @@ class GomokuGame:
     
     def _handle_mouse_click(self, pos: tuple) -> None:
         """处理鼠标点击"""
+        board = self.game_manager.board
         if self.ai_thinking:
             return  # AI思考中，禁止落子
+
+        if self.game_mode == 'pvc' and board.current_player == self.ai_player:
+            # 人机对战且轮到AI时，阻止玩家代替AI落子
+            return
         
         board_pos = self.ui_manager.handle_click(pos)
         if board_pos:
             row, col = board_pos
             self._place_stone(row, col)
     
-    def _place_stone(self, row: int, col: int) -> None:
+    def _place_stone(self, row: int, col: int,
+                     duration_override: Optional[float] = None,
+                     think_time: Optional[float] = None) -> None:
         """放置棋子"""
         board = self.game_manager.board
         
@@ -186,6 +428,9 @@ class GomokuGame:
         
         # 落子
         if self.game_manager.place_stone(row, col):
+            move_player = board.history[-1].player
+            duration = duration_override if duration_override is not None else max(0.0, time.time() - self.turn_start_time)
+            self._record_move(move_player, row, col, duration_override if duration_override is not None else duration, think_time)
             # 添加动画
             self.ui_manager.add_stone_animation(row, col)
             
@@ -194,6 +439,16 @@ class GomokuGame:
                 board.state == GameState.ONGOING and
                 board.current_player == self.ai_player):
                 self.ai_thinking = True
+                self.player_states[self.ai_player].thinking = True
+                self.player_states[self.ai_player].thinking_duration = 0.0
+                self.ai_think_start = time.time()
+            else:
+                self.ai_thinking = False
+                self.player_states[self.ai_player].thinking = False
+                self.ai_think_start = None
+
+            self.turn_start_time = time.time()
+            self.game_result_recorded = False
     
     def _handle_button_click(self, button_name: str) -> None:
         """处理按钮点击"""
@@ -217,6 +472,13 @@ class GomokuGame:
         self.game_manager.reset()
         self.ai_thinking = False
         self.ai_controller.clear_cache()  # 清空缓存
+        for state in self.player_states.values():
+            state.reset_round()
+        self.turn_start_time = time.time()
+        self.ai_think_start = None
+        self.game_result_recorded = False
+        self.status_messages.clear()
+        self._log_info("开始新局")
     
     def _handle_undo(self) -> None:
         """悔棋"""
@@ -225,16 +487,24 @@ class GomokuGame:
         
         if self.game_mode == 'pvc':
             # 人机对战：悔棋两步
-            self.game_manager.undo(count=2)
+            success = self.game_manager.undo(count=2)
         else:
             # 双人对战：悔棋一步
-            self.game_manager.undo(count=1)
-        
-        self.ai_thinking = False
+            success = self.game_manager.undo(count=1)
+
+        if success:
+            self._refresh_last_moves_from_history()
+            self.ai_thinking = False
+            self.player_states[self.ai_player].thinking = False
+            self.ai_think_start = None
+            self.turn_start_time = time.time()
+            self.game_result_recorded = False
+            self._log_info("执行悔棋")
     
     def _cycle_difficulty(self) -> None:
         """切换难度"""
-        difficulties = ['easy', 'medium', 'hard']
+        difficulty_configs = _CONFIG.get_difficulty_names()
+        difficulties = list(difficulty_configs.keys()) or ['easy', 'medium', 'hard']
         current = self.settings['game']['ai_difficulty']
         current_idx = difficulties.index(current) if current in difficulties else 1
         next_idx = (current_idx + 1) % len(difficulties)
@@ -244,9 +514,12 @@ class GomokuGame:
         self.ai_controller.set_difficulty(new_difficulty)
         
         # 更新按钮文字
-        difficulty_names = {'easy': '简单', 'medium': '中等', 'hard': '困难'}
-        depth_info = {'easy': 'D3', 'medium': 'D5', 'hard': 'D7'}
-        self.ui_manager.buttons['difficulty'].text = f"AI难度: {difficulty_names[new_difficulty]} ({depth_info[new_difficulty]})"
+        config = difficulty_configs.get(new_difficulty)
+        if config:
+            display_label = config.display_name
+        else:
+            display_label = new_difficulty.title()
+        self.ui_manager.buttons['difficulty'].text = f"AI难度: {display_label}"
     
     def _toggle_game_mode(self) -> None:
         """切换游戏模式（人机/双人）"""
@@ -260,11 +533,22 @@ class GomokuGame:
         # 更新UI（如果有模式按钮）
         if 'mode' in self.ui_manager.buttons:
             self.ui_manager.buttons['mode'].text = f"模式: {mode_text}"
+
+        self._sync_player_profiles()
+        self._reset_scores()
+        for state in self.player_states.values():
+            state.reset_round()
+        self.ai_thinking = False
+        self.ai_think_start = None
+        self.turn_start_time = time.time()
+        self.game_result_recorded = False
+        self.status_messages.clear()
+        self._log_info(f"切换为{mode_text}")
     
     def _save_game(self) -> None:
         """保存游戏"""
-        save_dir = Path(__file__).parent / "saves"
-        save_dir.mkdir(exist_ok=True)
+        save_dir = Path(__file__).parent / _SAVE_DIR
+        save_dir.mkdir(parents=True, exist_ok=True)
         
         filename = f"gomoku_save_{len(self.game_manager.board.history)}.json"
         filepath = save_dir / filename
@@ -282,40 +566,67 @@ class GomokuGame:
         # 更新UI动画
         self.ui_manager.update(dt)
         
-        # AI思考
-        if self.ai_thinking:
+        # AI思考流程
+        if self.ai_thinking and self.game_mode == 'pvc':
             board = self.game_manager.board
-            
-            # 确保游戏还在进行中
+            # 立即清除思考标志，避免在同一帧内重复触发
+            self.ai_thinking = False
+
             if board.state == GameState.ONGOING:
+                if self.ai_think_start is not None:
+                    elapsed = time.time() - self.ai_think_start
+                    self.player_states[self.ai_player].thinking_duration = max(0.0, elapsed)
+
                 best_move = self.ai_controller.find_best_move(board, self.ai_player)
-                
+                fallback_used = False
+
+                if best_move is None:
+                    fallback_move = self._select_fallback_move(board, self.ai_player)
+                    if fallback_move:
+                        best_move = fallback_move
+                        fallback_used = True
+                        self._log_info("AI 使用备用策略落子")
+
                 if best_move:
-                    row, col = best_move
-                    self._place_stone(row, col)
-                    
-                    # 显示AI统计信息
                     stats = self.ai_controller.get_stats()
                     engine_name = self.ai_controller.get_engine_name()
-                    print(f"[{engine_name}] AI搜索: ", end="")
-                    if 'nodes_searched' in stats:
-                        print(f"{stats['nodes_searched']} 节点, ", end="")
-                    if 'search_time' in stats:
-                        print(f"{stats['search_time']:.3f}秒, ", end="")
-                    if 'nodes_per_second' in stats:
-                        print(f"{stats['nodes_per_second']:.0f} nps", end="")
-                    if 'tt_hit_rate' in stats:
-                        print(f", TT命中率: {stats['tt_hit_rate']:.1%}", end="")
-                    print()  # 换行
-            
-            self.ai_thinking = False
-        
+                    search_time = stats.get('search_time')
+                    row, col = best_move
+                    self._place_stone(row, col, duration_override=search_time, think_time=search_time)
+                    if not fallback_used:
+                        self._log_ai_stats(engine_name, stats)
+                else:
+                    self._log_info("AI 未找到可落子位置")
+
+            self.player_states[self.ai_player].thinking = False
+            self.ai_think_start = None
+
+        self._check_game_conclusion()
+
         # 更新悔棋按钮状态
         self.ui_manager.buttons['undo'].enabled = self.game_manager.can_undo()
-    
+
+    def _record_move(self, player: Player, row: int, col: int,
+                     duration: Optional[float], think_time: Optional[float] = None) -> None:
+        """更新玩家落子信息与时间统计"""
+        state = self.player_states[player]
+        state.last_move = (row, col)
+        state.last_move_time = duration if duration is not None else None
+        if duration is not None:
+            state.total_time += duration
+        state.thinking = False
+        state.thinking_duration = think_time or 0.0
+
+        move_text = self._format_move((row, col)) or "--"
+        if duration is not None:
+            self._log_info(f"{state.name} 落子 {move_text} (耗时 {duration:.2f}s)")
+        else:
+            self._log_info(f"{state.name} 落子 {move_text}")
+
     def draw(self) -> None:
         """绘制画面"""
-        self.ui_manager.draw(self.screen, self.game_manager.board)
+        sidebar_state = self._build_sidebar_state()
+        self.ui_manager.draw(self.screen, self.game_manager.board, sidebar_state)
         
         # 绘制字体调试信息
         font_mgr = get_font_manager()

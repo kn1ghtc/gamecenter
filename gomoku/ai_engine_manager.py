@@ -5,10 +5,11 @@ AI Engine Manager with C++/Python switching and automatic fallback.
 from __future__ import annotations
 
 import logging
-from typing import Optional, Tuple
+from typing import Any, Optional, Tuple
 from enum import Enum
 
-from gamecenter.gomoku.game_logic import Board, Player
+from gamecenter.gomoku.config.config_manager import get_difficulty_config
+from gamecenter.gomoku.game_logic import Board, Player, GameState
 
 # 尝试导入C++引擎
 try:
@@ -18,21 +19,13 @@ except (ImportError, FileNotFoundError, OSError) as e:
     CPP_AVAILABLE = False
     logging.warning(f"C++ engine not available: {e}")
 
-# 导入Python引擎
-try:
-    from gamecenter.gomoku.ai_engine_phase2 import Phase2AIController
-    PYTHON_PHASE2_AVAILABLE = True
-except ImportError:
-    PYTHON_PHASE2_AVAILABLE = False
-
 from gamecenter.gomoku.ai_engine import OptimizedAIController
 
 
 class EngineType(Enum):
     """AI引擎类型"""
     CPP = "cpp"           # C++引擎 (最快)
-    PYTHON_PHASE2 = "python_phase2"  # Python Phase 2优化
-    PYTHON_PHASE1 = "python_phase1"  # Python Phase 1优化
+    PYTHON = "python"     # Python引擎
     AUTO = "auto"         # 自动选择 (优先C++)
 
 
@@ -49,7 +42,7 @@ class AIEngineManager:
     def __init__(self, 
                  engine_type: EngineType = EngineType.AUTO,
                  difficulty: str = "medium",
-                 time_limit: float = 5.0):
+                 time_limit: Optional[float] = None):
         """初始化AI引擎管理器
         
         Args:
@@ -59,9 +52,17 @@ class AIEngineManager:
         """
         self.requested_engine_type = engine_type
         self.difficulty_name = difficulty
-        self.time_limit = time_limit
+        try:
+            self._difficulty_config = get_difficulty_config(self.difficulty_name)
+        except KeyError:  # pragma: no cover - config fallback safeguard
+            logging.warning("Difficulty '%s' not found. Falling back to 'medium'.", self.difficulty_name)
+            self.difficulty_name = "medium"
+            self._difficulty_config = get_difficulty_config(self.difficulty_name)
+        self._custom_time_limit = time_limit is not None
+        self.time_limit = time_limit if self._custom_time_limit else self._difficulty_config.time_limit
+        self._cpp_depth = self._difficulty_config.search_depth
         self.current_engine_type: Optional[EngineType] = None
-        self.engine: Optional[any] = None
+        self.engine: Optional[Any] = None
         
         # 统计信息
         self.cpp_failures = 0
@@ -74,13 +75,8 @@ class AIEngineManager:
         """初始化AI引擎"""
         # 确定使用的引擎类型
         if self.requested_engine_type == EngineType.AUTO:
-            # 自动选择: C++ > Python Phase2 > Python Phase1
-            if CPP_AVAILABLE:
-                target_type = EngineType.CPP
-            elif PYTHON_PHASE2_AVAILABLE:
-                target_type = EngineType.PYTHON_PHASE2
-            else:
-                target_type = EngineType.PYTHON_PHASE1
+            # 自动选择: C++ 优先，其次 Python
+            target_type = EngineType.CPP if CPP_AVAILABLE else EngineType.PYTHON
         else:
             target_type = self.requested_engine_type
         
@@ -93,14 +89,9 @@ class AIEngineManager:
             self.fallback_count += 1
             
             if target_type == EngineType.CPP:
-                # C++失败，尝试Python Phase2
-                if PYTHON_PHASE2_AVAILABLE:
-                    self._create_engine(EngineType.PYTHON_PHASE2)
-                else:
-                    self._create_engine(EngineType.PYTHON_PHASE1)
-            elif target_type == EngineType.PYTHON_PHASE2:
-                # Phase2失败，使用Phase1
-                self._create_engine(EngineType.PYTHON_PHASE1)
+                # C++失败，尝试Python引擎
+                self._create_engine(EngineType.PYTHON)
+            # Python失败无进一步回退
     
     def _create_engine(self, engine_type: EngineType) -> bool:
         """创建指定类型的引擎
@@ -113,9 +104,8 @@ class AIEngineManager:
                 if not CPP_AVAILABLE:
                     return False
                 
-                # 映射难度到深度
-                depth_map = {'easy': 3, 'medium': 5, 'hard': 7}
-                depth = depth_map.get(self.difficulty_name, 5)
+                # 使用配置中的搜索深度
+                depth = self._difficulty_config.search_depth
                 
                 self.engine = CppAIEngine()
                 self.current_engine_type = EngineType.CPP
@@ -124,21 +114,10 @@ class AIEngineManager:
                 logging.info("C++ engine initialized successfully")
                 return True
             
-            elif engine_type == EngineType.PYTHON_PHASE2:
-                if not PYTHON_PHASE2_AVAILABLE:
-                    return False
-                
-                from gamecenter.gomoku.ai_engine_phase2 import Phase2AIController
-                self.engine = Phase2AIController(self.difficulty_name, self.time_limit)
-                self.current_engine_type = EngineType.PYTHON_PHASE2
-                logging.info("Python Phase 2 engine initialized successfully")
-                return True
-            
-            else:  # PYTHON_PHASE1
-                from gamecenter.gomoku.ai_engine import OptimizedAIController
+            else:  # PYTHON
                 self.engine = OptimizedAIController(self.difficulty_name, self.time_limit)
-                self.current_engine_type = EngineType.PYTHON_PHASE1
-                logging.info("Python Phase 1 engine initialized successfully")
+                self.current_engine_type = EngineType.PYTHON
+                logging.info("Python engine initialized successfully")
                 return True
         
         except Exception as e:
@@ -159,6 +138,10 @@ class AIEngineManager:
             logging.error("No engine available!")
             return None
         
+        immediate_move = self._find_immediate_move(board, player)
+        if immediate_move is not None:
+            return immediate_move
+
         try:
             if self.current_engine_type == EngineType.CPP:
                 # C++引擎调用
@@ -178,10 +161,7 @@ class AIEngineManager:
                 logging.warning(f"C++ engine failed (count: {self.cpp_failures}), falling back to Python...")
                 
                 # 回退到Python
-                if PYTHON_PHASE2_AVAILABLE:
-                    self._create_engine(EngineType.PYTHON_PHASE2)
-                else:
-                    self._create_engine(EngineType.PYTHON_PHASE1)
+                self._create_engine(EngineType.PYTHON)
                 
                 # 重试
                 try:
@@ -199,22 +179,26 @@ class AIEngineManager:
             difficulty: 难度名称 ('easy', 'medium', 'hard')
         """
         self.difficulty_name = difficulty
+        self._difficulty_config = get_difficulty_config(self.difficulty_name)
+        if not self._custom_time_limit:
+            self.time_limit = self._difficulty_config.time_limit
         
         if self.current_engine_type == EngineType.CPP:
             # C++引擎：更新深度参数
-            depth_map = {'easy': 3, 'medium': 5, 'hard': 7}
-            self._cpp_depth = depth_map.get(difficulty, 5)
+            self._cpp_depth = self._difficulty_config.search_depth
         else:
             # Python引擎：调用set_difficulty (now accepts string)
             if hasattr(self.engine, 'set_difficulty'):
                 self.engine.set_difficulty(difficulty)
+                if self._custom_time_limit:
+                    # 重新应用自定义时间限制
+                    setattr(self.engine, 'time_limit', self.time_limit)
     
     def get_stats(self) -> dict:
         """获取统计信息"""
         stats = {
             'engine_type': self.current_engine_type.value if self.current_engine_type else 'none',
             'cpp_available': CPP_AVAILABLE,
-            'python_phase2_available': PYTHON_PHASE2_AVAILABLE,
             'cpp_failures': self.cpp_failures,
             'fallback_count': self.fallback_count,
         }
@@ -236,10 +220,8 @@ class AIEngineManager:
         """获取当前引擎名称"""
         if self.current_engine_type == EngineType.CPP:
             return "C++ Engine"
-        elif self.current_engine_type == EngineType.PYTHON_PHASE2:
-            return "Python Phase 2"
-        elif self.current_engine_type == EngineType.PYTHON_PHASE1:
-            return "Python Phase 1"
+        elif self.current_engine_type == EngineType.PYTHON:
+            return "Python Engine"
         else:
             return "Unknown"
     
@@ -250,26 +232,62 @@ class AIEngineManager:
         if self.engine and hasattr(self.engine, 'killer_table'):
             self.engine.killer_table.clear()
 
+    def _find_immediate_move(self, board: Board, player: Player) -> Optional[Tuple[int, int]]:
+        """检测立即获胜或必须防守的落点"""
+        if board.state != GameState.ONGOING:
+            return None
+
+        candidates = board.get_empty_neighbors(distance=1)
+        if not candidates:
+            candidates = board.get_empty_neighbors(distance=2)
+
+        winning_move = self._find_for_player(board, player, candidates)
+        if winning_move:
+            return winning_move
+
+        blocking_move = self._find_for_player(board, player.opponent(), candidates)
+        if blocking_move:
+            return blocking_move
+
+        return None
+
+    def _find_for_player(self, board: Board, target_player: Player,
+                         candidates: list[Tuple[int, int]]) -> Optional[Tuple[int, int]]:
+        """判断候选点是否对指定玩家形成五连"""
+        for row, col in candidates:
+            test_board = board.copy()
+            if not test_board.place_stone(row, col, target_player):
+                continue
+            if target_player == Player.BLACK and test_board.state == GameState.BLACK_WIN:
+                return (row, col)
+            if target_player == Player.WHITE and test_board.state == GameState.WHITE_WIN:
+                return (row, col)
+        return None
+
 
 def create_ai_engine(engine_type: str = "auto", 
                      difficulty: str = "medium",
-                     time_limit: float = 5.0) -> AIEngineManager:
+                     time_limit: Optional[float] = None) -> AIEngineManager:
     """创建AI引擎管理器（工厂函数）
     
     Args:
-        engine_type: 引擎类型 ('auto', 'cpp', 'python_phase2', 'python_phase1')
+        engine_type: 引擎类型 ('auto', 'cpp', 'python')
         difficulty: 难度 ('easy', 'medium', 'hard')
         time_limit: 时间限制(秒)
     
     Returns:
         AIEngineManager实例
     """
+    engine_type_lower = engine_type.lower()
+    if engine_type_lower in {"python_phase1", "python_phase2"}:
+        logging.warning("Engine type '%s' is deprecated. Using 'python' engine instead.", engine_type)
+        engine_type_lower = "python"
+
     engine_type_map = {
         'auto': EngineType.AUTO,
         'cpp': EngineType.CPP,
-        'python_phase2': EngineType.PYTHON_PHASE2,
-        'python_phase1': EngineType.PYTHON_PHASE1,
+        'python': EngineType.PYTHON,
     }
     
-    engine_enum = engine_type_map.get(engine_type.lower(), EngineType.AUTO)
+    engine_enum = engine_type_map.get(engine_type_lower, EngineType.AUTO)
     return AIEngineManager(engine_enum, difficulty, time_limit)

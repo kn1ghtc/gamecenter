@@ -8,34 +8,11 @@ from __future__ import annotations
 
 from typing import Dict, List, Tuple
 from gamecenter.gomoku.game_logic import Board, Player
+from gamecenter.gomoku.config.config_manager import get_config_manager
 
 
-# 棋型分值表（基于威胁程度）
-PATTERN_SCORES = {
-    # 五连：胜利
-    'FIVE': 100000,
-    
-    # 活四：下一步必胜
-    'LIVE_FOUR': 10000,
-    
-    # 冲四：一端被堵的四
-    'RUSH_FOUR': 1000,
-    
-    # 活三：可形成活四
-    'LIVE_THREE': 1000,
-    
-    # 眠三：一端被堵的三
-    'SLEEP_THREE': 100,
-    
-    # 活二：可形成活三
-    'LIVE_TWO': 100,
-    
-    # 眠二：一端被堵的二
-    'SLEEP_TWO': 10,
-    
-    # 活一
-    'LIVE_ONE': 10,
-}
+_CONFIG = get_config_manager()
+PATTERN_SCORES = _CONFIG.get_pattern_scores()
 
 
 class PatternRecognizer:

@@ -19,7 +19,19 @@ from collections import OrderedDict
 
 from gamecenter.gomoku.evaluation import BoardEvaluator, evaluate_move
 from gamecenter.gomoku.game_logic import Board, Player, GameState
-from gamecenter.gomoku.config.config_loader import get_difficulty_config, DifficultyConfig
+from gamecenter.gomoku.config.config_manager import (
+    get_config_manager,
+    get_difficulty_config,
+    DifficultyConfig,
+)
+
+
+_CONFIG = get_config_manager()
+_GAMEPLAY_CONFIG = _CONFIG.get_gameplay_config()
+_ENGINE_CONFIG = _CONFIG.get_engine_metadata()
+BOARD_SIZE_DEFAULT = _GAMEPLAY_CONFIG.get('board_size', 15)
+DEFAULT_TIME_LIMIT = _CONFIG.get_engine_defaults().get('time_limit', 5.0)
+DEFAULT_TT_SIZE = _ENGINE_CONFIG.get('python', {}).get('transposition_table_size', 500_000)
 
 
 class HistoryTable:
@@ -28,7 +40,7 @@ class HistoryTable:
     记录历史最佳着法，用于移动排序优化。
     """
     
-    def __init__(self, board_size: int = 15):
+    def __init__(self, board_size: int = BOARD_SIZE_DEFAULT):
         """初始化历史表
         
         Args:
@@ -63,7 +75,7 @@ class ZobristHasher:
     支持O(1)增量更新。
     """
     
-    def __init__(self, board_size: int = 15, seed: int = 12345):
+    def __init__(self, board_size: int = BOARD_SIZE_DEFAULT, seed: int = 12345):
         """初始化Zobrist哈希表
         
         Args:
@@ -167,12 +179,12 @@ class KillerMoveTable:
 
 
 class TranspositionTable:
-    """置换表（缓存已搜索局面）- Phase 2: 增大到500K
+    """置换表（缓存已搜索局面）
     
     使用Zobrist哈希 + LRU策略管理内存，存储局面评估结果。
     """
     
-    def __init__(self, max_size: int = 500000, zobrist: Optional[ZobristHasher] = None):
+    def __init__(self, max_size: int = DEFAULT_TT_SIZE, zobrist: Optional[ZobristHasher] = None):
         """初始化置换表
         
         Args:
@@ -429,7 +441,7 @@ class OptimizedAIController:
     
     def _find_killer_move(self, board: Board, player: Player) -> Optional[Tuple[int, int]]:
         """寻找杀棋着法（立即获胜或防御必输）"""
-        move_gen = FastMoveGenerator(board, top_n=20)
+        move_gen = FastMoveGenerator(board, top_n=board.size * board.size)
         candidates = move_gen.generate_best_moves(player)
         
         for row, col in candidates:

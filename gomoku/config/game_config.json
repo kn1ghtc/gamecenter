@@ -1,0 +1,186 @@
+{
+  "paths": {
+    "settings_file": "saves/runtime_settings.json",
+    "save_dir": "saves"
+  },
+  "window": {
+    "min_width": 800,
+    "min_height": 700,
+    "default_width": 1000,
+    "default_height": 900
+  },
+  "gameplay": {
+    "board_size": 15,
+    "cell_size": 40,
+    "max_undo_count": 3,
+    "ai_time_limit": 5.0
+  },
+  "engine": {
+    "defaults": {
+      "type": "PYTHON",
+      "difficulty": "medium",
+      "time_limit": 5.0
+    },
+    "difficulties": {
+      "easy": {
+        "name": "简单",
+        "display_name": "简单 (D3)",
+        "search_depth": 3,
+        "time_limit": 5.0,
+        "use_iterative_deepening": false,
+        "use_killer_moves": true,
+        "use_history_table": false,
+        "transposition_table_size": 100000,
+        "candidate_moves_count": 10,
+        "description": "适合入门玩家，搜索深度3"
+      },
+      "medium": {
+        "name": "中等",
+        "display_name": "中等 (D5)",
+        "search_depth": 5,
+        "time_limit": 5.0,
+        "use_iterative_deepening": false,
+        "use_killer_moves": true,
+        "use_history_table": true,
+        "transposition_table_size": 500000,
+        "candidate_moves_count": 12,
+        "description": "平衡难度，搜索深度5"
+      },
+      "hard": {
+        "name": "困难",
+        "display_name": "困难 (D7)",
+        "search_depth": 7,
+        "time_limit": 10.0,
+        "use_iterative_deepening": true,
+        "use_killer_moves": true,
+        "use_history_table": true,
+        "transposition_table_size": 1000000,
+        "candidate_moves_count": 15,
+        "description": "挑战难度，搜索深度7+迭代加深"
+      }
+    },
+    "python": {
+      "transposition_table_size": 500000
+    },
+    "cpp": {
+      "transposition_table_size": 2000000
+    }
+  },
+  "audio": {
+    "default_volume": 0.7
+  },
+  "colors": {
+    "board_bg": [220, 179, 92],
+    "board_line": [50, 50, 50],
+    "board_border": [139, 90, 43],
+    "board_star": [100, 100, 100],
+    "black_stone": [20, 20, 20],
+    "black_highlight": [60, 60, 60],
+    "white_stone": [245, 245, 245],
+    "white_highlight": [255, 255, 255],
+    "stone_shadow": [100, 100, 100],
+    "last_move": [255, 0, 0],
+    "winning_line": [255, 215, 0],
+    "preview": [128, 128, 128, 128],
+    "ui_bg": [40, 40, 45],
+    "ui_panel": [50, 50, 55],
+    "ui_text": [220, 220, 220],
+    "ui_text_dim": [150, 150, 150],
+    "button_normal": [70, 130, 180],
+    "button_hover": [100, 149, 237],
+    "button_pressed": [50, 100, 150],
+    "button_disabled": [100, 100, 100],
+    "button_text": [255, 255, 255],
+    "success": [34, 139, 34],
+    "warning": [255, 165, 0],
+    "error": [220, 20, 60],
+    "info": [70, 130, 180],
+    "panel_active_bg": [70, 85, 110],
+    "panel_inactive_bg": [55, 60, 70],
+    "panel_border_active": [130, 200, 255],
+    "panel_border_inactive": [80, 85, 95]
+  },
+  "ui": {
+    "layout": {
+      "ui_panel_width": 300,
+      "board_margin": 15,
+      "top_panel_height": 100,
+      "bottom_panel_height": 100,
+      "side_panel_width": 220,
+      "button_width": 190,
+      "button_height": 48,
+      "button_spacing": 12,
+      "panel_padding": 15,
+      "player_info_height": 140,
+      "player_panel_spacing": 18,
+      "info_section_margin": 20
+    },
+    "fonts": {
+      "title": 32,
+      "large": 24,
+      "normal": 18,
+      "small": 14,
+      "button": 20
+    },
+    "animation": {
+      "stone_drop_duration": 200,
+      "stone_scale_start": 0.3,
+      "winning_line_blink": 500,
+      "button_hover_duration": 150
+    },
+    "rendering": {
+      "antialias": true,
+      "stone_3d_effect": true,
+      "board_wood_texture": true,
+      "shadow_enabled": true,
+      "shadow_offset": 3
+    },
+    "interaction": {
+      "hover_preview": true,
+      "click_feedback": true,
+      "sound_enabled": true,
+      "show_coordinates": false,
+      "show_last_move": true
+    }
+  },
+  "pattern_scores": {
+    "FIVE": 100000,
+    "LIVE_FOUR": 10000,
+    "RUSH_FOUR": 1000,
+    "LIVE_THREE": 1000,
+    "SLEEP_THREE": 100,
+    "LIVE_TWO": 100,
+    "SLEEP_TWO": 10,
+    "LIVE_ONE": 10
+  },
+  "default_settings": {
+    "game": {
+      "board_size": 15,
+      "max_undo_count": 3,
+      "ai_difficulty": "medium",
+      "ai_engine_type": "auto",
+      "ai_time_limit": 5.0
+    },
+    "display": {
+      "window_width": 1000,
+      "window_height": 900,
+      "fullscreen": false
+    },
+    "audio": {
+      "sound_enabled": true,
+      "volume": 0.7
+    },
+    "ui": {
+      "show_coordinates": false,
+      "show_last_move": true,
+      "hover_preview": true,
+      "animation_enabled": true
+    },
+    "controls": {
+      "undo_key": "u",
+      "reset_key": "r",
+      "fullscreen_key": "f11",
+      "quit_key": "escape"
+    }
+  }
+}
