@@ -48,12 +48,13 @@ Game Center 集成了五款 Python 游戏（Chess、StreetBattle、Stickman Game
 4. [运行方式概览](#运行方式概览)
 5. [游戏模块总览](#游戏模块总览)
    1. [Chess](#chess)
-   2. [Military Chess（中国军棋）](#military-chess中国军棋)
-   3. [StreetBattle](#streetbattle)
-   4. [Eco Grassland](#eco-grassland生态平衡模拟)
-   5. [Stickman Game](#stickman-game)
-   6. [Super Mario Bros](#super-mario-bros)
-   7. [Tank Battle](#tank-battle)
+   2. [Gomoku（五子棋）](#gomoku五子棋)
+   3. [Military Chess（中国军棋）](#military-chess中国军棋)
+   4. [StreetBattle](#streetbattle)
+   5. [Eco Grassland](#eco-grassland生态平衡模拟)
+   6. [Stickman Game](#stickman-game)
+   7. [Super Mario Bros](#super-mario-bros)
+   8. [Tank Battle](#tank-battle)
 6. [工具与自动化脚本](#工具与自动化脚本)
 7. [质量保障与测试](#质量保障与测试)
 8. [贡献流程](#贡献流程)
@@ -63,7 +64,7 @@ Game Center 集成了五款 Python 游戏（Chess、StreetBattle、Stickman Game
 
 ## 项目概览
 
-- **定位**：单一仓库存放五款可独立运行的游戏项目，与资源、工具脚本共享。
+- **定位**：单一仓库存放多款可独立运行的游戏项目，与资源、工具脚本共享。
 - **目标平台**：Windows 11，PowerShell 为默认终端；Python 3.12 是推荐运行时。
 - **核心依赖**：Pygame、Panda3D、LangChain、Pillow、Requests、NumPy/SciPy、PyTorch 等。
 - **资源策略**：全部素材保持合法来源（CC0/CC-BY 等），通过脚本自动校验与同步，避免占位资产。
@@ -76,6 +77,7 @@ Game Center 集成了五款 Python 游戏（Chess、StreetBattle、Stickman Game
 gamecenter/
 ├─ README.md                 # 本文档（唯一项目文档）
 ├─ chess/                    # 国际象棋 + AI 陪伴系统
+├─ gomoku/                   # 五子棋 + 三级智能 AI
 ├─ militaryChess/            # 中国军棋（陆战棋）+ 智能 AI
 ├─ streetBattle/             # 3D/2.5D 格斗平台
 ├─ stickman_game/            # 火柴人动作冒险
@@ -139,6 +141,7 @@ VS Code 提示：
 1. 在 `gamecenter/` 根目录激活虚拟环境。
 2. 根据目标游戏进入其子目录并执行主入口：
    - Chess：`python chess/main.py`（或 `python -m chess.game`）
+   - Gomoku（五子棋）：`cd gomoku; python main.py` 或 `python -c "from gamecenter.gomoku import run_game; run_game()"`
    - Military Chess（军棋）：`cd militaryChess; python main.py` 或 `python -c "from gamecenter.militaryChess import run_game; run_game()"`
    - StreetBattle：`cd streetBattle; python main.py`
    - Stickman Game：`cd stickman_game; python main.py`
@@ -180,9 +183,78 @@ python tools/training.py --episodes 100  # 示例训练脚本
 
 ---
 
+### Gomoku（五子棋）
+
+**概览**：专业级五子棋游戏，搭载三级难度AI（Minimax + Alpha-Beta剪枝）、棋型识别系统（12种棋型）和现代化自适应UI。支持悔棋、存档、全屏模式，提供流畅的人机对战体验。
+
+**核心特性**
+- **三级智能AI**：简单（3层搜索）、中等（5层+Alpha-Beta剪枝）、困难（7层+迭代加深+历史启发）。
+- **棋型识别**：五连、活四、冲四、活三、眠三等12种基础棋型，精准评估局面优劣。
+- **自适应布局**：窗口调整时自动缩放，支持最大化与全屏（F11）。
+- **3D棋子渲染**：渐变阴影与高光效果，模拟真实棋子质感。
+- **悔棋系统**：默认3次悔棋机会，每次悔2步（玩家+AI）。
+- **存档/读档**：JSON格式保存完整棋局状态（棋盘、历史、当前玩家）。
+- **算法优化**：评估缓存、历史启发、邻域搜索、着法排序，大幅提升AI响应速度。
+
+**运行方式**
+```powershell
+# 方式 1：直接运行
+cd gamecenter/gomoku
+python main.py
+
+# 方式 2：包导入运行
+python -c "from gamecenter.gomoku import run_game; run_game()"
+```
+
+**控制说明**
+- **鼠标左键**：在空位落子
+- **U键**：悔棋（撤销玩家和AI最后各一步）
+- **R键**：重新开始游戏
+- **F11**：切换全屏模式
+- **ESC**：退出游戏
+- **UI按钮**：新游戏、悔棋、切换AI难度
+
+**技术架构**
+- `main.py`：游戏主循环、事件处理、AI集成（320行）
+- `game_logic.py`：棋盘表示、胜负检测、悔棋系统（485行）
+- `ai_engine.py`：Minimax搜索、难度控制、着法生成（386行）
+- `evaluation.py`：棋型识别、局面评估、缓存优化（398行）
+- `ui_manager.py`：自适应布局、棋盘渲染、动画系统（450行）
+- `font_manager.py`：跨平台中文字体管理（130行）
+- `config/`：游戏常量、UI配置、音效生成脚本
+- `assets/`：音效文件（自动生成）、图标资源
+
+**测试与质量保证**
+```powershell
+# 完整冒烟测试（22个测试用例）
+cd gamecenter/gomoku
+$env:SDL_VIDEODRIVER='dummy'; $env:SDL_AUDIODRIVER='dummy'; pytest test_smoke.py -v
+
+# 测试覆盖类别：
+# - 棋盘逻辑（8个）：初始化、落子、胜负检测（横竖斜）、和棋、悔棋
+# - 游戏管理（2个）：悔棋限制、游戏重置
+# - AI引擎（3个）：着法合法性、必胜着法识别、性能测试
+# - 评估系统（3个）：评估器初始化、初始局面、获胜局面
+# - 字体管理（5个）：初始化、字体获取、回退机制、渲染、尺寸
+# - 存档系统（1个）：保存与加载完整性
+```
+
+**AI性能指标**
+| 难度 | 搜索深度 | 平均耗时 | 算法特性 |
+|-----|---------|---------|---------|
+| 简单 | 3层 | <0.5秒 | 基础Minimax |
+| 中等 | 5层 | 1-3秒 | Alpha-Beta剪枝 |
+| 困难 | 7层 | 3-10秒 | 迭代加深+历史启发 |
+
+**版本说明**
+- **v1.0.0 (2025-01)**：首个稳定版本，完整五子棋规则、三级AI、自适应UI、音效系统、完整测试覆盖。
+- **后续计划**：联机对战、复盘系统、开局库、神经网络AI（MCTS/深度学习）、禁手规则。
+
+---
+
 ### Military Chess（中国军棋）
 
-**概览**：完整的中国军棋（陆战棋）实现，具备智能 AI 对手与现代化 Pygame 界面。采用模块化架构，分离游戏逻辑、AI 引擎和评估函数，支持多种运行方式。
+**概览**：完整的中国军棋（陆战棋）实现，具备智能 AI 对手与现代化 Pygame 界面。采用模块化架构，分离游戏逻辑、AI 引擎和评估函数,支持多种运行方式。
 
 **核心特性**
 - **完整规则实现**：标准中国军棋规则，包括棋子等级、行营铁路、司令部等要素。
@@ -413,6 +485,7 @@ python main.py --smoke-test --frames 300
 
 ## 质量保障与测试
 
+- **Gomoku（五子棋）**：`cd gomoku; pytest test_smoke.py -v` 验证棋盘逻辑、AI引擎、评估系统、字体管理、存档系统（22个测试用例，100%通过率）。
 - **Military Chess（军棋）**：`python test_smoke.py` 验证游戏逻辑、AI 引擎和包导入；支持直接运行和包导入两种方式的测试。
 - **StreetBattle**：`python -m pytest streetBattle/tests/test_smoke.py`（验证 manifest、技能、设置）；建议定期运行 `test_combat.py` 和 `test_rollback_sim.py`。
 - **Eco Grassland**：`python -m pytest gamecenter/tests/test_ecosystem_logic.py` 覆盖生态压力、进食与饮水逻辑，确保教学模式稳定运行。
