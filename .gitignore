@@ -15,3 +15,13 @@ streetBattle/assets/*_report.json
 streetBattle/assets/audit_report.json
 streetBattle/assets/cleanup_report.json
 
+# Gomoku C++ build directories
+gomoku/cpp_engine/build/
+gomoku/cpp_engine/Release/
+gomoku/cpp_engine/*.dll
+gomoku/cpp_engine/*.so
+gomoku/cpp_engine/*.dylib
+
+# Gomoku save files
+gomoku/saves/
+

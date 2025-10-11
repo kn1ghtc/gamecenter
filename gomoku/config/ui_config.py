@@ -2,14 +2,18 @@
 UI configuration for Gomoku.
 """
 
-# 布局配置
+# 布局配置（优化版：减少留白，增加玩家信息区域）
 LAYOUT = {
-    'board_margin': 40,      # 棋盘边距
-    'ui_panel_width': 250,   # 右侧UI面板宽度
-    'button_width': 200,     # 按钮宽度
-    'button_height': 50,     # 按钮高度
-    'button_spacing': 15,    # 按钮间距
-    'panel_padding': 20,     # 面板内边距
+    'ui_panel_width': 300,       # UI面板宽度
+    'board_margin': 15,          # 棋盘边距（减少留白）
+    'top_panel_height': 100,     # 顶部玩家信息面板高度
+    'bottom_panel_height': 100,  # 底部玩家信息面板高度
+    'side_panel_width': 220,     # 右侧控制面板宽度
+    'button_width': 190,         # 按钮宽度
+    'button_height': 48,         # 按钮高度
+    'button_spacing': 12,        # 按钮间距
+    'panel_padding': 15,         # 面板内边距
+    'player_info_height': 80,    # 玩家信息区域高度
 }
 
 # 字体配置

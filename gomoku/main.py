@@ -24,10 +24,10 @@ if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
 # 绝对导入
-from gamecenter.gomoku.ai_engine import AIController, DifficultyLevel, create_ai
+from gamecenter.gomoku.ai_engine_manager import create_ai_engine
 from gamecenter.gomoku.config.constants import (
     WINDOW_DEFAULT_HEIGHT, WINDOW_DEFAULT_WIDTH, WINDOW_MIN_HEIGHT,
-    WINDOW_MIN_WIDTH, MAX_UNDO_COUNT, SETTINGS_FILE
+    WINDOW_MIN_WIDTH, MAX_UNDO_COUNT, SETTINGS_FILE, AI_ENGINE_TYPE, AI_DEFAULT_DIFFICULTY
 )
 from gamecenter.gomoku.font_manager import get_font_manager
 from gamecenter.gomoku.game_logic import Board, GameManager, GameState, Player
@@ -57,12 +57,13 @@ class GomokuGame:
         self.game_manager = GameManager(max_undo=MAX_UNDO_COUNT)
         self.ui_manager = UIManager(width, height)
         
-        # AI设置
-        difficulty_name = self.settings['game']['ai_difficulty']
-        self.ai_controller = create_ai(difficulty_name)
+        # AI设置（使用AI引擎管理器）
+        difficulty_name = self.settings['game'].get('ai_difficulty', AI_DEFAULT_DIFFICULTY)
+        engine_type = self.settings['game'].get('ai_engine_type', AI_ENGINE_TYPE)
+        self.ai_controller = create_ai_engine(engine_type, difficulty_name, time_limit=5.0)
         self.ai_thinking = False
         self.ai_player = Player.WHITE  # AI默认执白
-        self.game_mode = 'pvp'  # 'pvp' 或 'pvc'
+        self.game_mode = 'pvc'  # 默认人机对战 'pvp'双人 或 'pvc'人机
         
         # 时钟
         self.clock = pygame.time.Clock()
@@ -78,14 +79,22 @@ class GomokuGame:
         except Exception:
             # 返回默认设置
             return {
-                'game': {'ai_difficulty': 'medium', 'max_undo_count': 3},
+                'game': {
+                    'ai_difficulty': AI_DEFAULT_DIFFICULTY,
+                    'ai_engine_type': AI_ENGINE_TYPE,
+                    'max_undo_count': 3
+                },
                 'display': {
                     'window_width': WINDOW_DEFAULT_WIDTH,
                     'window_height': WINDOW_DEFAULT_HEIGHT,
                     'fullscreen': False
                 },
                 'audio': {'sound_enabled': True, 'volume': 0.7},
-                'ui': {'show_coordinates': False, 'hover_preview': True}
+                'ui': {
+                    'show_coordinates': False,
+                    'hover_preview': True,
+                    'ui_panel_width': 300  # 添加缺失的参数
+                }
             }
     
     def _save_settings(self) -> None:
@@ -197,6 +206,9 @@ class GomokuGame:
         elif button_name == 'difficulty':
             self._cycle_difficulty()
         
+        elif button_name == 'mode':
+            self._toggle_game_mode()
+        
         elif button_name == 'save':
             self._save_game()
     
@@ -204,12 +216,7 @@ class GomokuGame:
         """开始新游戏"""
         self.game_manager.reset()
         self.ai_thinking = False
-        
-        # 显示模式选择（简化版：直接切换）
-        if self.game_mode == 'pvp':
-            self.game_mode = 'pvc'
-        else:
-            self.game_mode = 'pvp'
+        self.ai_controller.clear_cache()  # 清空缓存
     
     def _handle_undo(self) -> None:
         """悔棋"""
@@ -234,15 +241,25 @@ class GomokuGame:
         new_difficulty = difficulties[next_idx]
         
         self.settings['game']['ai_difficulty'] = new_difficulty
-        self.ai_controller.set_difficulty(
-            DifficultyLevel.EASY if new_difficulty == 'easy' 
-            else DifficultyLevel.MEDIUM if new_difficulty == 'medium'
-            else DifficultyLevel.HARD
-        )
+        self.ai_controller.set_difficulty(new_difficulty)
         
         # 更新按钮文字
         difficulty_names = {'easy': '简单', 'medium': '中等', 'hard': '困难'}
-        self.ui_manager.buttons['difficulty'].text = f"难度: {difficulty_names[new_difficulty]}"
+        depth_info = {'easy': 'D3', 'medium': 'D5', 'hard': 'D7'}
+        self.ui_manager.buttons['difficulty'].text = f"AI难度: {difficulty_names[new_difficulty]} ({depth_info[new_difficulty]})"
+    
+    def _toggle_game_mode(self) -> None:
+        """切换游戏模式（人机/双人）"""
+        if self.game_mode == 'pvp':
+            self.game_mode = 'pvc'
+            mode_text = "人机对战"
+        else:
+            self.game_mode = 'pvp'
+            mode_text = "双人对战"
+        
+        # 更新UI（如果有模式按钮）
+        if 'mode' in self.ui_manager.buttons:
+            self.ui_manager.buttons['mode'].text = f"模式: {mode_text}"
     
     def _save_game(self) -> None:
         """保存游戏"""
@@ -276,9 +293,17 @@ class GomokuGame:
                 
                 # 显示AI统计信息
                 stats = self.ai_controller.get_stats()
-                print(f"AI搜索: {stats['nodes_searched']} 节点, "
-                      f"{stats['search_time']:.2f}秒, "
-                      f"{stats['nodes_per_second']:.0f} nps")
+                engine_name = self.ai_controller.get_engine_name()
+                print(f"[{engine_name}] AI搜索: ", end="")
+                if 'nodes_searched' in stats:
+                    print(f"{stats['nodes_searched']} 节点, ", end="")
+                if 'search_time' in stats:
+                    print(f"{stats['search_time']:.3f}秒, ", end="")
+                if 'nodes_per_second' in stats:
+                    print(f"{stats['nodes_per_second']:.0f} nps", end="")
+                if 'tt_hit_rate' in stats:
+                    print(f", TT命中率: {stats['tt_hit_rate']:.1%}", end="")
+                print()  # 换行
             
             self.ai_thinking = False
         

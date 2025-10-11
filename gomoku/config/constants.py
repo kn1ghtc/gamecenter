@@ -58,6 +58,10 @@ WINDOW_DEFAULT_HEIGHT = 900
 MAX_UNDO_COUNT = 3  # 最大悔棋次数
 AI_TIME_LIMIT = 10.0  # AI思考时间限制（秒）
 
+# AI引擎配置
+AI_ENGINE_TYPE = "auto"  # 引擎类型: 'auto', 'cpp', 'python_phase2', 'python_phase1'
+AI_DEFAULT_DIFFICULTY = "medium"  # 默认难度: 'easy', 'medium', 'hard'
+
 # 音效配置
 SOUND_VOLUME = 0.7  # 默认音量（0.0-1.0）
 

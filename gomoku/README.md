@@ -65,28 +65,40 @@
 
 ```
 gomoku/
-├── __init__.py              # 包导出接口
-├── main.py                  # 主程序入口
-├── game_logic.py            # 棋盘逻辑、胜负判定
-├── ai_engine.py             # AI搜索引擎、难度控制
-├── evaluation.py            # 棋型识别、局面评估
-├── ui_manager.py            # 界面渲染、事件处理
-├── font_manager.py          # 跨平台字体管理
-├── test_smoke.py            # 冒烟测试套件
+├── __init__.py                         # 包导出接口
+├── main.py                             # 主程序入口
+├── game_logic.py                       # 棋盘逻辑、胜负判定
+├── ai_engine.py                        # Python AI引擎 (Phase 1)
+├── ai_engine_phase2.py                 # Python AI引擎 (Phase 2高级优化)
+├── ai_engine_manager.py                # 统一引擎管理器（多引擎支持）
+├── evaluation.py                       # 棋型识别、局面评估
+├── ui_manager.py                       # 界面渲染、事件处理
+├── font_manager.py                     # 跨平台字体管理
+├── test_smoke.py                       # 冒烟测试套件
+├── test_ai_integration.py              # AI引擎集成测试
+├── test_pure_search_performance.py     # 纯搜索性能测试
+├── TASK_COMPLETION_SUMMARY.md          # 任务完成总结
 │
 ├── config/
-│   ├── constants.py         # 游戏常量、棋型分数
-│   ├── ui_config.py         # UI布局配置
-│   ├── settings.json        # 用户配置文件
-│   └── generate_sounds.py   # 音效生成脚本
+│   ├── constants.py                    # 游戏常量、引擎配置
+│   ├── ui_config.py                    # UI布局配置
+│   ├── settings.json                   # 用户配置文件
+│   └── generate_sounds.py              # 音效生成脚本
+│
+├── cpp_engine/                         # C++引擎目录
+│   ├── gomoku_engine.cpp               # C++引擎源码
+│   ├── gomoku_engine.def               # DLL导出定义
+│   ├── CMakeLists.txt                  # CMake构建配置
+│   ├── gomoku_engine.dll               # 编译后的DLL（Windows）
+│   └── build/                          # 构建目录（已忽略）
 │
 └── assets/
-    ├── sounds/              # 游戏音效（自动生成）
-    │   ├── stone_black.wav  # 黑棋落子
-    │   ├── stone_white.wav  # 白棋落子
-    │   ├── win.wav          # 胜利音效
-    │   └── undo.wav         # 悔棋音效
-    └── icons/               # 图标资源（预留）
+    ├── sounds/                         # 游戏音效（自动生成）
+    │   ├── stone_black.wav             # 黑棋落子
+    │   ├── stone_white.wav             # 白棋落子
+    │   ├── win.wav                     # 胜利音效
+    │   └── undo.wav                    # 悔棋音效
+    └── icons/                          # 图标资源（预留）
 ```
 
 ### 核心模块说明
@@ -97,11 +109,26 @@ gomoku/
 - **Player枚举**：黑/白/空位标识
 - **GameState枚举**：进行中/黑胜/白胜/和棋
 
-#### `ai_engine.py` (386行)
-- **AIController类**：统一AI接口，支持三级难度
-- **MoveGenerator类**：候选着法生成与排序
+#### `ai_engine.py` (641行)
+- **OptimizedAIController类**：Python Phase 1 AI引擎
+- **TranspositionTable类**：置换表（500K条目）
+- **KillerMoveTable类**：Killer Moves启发
 - **HistoryTable类**：历史启发表
+- **MoveGenerator类**：候选着法生成与排序
 - **DifficultyLevel枚举**：难度级别定义
+
+#### `ai_engine_phase2.py` (541行)
+- **Phase2AIController类**：Python Phase 2高级优化引擎
+- **IncrementalEvaluator类**：增量评估器（缓存线路评分）
+- **FastMoveGenerator类**：改进的着法生成（优先级排序）
+- **Late Move Reductions (LMR)**：后期着法深度削减
+- **Null Move Pruning (NMP)**：空着剪枝
+
+#### `ai_engine_manager.py` (350行)
+- **AIEngineManager类**：统一引擎管理器
+- **EngineType枚举**：CPP, PYTHON_PHASE2, PYTHON_PHASE1, AUTO
+- **自动回退机制**：C++ → Phase2 → Phase1
+- **create_ai_engine()工厂函数**：统一创建接口
 
 #### `evaluation.py` (398行)
 - **PatternRecognizer类**：棋型识别（滑动窗口算法）
@@ -152,6 +179,24 @@ from gamecenter.gomoku import run_game
 run_game()
 ```
 
+#### 方式3：指定AI引擎
+```python
+from gamecenter.gomoku.ai_engine_manager import create_ai_engine
+
+# 使用C++引擎（推荐）
+ai = create_ai_engine("cpp", "hard", time_limit=3.0)
+
+# 使用Python Phase1（稳定）
+ai = create_ai_engine("python_phase1", "medium", time_limit=5.0)
+
+# 使用自动模式（智能选择）
+ai = create_ai_engine("auto", "medium", time_limit=5.0)
+
+# AI下棋
+best_move = ai.find_best_move(board, player)
+stats = ai.get_stats()  # 获取性能统计
+```
+
 ## 🎮 游戏操作
 
 ### 鼠标操作
@@ -174,18 +219,79 @@ run_game()
 4. 先达成五连者获胜
 5. 可使用悔棋功能（每次悔2步，最多3次）
 
-## 🤖 AI难度说明
+## 🤖 AI引擎系统
 
-| 难度 | 搜索深度 | 算法特性 | 平均耗时 | 适用场景 |
-|-----|---------|---------|---------|---------|
-| **简单** | 3层 | 基础Minimax | <0.5秒 | 初学者 |
-| **中等** | 5层 | Alpha-Beta剪枝 | 1-3秒 | 中级玩家 |
-| **困难** | 7层 | 迭代加深 + 历史启发 | 3-10秒 | 高手对战 |
+### 引擎类型
+
+本项目支持**多引擎架构**，提供3种AI引擎供选择：
+
+| 引擎 | 性能 | 特点 | 推荐场景 |
+|------|------|------|---------|
+| **C++ Engine** | 70,000+ NPS | 原生编译，超高性能 | 困难模式，实时对战 ⭐ |
+| **Python Phase 1** | ~860 NPS | 基础优化，稳定可靠 | 中等难度，开发调试 |
+| **Python Phase 2** | ~600 NPS | 高级特性（LMR/NMP），实验性 | 算法研究 |
+
+*NPS = Nodes Per Second (每秒搜索节点数)*
+
+### 引擎配置
+
+在`config/constants.py`中配置：
+
+```python
+AI_ENGINE_TYPE = "auto"  # 引擎类型
+# 可选值: "auto" | "cpp" | "python_phase1" | "python_phase2"
+
+AI_DEFAULT_DIFFICULTY = "medium"  # 默认难度
+# 可选值: "easy" | "medium" | "hard"
+```
+
+### 自动回退机制
+
+系统采用**多层回退**策略，确保稳定性：
+
+```
+AUTO模式
+  ↓
+尝试加载C++ Engine (gomoku_engine.dll)
+  ↓ 失败？
+尝试Python Phase 2 (高级优化)
+  ↓ 失败？
+使用Python Phase 1 (基础优化，保底)
+```
+
+### 引擎技术对比
+
+#### C++ Engine (推荐✅)
+- **性能**: 70,000+ NPS（超目标23倍）
+- **技术**: Visual Studio 2022编译，AVX2指令集优化
+- **优点**: 极速响应，困难模式无延迟
+- **缺点**: 需要DLL文件（已包含）
+
+#### Python Phase 1（稳定✅）
+- **性能**: ~860 NPS（基线）
+- **技术**: Alpha-Beta剪枝 + 置换表 + Killer Moves + 历史启发
+- **优点**: 纯Python实现，跨平台兼容
+- **缺点**: 中等性能，深度搜索慢
+
+#### Python Phase 2（实验⚠️）
+- **性能**: ~600 NPS（待优化）
+- **技术**: Late Move Reductions + Null Move Pruning + 增量评估
+- **优点**: 实现了高级搜索技术
+- **缺点**: 当前参数未调优，性能反而低于Phase 1
+
+### AI难度说明
+
+| 难度 | 搜索深度 | 算法特性 | C++耗时 | Python耗时 | 适用场景 |
+|-----|---------|---------|---------|-----------|---------|
+| **简单** | 3层 | 基础Minimax | <0.1秒 | <0.5秒 | 初学者 |
+| **中等** | 5层 | Alpha-Beta剪枝 | <0.5秒 | 1-3秒 | 中级玩家 |
+| **困难** | 7层+ | 迭代加深 + 历史启发 | 1-2秒 | 5-15秒 | 高手对战 |
 
 ### AI思考过程可视化
-- 搜索节点数实时显示
-- 耗时统计（精确到毫秒）
-- 缓存命中率（评估优化）
+- **引擎类型显示**：实时显示当前使用的引擎
+- **搜索节点数**：实时显示搜索规模
+- **耗时统计**：精确到毫秒
+- **回退记录**：显示C++失败次数（如有）
 
 ## 👨‍💻 开发指南
 

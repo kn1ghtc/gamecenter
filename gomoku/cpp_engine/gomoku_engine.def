@@ -1,0 +1,8 @@
+LIBRARY gomoku_engine
+EXPORTS
+    gomoku_create_engine
+    gomoku_destroy_engine
+    gomoku_set_board
+    gomoku_find_best_move
+    gomoku_get_nodes_searched
+    gomoku_get_search_time
