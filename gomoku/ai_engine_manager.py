@@ -20,12 +20,12 @@ except (ImportError, FileNotFoundError, OSError) as e:
 
 # 导入Python引擎
 try:
-    from gamecenter.gomoku.ai_engine_phase2 import Phase2AIController, DifficultyLevel
+    from gamecenter.gomoku.ai_engine_phase2 import Phase2AIController
     PYTHON_PHASE2_AVAILABLE = True
 except ImportError:
     PYTHON_PHASE2_AVAILABLE = False
-    from gamecenter.gomoku.ai_engine import OptimizedAIController, DifficultyLevel
-    PYTHON_PHASE2_AVAILABLE = False
+
+from gamecenter.gomoku.ai_engine import OptimizedAIController
 
 
 class EngineType(Enum):
@@ -129,26 +129,14 @@ class AIEngineManager:
                     return False
                 
                 from gamecenter.gomoku.ai_engine_phase2 import Phase2AIController
-                difficulty_map = {
-                    'easy': DifficultyLevel.EASY,
-                    'medium': DifficultyLevel.MEDIUM,
-                    'hard': DifficultyLevel.HARD,
-                }
-                difficulty = difficulty_map.get(self.difficulty_name, DifficultyLevel.MEDIUM)
-                self.engine = Phase2AIController(difficulty, self.time_limit)
+                self.engine = Phase2AIController(self.difficulty_name, self.time_limit)
                 self.current_engine_type = EngineType.PYTHON_PHASE2
                 logging.info("Python Phase 2 engine initialized successfully")
                 return True
             
             else:  # PYTHON_PHASE1
                 from gamecenter.gomoku.ai_engine import OptimizedAIController
-                difficulty_map = {
-                    'easy': DifficultyLevel.EASY,
-                    'medium': DifficultyLevel.MEDIUM,
-                    'hard': DifficultyLevel.HARD,
-                }
-                difficulty = difficulty_map.get(self.difficulty_name, DifficultyLevel.MEDIUM)
-                self.engine = OptimizedAIController(difficulty, self.time_limit)
+                self.engine = OptimizedAIController(self.difficulty_name, self.time_limit)
                 self.current_engine_type = EngineType.PYTHON_PHASE1
                 logging.info("Python Phase 1 engine initialized successfully")
                 return True
@@ -217,15 +205,9 @@ class AIEngineManager:
             depth_map = {'easy': 3, 'medium': 5, 'hard': 7}
             self._cpp_depth = depth_map.get(difficulty, 5)
         else:
-            # Python引擎：调用set_difficulty
-            difficulty_map = {
-                'easy': DifficultyLevel.EASY,
-                'medium': DifficultyLevel.MEDIUM,
-                'hard': DifficultyLevel.HARD,
-            }
-            diff_level = difficulty_map.get(difficulty, DifficultyLevel.MEDIUM)
+            # Python引擎：调用set_difficulty (now accepts string)
             if hasattr(self.engine, 'set_difficulty'):
-                self.engine.set_difficulty(diff_level)
+                self.engine.set_difficulty(difficulty)
     
     def get_stats(self) -> dict:
         """获取统计信息"""

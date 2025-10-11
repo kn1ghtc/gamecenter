@@ -21,22 +21,8 @@ from gamecenter.gomoku.evaluation import BoardEvaluator
 from gamecenter.gomoku.game_logic import Board, Player, GameState
 
 
-class DifficultyLevel(Enum):
-    """AI难度等级"""
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
-
-    def get_depth(self) -> int:
-        depths = {
-            DifficultyLevel.EASY: 3,
-            DifficultyLevel.MEDIUM: 5,
-            DifficultyLevel.HARD: 7,
-        }
-        return depths[self]
-    
-    def __str__(self) -> str:
-        return self.value
+# DifficultyLevel现在从config_loader导入
+from gamecenter.gomoku.config.config_loader import get_difficulty_config, DifficultyConfig
 
 
 class HistoryTable:
@@ -283,17 +269,41 @@ class Phase2AIController:
     2. 后期着法削减 (LMR)
     3. 空着裁剪 (NMP)
     4. 改进的着法排序
-    5. 更大的TT (500K)
+    5. 使用配置管理的TT大小
     """
     
-    def __init__(self, difficulty: DifficultyLevel = DifficultyLevel.MEDIUM,
-                 time_limit: float = 5.0):
-        self.difficulty = difficulty
-        self.time_limit = time_limit
+    def __init__(self, difficulty: str = "medium", time_limit: Optional[float] = None):
+        # 加载配置
+        from gamecenter.gomoku.config.config_loader import get_config_manager
+        self.difficulty_config = get_difficulty_config(difficulty)
+        self.difficulty_name = difficulty
+        self.time_limit = time_limit if time_limit is not None else self.difficulty_config.time_limit
+        
+        # 加载Phase 2优化配置并缓存参数（避免热路径查询）
+        config_mgr = get_config_manager()
+        self.phase2_config = config_mgr.get_phase2_config()
+        
+        # LMR参数缓存
+        lmr_cfg = self.phase2_config.get('late_move_reduction', {})
+        self.lmr_enabled = lmr_cfg.get('enabled', True)
+        self.lmr_min_depth = lmr_cfg.get('min_depth', 3)
+        self.lmr_min_move_idx = lmr_cfg.get('min_move_index', 3)
+        self.lmr_reduction = lmr_cfg.get('reduction_amount', 1)
+        
+        # NMP参数缓存
+        nmp_cfg = self.phase2_config.get('null_move_pruning', {})
+        self.nmp_enabled = nmp_cfg.get('enabled', True)
+        self.nmp_min_depth = nmp_cfg.get('min_depth', 3)
+        self.nmp_R = nmp_cfg.get('R_value', 3)
+        
+        # 初始化组件
         self.zobrist = ZobristHasher()
-        self.tt = TranspositionTable(max_size=500000, zobrist=self.zobrist)
+        tt_size = self.difficulty_config.transposition_table_size
+        self.tt = TranspositionTable(max_size=tt_size, zobrist=self.zobrist)
         self.history_table = HistoryTable()
         self.killer_table = KillerMoveTable(max_depth=20)
+        
+        # 搜索统计
         self.nodes_searched = 0
         self.search_time = 0.0
         self.search_start_time = 0.0
@@ -301,9 +311,19 @@ class Phase2AIController:
         self.pv_move: Optional[Tuple[int, int]] = None
         self.null_move_allowed = True
     
-    def set_difficulty(self, difficulty: DifficultyLevel) -> None:
-        self.difficulty = difficulty
-        self.tt.clear()
+    def set_difficulty(self, difficulty: str) -> None:
+        """动态设置难度"""
+        self.difficulty_config = get_difficulty_config(difficulty)
+        self.difficulty_name = difficulty
+        self.time_limit = self.difficulty_config.time_limit
+        
+        # 调整TT大小
+        new_tt_size = self.difficulty_config.transposition_table_size
+        if new_tt_size != self.tt.max_size:
+            self.tt = TranspositionTable(max_size=new_tt_size, zobrist=self.zobrist)
+        else:
+            self.tt.clear()
+        
         self.history_table.clear()
         self.killer_table.clear()
     
@@ -352,7 +372,7 @@ class Phase2AIController:
     def _iterative_deepening_search(self, board: Board, player: Player) -> Optional[Tuple[int, int]]:
         best_move = None
         prev_score = 0.0
-        max_depth = self.difficulty.get_depth()
+        max_depth = self.difficulty_config.search_depth
         
         for depth in range(1, max_depth + 1):
             elapsed = time.time() - self.search_start_time
@@ -410,13 +430,13 @@ class Phase2AIController:
             score = evaluator.evaluate(board, player)
             return (None, score)
         
-        # Phase 2: Null Move Pruning
-        if (allow_null_move and depth >= 3 and not is_maximizing and 
+        # Phase 2: Null Move Pruning (使用缓存的参数)
+        if (self.nmp_enabled and allow_null_move and depth >= self.nmp_min_depth and not is_maximizing and 
             self.null_move_allowed and len(board.history) > 2):
             # Try passing a turn
             self.null_move_allowed = False
             _, null_score = self._minimax_search(
-                board, player, depth - 3, -beta, -beta + 1, True, current_hash, False
+                board, player, depth - self.nmp_R, -beta, -beta + 1, True, current_hash, False
             )
             self.null_move_allowed = True
             null_score = -null_score
@@ -435,7 +455,7 @@ class Phase2AIController:
         move_gen = FastMoveGenerator(board, top_n=12 if depth > 3 else 15)
         candidates = move_gen.generate_best_moves(
             current_player, 
-            pv_move=self.pv_move if depth == self.difficulty.get_depth() else None,
+            pv_move=self.pv_move if depth == self.difficulty_config.search_depth else None,
             hash_move=hash_move,
             killer_moves=killer_moves
         )
@@ -451,11 +471,12 @@ class Phase2AIController:
                 board.place_stone(row, col, player)
                 new_hash = self.zobrist.update_hash(current_hash, row, col, player)
                 
-                # Phase 2: Late Move Reductions
-                if move_idx > 3 and depth >= 3:
+                # Phase 2: Late Move Reductions (使用缓存的参数)
+                if self.lmr_enabled and move_idx > self.lmr_min_move_idx and depth >= self.lmr_min_depth:
                     # Reduce depth for later moves
+                    reduced_depth = depth - 1 - self.lmr_reduction
                     _, eval_score = self._minimax_search(
-                        board, player, depth - 2, alpha, beta, False, new_hash
+                        board, player, reduced_depth, alpha, beta, False, new_hash
                     )
                     # Re-search if promising
                     if eval_score > alpha:
@@ -487,10 +508,11 @@ class Phase2AIController:
                 board.place_stone(row, col, current_player)
                 new_hash = self.zobrist.update_hash(current_hash, row, col, current_player)
                 
-                # Phase 2: Late Move Reductions
-                if move_idx > 3 and depth >= 3:
+                # Phase 2: Late Move Reductions (使用缓存的参数)
+                if self.lmr_enabled and move_idx > self.lmr_min_move_idx and depth >= self.lmr_min_depth:
+                    reduced_depth = depth - 1 - self.lmr_reduction
                     _, eval_score = self._minimax_search(
-                        board, player, depth - 2, alpha, beta, True, new_hash
+                        board, player, reduced_depth, alpha, beta, True, new_hash
                     )
                     if eval_score < beta:
                         _, eval_score = self._minimax_search(
@@ -529,12 +551,6 @@ class Phase2AIController:
 OptimizedAIController = Phase2AIController
 
 
-def create_optimized_ai(difficulty_name: str = 'medium', time_limit: float = 5.0) -> Phase2AIController:
-    """创建Phase 2优化AI实例"""
-    difficulty_map = {
-        'easy': DifficultyLevel.EASY,
-        'medium': DifficultyLevel.MEDIUM,
-        'hard': DifficultyLevel.HARD,
-    }
-    difficulty = difficulty_map.get(difficulty_name.lower(), DifficultyLevel.MEDIUM)
-    return Phase2AIController(difficulty, time_limit)
+def create_optimized_ai(difficulty_name: str = 'medium', time_limit: Optional[float] = None) -> Phase2AIController:
+    """创建Phase 2优化AI实例 (配置化)"""
+    return Phase2AIController(difficulty_name, time_limit)

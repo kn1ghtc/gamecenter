@@ -19,25 +19,7 @@ from collections import OrderedDict
 
 from gamecenter.gomoku.evaluation import BoardEvaluator, evaluate_move
 from gamecenter.gomoku.game_logic import Board, Player, GameState
-
-
-class DifficultyLevel(Enum):
-    """AI难度等级"""
-    EASY = "easy"        # 深度3，基础优化
-    MEDIUM = "medium"    # 深度5，完整优化
-    HARD = "hard"        # 深度7，最大优化
-
-    def get_depth(self) -> int:
-        """获取搜索深度"""
-        depths = {
-            DifficultyLevel.EASY: 3,
-            DifficultyLevel.MEDIUM: 5,
-            DifficultyLevel.HARD: 7,
-        }
-        return depths[self]
-    
-    def __str__(self) -> str:
-        return self.value
+from gamecenter.gomoku.config.config_loader import get_difficulty_config, DifficultyConfig
 
 
 class HistoryTable:
@@ -372,23 +354,26 @@ class OptimizedAIController:
     - 时间管理
     """
     
-    def __init__(self, difficulty: DifficultyLevel = DifficultyLevel.MEDIUM,
-                 time_limit: float = 5.0):
+    def __init__(self, difficulty: str = "medium", time_limit: Optional[float] = None):
         """初始化AI控制器
         
         Args:
-            difficulty: 难度级别
-            time_limit: 时间限制（秒）
+            difficulty: 难度名称 (easy/medium/hard/expert)
+            time_limit: 时间限制（秒），None则使用配置文件中的值
         """
-        self.difficulty = difficulty
-        self.time_limit = time_limit
+        # 加载难度配置
+        self.difficulty_config = get_difficulty_config(difficulty)
+        self.difficulty_name = difficulty
+        self.time_limit = time_limit if time_limit is not None else self.difficulty_config.time_limit
+        
         self.evaluator = BoardEvaluator()
         
         # Zobrist哈希器（所有模块共享）
         self.zobrist = ZobristHasher()
         
-        # 置换表（使用Zobrist哈希）- Phase 2: 500K entries
-        self.tt = TranspositionTable(max_size=500000, zobrist=self.zobrist)
+        # 置换表（使用配置中的大小）
+        tt_size = self.difficulty_config.transposition_table_size
+        self.tt = TranspositionTable(max_size=tt_size, zobrist=self.zobrist)
         
         # 历史启发表
         self.history_table = HistoryTable()
@@ -402,10 +387,23 @@ class OptimizedAIController:
         self.search_start_time = 0.0
         self.current_hash = 0  # 当前局面哈希
     
-    def set_difficulty(self, difficulty: DifficultyLevel) -> None:
-        """设置难度"""
-        self.difficulty = difficulty
-        self.tt.clear()
+    def set_difficulty(self, difficulty: str) -> None:
+        """设置难度
+        
+        Args:
+            difficulty: 难度名称 (easy/medium/hard/expert)
+        """
+        self.difficulty_config = get_difficulty_config(difficulty)
+        self.difficulty_name = difficulty
+        self.time_limit = self.difficulty_config.time_limit
+        
+        # 根据新配置调整TT大小
+        tt_size = self.difficulty_config.transposition_table_size
+        if len(self.tt.table) != tt_size:
+            self.tt = TranspositionTable(max_size=tt_size, zobrist=self.zobrist)
+        else:
+            self.tt.clear()
+        
         self.history_table.clear()
         self.killer_table.clear()
     
@@ -463,7 +461,7 @@ class OptimizedAIController:
         """迭代加深搜索（时间管理版 + Aspiration Window）"""
         best_move = None
         prev_score = 0.0
-        max_depth = self.difficulty.get_depth()
+        max_depth = self.difficulty_config.search_depth
         
         # 从深度1开始逐步加深
         for depth in range(1, max_depth + 1):
@@ -620,21 +618,14 @@ class OptimizedAIController:
 
 
 # 工厂函数（兼容旧接口）
-def create_optimized_ai(difficulty_name: str = 'medium', time_limit: float = 5.0) -> OptimizedAIController:
+def create_optimized_ai(difficulty_name: str = 'medium', time_limit: Optional[float] = None) -> OptimizedAIController:
     """创建优化AI实例
     
     Args:
-        difficulty_name: 难度名称 ('easy', 'medium', 'hard')
-        time_limit: 时间限制（秒）
+        difficulty_name: 难度名称 ('easy', 'medium', 'hard', 'expert')
+        time_limit: 时间限制（秒），None则使用配置文件中的值
     
     Returns:
         OptimizedAIController实例
     """
-    difficulty_map = {
-        'easy': DifficultyLevel.EASY,
-        'medium': DifficultyLevel.MEDIUM,
-        'hard': DifficultyLevel.HARD,
-    }
-    
-    difficulty = difficulty_map.get(difficulty_name.lower(), DifficultyLevel.MEDIUM)
-    return OptimizedAIController(difficulty, time_limit)
+    return OptimizedAIController(difficulty_name, time_limit)

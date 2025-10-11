@@ -285,25 +285,28 @@ class GomokuGame:
         # AI思考
         if self.ai_thinking:
             board = self.game_manager.board
-            best_move = self.ai_controller.find_best_move(board, self.ai_player)
             
-            if best_move:
-                row, col = best_move
-                self._place_stone(row, col)
+            # 确保游戏还在进行中
+            if board.state == GameState.ONGOING:
+                best_move = self.ai_controller.find_best_move(board, self.ai_player)
                 
-                # 显示AI统计信息
-                stats = self.ai_controller.get_stats()
-                engine_name = self.ai_controller.get_engine_name()
-                print(f"[{engine_name}] AI搜索: ", end="")
-                if 'nodes_searched' in stats:
-                    print(f"{stats['nodes_searched']} 节点, ", end="")
-                if 'search_time' in stats:
-                    print(f"{stats['search_time']:.3f}秒, ", end="")
-                if 'nodes_per_second' in stats:
-                    print(f"{stats['nodes_per_second']:.0f} nps", end="")
-                if 'tt_hit_rate' in stats:
-                    print(f", TT命中率: {stats['tt_hit_rate']:.1%}", end="")
-                print()  # 换行
+                if best_move:
+                    row, col = best_move
+                    self._place_stone(row, col)
+                    
+                    # 显示AI统计信息
+                    stats = self.ai_controller.get_stats()
+                    engine_name = self.ai_controller.get_engine_name()
+                    print(f"[{engine_name}] AI搜索: ", end="")
+                    if 'nodes_searched' in stats:
+                        print(f"{stats['nodes_searched']} 节点, ", end="")
+                    if 'search_time' in stats:
+                        print(f"{stats['search_time']:.3f}秒, ", end="")
+                    if 'nodes_per_second' in stats:
+                        print(f"{stats['nodes_per_second']:.0f} nps", end="")
+                    if 'tt_hit_rate' in stats:
+                        print(f", TT命中率: {stats['tt_hit_rate']:.1%}", end="")
+                    print()  # 换行
             
             self.ai_thinking = False
         

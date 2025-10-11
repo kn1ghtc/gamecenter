@@ -41,8 +41,7 @@ def test_pure_search_phase1():
     print("="*70)
     
     board = create_complex_midgame_board()
-    from gamecenter.gomoku.ai_engine import DifficultyLevel
-    ai = Phase1AI(difficulty=DifficultyLevel.MEDIUM, time_limit=3.0)
+    ai = Phase1AI(difficulty="medium", time_limit=3.0)
     
     # 初始化搜索状态
     ai.nodes_searched = 0
@@ -79,8 +78,7 @@ def test_pure_search_phase2():
     print("="*70)
     
     board = create_complex_midgame_board()
-    from gamecenter.gomoku.ai_engine_phase2 import DifficultyLevel
-    ai = Phase2AIController(difficulty=DifficultyLevel.MEDIUM, time_limit=3.0)
+    ai = Phase2AIController(difficulty="medium", time_limit=3.0)
     
     # 初始化搜索状态
     ai.nodes_searched = 0

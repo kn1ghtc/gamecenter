@@ -2,12 +2,12 @@
   "game": {
     "board_size": 15,
     "max_undo_count": 3,
-    "ai_difficulty": "medium",
+    "ai_difficulty": "hard",
     "ai_time_limit": 10.0
   },
   "display": {
-    "window_width": 2560,
-    "window_height": 1417,
+    "window_width": 1536,
+    "window_height": 889,
     "fullscreen": false
   },
   "audio": {

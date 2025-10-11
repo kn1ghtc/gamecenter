@@ -5,7 +5,8 @@ Gomoku (Five in a Row) Game Package
 """
 
 from gamecenter.gomoku.game_logic import Board, GameManager, GameState, Player, create_game
-from gamecenter.gomoku.ai_engine import AIController, DifficultyLevel, create_ai
+from gamecenter.gomoku.ai_engine import OptimizedAIController, create_optimized_ai
+from gamecenter.gomoku.config.config_loader import get_difficulty_config, DifficultyConfig
 from gamecenter.gomoku.main import run_game
 
 __version__ = "1.0.0"
@@ -20,9 +21,12 @@ __all__ = [
     'create_game',
     
     # AI引擎
-    'AIController',
-    'DifficultyLevel',
-    'create_ai',
+    'OptimizedAIController',
+    'create_optimized_ai',
+    
+    # 配置系统
+    'get_difficulty_config',
+    'DifficultyConfig',
     
     # 主程序
     'run_game',
