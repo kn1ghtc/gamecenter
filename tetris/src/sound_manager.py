@@ -33,7 +33,7 @@ class SoundManager:
             self.enabled = False
     
     def _load_sounds(self):
-        """加载所有音效"""
+        """加载所有音效（静默失败，不影响游戏体验）"""
         sound_keys = [
             'sound_rotate',
             'sound_move',
@@ -43,6 +43,7 @@ class SoundManager:
             'sound_game_over'
         ]
         
+        loaded_count = 0
         for key in sound_keys:
             path = self.resource_manager.get_resource_path(key)
             if path and os.path.exists(path):
@@ -50,8 +51,13 @@ class SoundManager:
                     sound = pygame.mixer.Sound(path)
                     sound.set_volume(self.sfx_volume)
                     self.sounds[key] = sound
+                    loaded_count += 1
                 except Exception as e:
-                    print(f"无法加载音效 {key}: {e}")
+                    pass  # 静默失败
+        
+        # 只在开发模式下显示加载信息
+        if loaded_count > 0:
+            pass  # 成功加载音效，静默运行
     
     def play_sound(self, sound_key):
         """
@@ -109,7 +115,7 @@ class SoundManager:
                 pygame.mixer.music.set_volume(self.music_volume)
                 pygame.mixer.music.play(-1 if loop else 0)
             except Exception as e:
-                print(f"播放背景音乐失败: {e}")
+                pass  # 静默失败，不影响游戏
     
     def stop_music(self):
         """停止背景音乐"""

@@ -3,6 +3,7 @@ UI渲染模块
 
 负责游戏界面的美化渲染，包括背景、面板、文字显示等
 """
+import os
 import pygame
 import math
 from .settings import (
@@ -31,17 +32,43 @@ class UIRenderer:
         self.bg_speed = 0.2
     
     def _init_fonts(self):
-        """初始化字体"""
-        font_path = self.resource_manager.get_font_path()
+        """初始化字体（优先使用系统字体，确保快速启动）"""
+        # 优先尝试系统字体
+        font_path = None
         
+        # Windows系统字体列表（按优先级）
+        system_fonts = [
+            ('Microsoft YaHei UI', True),  # 微软雅黑UI
+            ('Microsoft YaHei', True),      # 微软雅黑
+            ('SimHei', True),               # 黑体
+            ('Arial', False),               # Arial（英文后备）
+        ]
+        
+        for font_name, is_chinese in system_fonts:
+            try:
+                # 尝试使用系统字体
+                test_font = pygame.font.SysFont(font_name, 24)
+                if test_font:
+                    # 使用找到的系统字体
+                    for name, size in FONT_SIZES.items():
+                        self.fonts[name] = pygame.font.SysFont(font_name, size)
+                    return
+            except:
+                continue
+        
+        # 如果系统字体都失败，尝试下载的字体
+        font_path = self.resource_manager.get_font_path(fallback=False)
+        
+        # 加载字体
         for name, size in FONT_SIZES.items():
             try:
-                if font_path:
+                if font_path and os.path.exists(font_path):
                     self.fonts[name] = pygame.font.Font(font_path, size)
                 else:
+                    # 最后的后备：pygame默认字体
                     self.fonts[name] = pygame.font.Font(None, size)
             except:
-                # 使用pygame默认字体作为后备
+                # 确保一定有字体可用
                 self.fonts[name] = pygame.font.Font(None, size)
     
     def draw_background(self, surface):

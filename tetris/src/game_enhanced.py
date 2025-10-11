@@ -33,8 +33,8 @@ class TetrisGame:
         self.screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         pygame.display.set_caption("俄罗斯方块 - Tetris Enhanced")
         
-        # 资源管理
-        self.resource_manager = get_resource_manager()
+        # 资源管理（禁用自动下载，提升启动速度）
+        self.resource_manager = get_resource_manager(auto_download=False)
         
         # 初始化各个系统
         self.clock = pygame.time.Clock()
@@ -73,18 +73,6 @@ class TetrisGame:
         self.level_up_animation = 0
         self.combo_animation = 0
         self.combo_pos_y = WINDOW_HEIGHT // 3
-        
-        # 下载资源
-        self._init_resources()
-    
-    def _init_resources(self):
-        """初始化资源（下载缺失的资源）"""
-        missing = self.resource_manager.get_missing_resources()
-        if missing:
-            print(f"\n检测到缺失资源: {len(missing)} 个")
-            print("=" * 60)
-            self.resource_manager.download_all_resources()
-            print("=" * 60)
     
     def start_game(self):
         """开始新游戏"""

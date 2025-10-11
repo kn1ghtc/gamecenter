@@ -61,9 +61,15 @@ class ResourceManager:
         },
     }
     
-    def __init__(self):
-        """初始化资源管理器"""
+    def __init__(self, auto_download=False):
+        """
+        初始化资源管理器
+        
+        参数:
+            auto_download: 是否自动下载资源（默认False，提升启动速度）
+        """
         self.cached_resources: Dict[str, str] = {}
+        self.auto_download = auto_download
         self._ensure_directories()
     
     def _ensure_directories(self):
@@ -139,7 +145,7 @@ class ResourceManager:
     
     def get_resource_path(self, key: str) -> Optional[str]:
         """
-        获取资源路径（如果不存在则尝试下载）
+        获取资源路径（如果不存在且启用自动下载则尝试下载）
         
         参数:
             key: 资源键名
@@ -150,7 +156,18 @@ class ResourceManager:
         if key in self.cached_resources:
             return self.cached_resources[key]
         
-        return self.download_resource(key)
+        # 检查本地是否存在
+        if key in self.RESOURCE_URLS:
+            local_path = self.RESOURCE_URLS[key]['path']
+            if os.path.exists(local_path):
+                self.cached_resources[key] = local_path
+                return local_path
+        
+        # 只有启用自动下载时才尝试下载
+        if self.auto_download:
+            return self.download_resource(key)
+        
+        return None
     
     def get_font_path(self, fallback: bool = True) -> str:
         """
@@ -219,11 +236,16 @@ class ResourceManager:
 # 全局资源管理器实例
 _resource_manager = None
 
-def get_resource_manager() -> ResourceManager:
-    """获取全局资源管理器实例"""
+def get_resource_manager(auto_download=False) -> ResourceManager:
+    """
+    获取全局资源管理器实例
+    
+    参数:
+        auto_download: 是否启用自动下载（默认False）
+    """
     global _resource_manager
     if _resource_manager is None:
-        _resource_manager = ResourceManager()
+        _resource_manager = ResourceManager(auto_download=auto_download)
     return _resource_manager
 
 
