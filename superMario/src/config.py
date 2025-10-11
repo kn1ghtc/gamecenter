@@ -19,7 +19,7 @@ DEFAULT_CONFIG = {
     },
     "player": {
         "speed": 200,
-        "jump_force": -400,
+        "jump_force": -600,
         "gravity": 800,
         "max_fall_speed": 400,
         "skills": {

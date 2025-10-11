@@ -41,31 +41,41 @@ def init_chinese_fonts():
     """初始化中文字体支持"""
     pygame.font.init()
 
-    # macOS 中文字体路径
+    # 跨平台中文字体路径
     chinese_fonts = [
-        "/System/Library/Fonts/PingFang.ttc",  # macOS 系统字体
-        "/System/Library/Fonts/STHeiti Light.ttc",  # 黑体
-        "/System/Library/Fonts/Hiragino Sans GB.ttc",  # 冬青黑体
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",  # Linux 备选
-        "simhei.ttf",  # Windows 黑体
-        "simsun.ttc",  # Windows 宋体
-        None  # pygame 默认字体
+        # Windows 字体
+        "C:/Windows/Fonts/msyh.ttc",  # 微软雅黑
+        "C:/Windows/Fonts/simhei.ttf",  # 黑体
+        "C:/Windows/Fonts/simsun.ttc",  # 宋体
+        # macOS 字体
+        "/System/Library/Fonts/PingFang.ttc",
+        "/System/Library/Fonts/STHeiti Light.ttc",
+        "/System/Library/Fonts/Hiragino Sans GB.ttc",
+        # Linux 字体
+        "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+        "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
     ]
 
     for font_path in chinese_fonts:
         try:
-            if font_path is None:
-                # 使用 pygame 默认字体
-                test_font = pygame.font.Font(None, 24)
-            elif os.path.exists(font_path):
+            if os.path.exists(font_path):
                 test_font = pygame.font.Font(font_path, 24)
-                # 测试中文渲染
-                test_surface = test_font.render("测试", True, (0, 0, 0))
+                test_font.render("测试", True, (0, 0, 0))
                 print(f"✅ 成功加载中文字体: {font_path}")
                 return font_path
-            else:
-                continue
-        except Exception as e:
+        except Exception:
+            continue
+
+    # 尝试使用pygame系统字体
+    for font_name in ['microsoftyahei', 'simhei', 'simsun', 'pingfang', 'notosanscjk']:
+        try:
+            font_path = pygame.font.match_font(font_name)
+            if font_path:
+                test_font = pygame.font.Font(font_path, 24)
+                test_font.render("测试", True, (0, 0, 0))
+                print(f"✅ 成功加载系统字体: {font_name}")
+                return font_path
+        except Exception:
             continue
 
     print("⚠️  未找到中文字体，使用系统默认字体")
@@ -87,9 +97,14 @@ class EcoGrasslandGame:
         # 初始化Pygame
         pygame.init()
 
-        # 游戏窗口设置
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        # 游戏窗口设置（支持调整大小）
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
         pygame.display.set_caption("小羊吃草 - 生态模拟游戏 v1.0")
+        self.fullscreen = False
+        
+        # 当前屏幕尺寸（动态适配）
+        self.current_width = SCREEN_WIDTH
+        self.current_height = SCREEN_HEIGHT
 
         # 设置图标（如果有的话）
         try:
@@ -105,8 +120,8 @@ class EcoGrasslandGame:
 
         # 初始化游戏系统
         self.ecosystem = EcoSystem()
-        self.ui_manager = UIManager(CHINESE_FONT_PATH)  # 传入中文字体路径
-        self.camera = Camera(SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.ui_manager = UIManager(CHINESE_FONT_PATH, self.current_width, self.current_height)  # 传入中文字体路径和屏幕尺寸
+        self.camera = Camera(self.current_width, self.current_height)
 
         # 设置摄像机初始位置和世界边界
         self.camera.set_world_bounds(MAP_WIDTH, MAP_HEIGHT)
@@ -139,6 +154,11 @@ class EcoGrasslandGame:
             if event.type == pygame.QUIT:
                 self.running = False
                 return
+            
+            # 窗口大小改变事件
+            if event.type == pygame.VIDEORESIZE:
+                self._handle_resize(event.w, event.h)
+                continue
 
             # 优先让UI处理事件
             if self.ui_manager.handle_event(event):
@@ -160,6 +180,8 @@ class EcoGrasslandGame:
                     self._restart_game()
                 elif event.key == pygame.K_F3:
                     self.debug_mode = not self.debug_mode
+                elif event.key == pygame.K_F11:
+                    self._toggle_fullscreen()
                 elif event.key == pygame.K_1:
                     self.ui_manager.selected_animal_type = AnimalType.SHEEP
                 elif event.key == pygame.K_2:
@@ -182,6 +204,37 @@ class EcoGrasslandGame:
         self.ui_manager.paused = self.paused
         print(f"游戏{'暂停' if self.paused else '继续'}")
 
+    def _toggle_fullscreen(self):
+        """切换全屏模式"""
+        self.fullscreen = not self.fullscreen
+        if self.fullscreen:
+            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            # 获取全屏尺寸
+            self.current_width, self.current_height = self.screen.get_size()
+            print(f"🖥️  切换到全屏模式 ({self.current_width}x{self.current_height})")
+        else:
+            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
+            self.current_width, self.current_height = SCREEN_WIDTH, SCREEN_HEIGHT
+            print("🪟 切换到窗口模式")
+        
+        # 更新摄像机视口
+        self.camera.screen_width = self.current_width
+        self.camera.screen_height = self.current_height
+        
+        # 更新UI布局
+        self.ui_manager.update_layout(self.current_width, self.current_height)
+    
+    def _handle_resize(self, width: int, height: int):
+        """处理窗口大小改变"""
+        self.current_width = width
+        self.current_height = height
+        self.camera.screen_width = width
+        self.camera.screen_height = height
+        
+        # 更新UI布局
+        self.ui_manager.update_layout(width, height)
+        print(f"📐 窗口大小调整为: {width}x{height}")
+
     def _show_help(self):
         """显示帮助信息"""
         help_text = """
@@ -201,6 +254,7 @@ class EcoGrasslandGame:
   R            - 重新开始游戏
   H            - 显示此帮助
   F3           - 切换调试模式
+  F11          - 切换全屏/窗口模式
   ESC          - 退出游戏
 
 🦌 动物特性：
@@ -235,7 +289,7 @@ class EcoGrasslandGame:
 
         # 检查是否点击在UI区域（控制面板或统计面板）
         control_panel_area = pygame.Rect(10, 10, 200, 350)
-        stats_panel_area = pygame.Rect(1000, 10, 190, 400)
+        stats_panel_area = pygame.Rect(self.current_width - 200, 10, 190, 400)
 
         if (control_panel_area.collidepoint(mouse_pos) or
             stats_panel_area.collidepoint(mouse_pos)):
@@ -399,14 +453,11 @@ class EcoGrasslandGame:
             # 清空屏幕 - 使用更自然的天空蓝色背景
             self.screen.fill((135, 206, 235))  # 天空蓝色背景
 
-            # 获取摄像机信息用于剪裁
-            camera_x, camera_y = int(self.camera.x - SCREEN_WIDTH / 2 / self.camera.zoom), int(self.camera.y - SCREEN_HEIGHT / 2 / self.camera.zoom)
-
-            # 绘制世界元素（按层次顺序）
-            self.ecosystem.draw_grass(self.screen, camera_x, camera_y)
-            self.ecosystem.draw_water(self.screen, camera_x, camera_y)
-            self.ecosystem.draw_obstacles(self.screen, camera_x, camera_y)
-            self.ecosystem.draw_animals(self.screen, camera_x, camera_y)
+            # 绘制世界元素（按层次顺序），传入摄像机对象以便正确坐标转换与缩放
+            self.ecosystem.draw_grass(self.screen, self.camera)
+            self.ecosystem.draw_water(self.screen, self.camera)
+            self.ecosystem.draw_obstacles(self.screen, self.camera)
+            self.ecosystem.draw_animals(self.screen, self.camera)
 
             # 绘制调试信息
             if self.debug_mode:
@@ -428,7 +479,7 @@ class EcoGrasslandGame:
                 font = pygame.font.Font(None, 24)
 
             fps_surface = font.render(fps_text, True, (255, 255, 255))
-            self.screen.blit(fps_surface, (SCREEN_WIDTH - 80, 10))
+            self.screen.blit(fps_surface, (self.current_width - 80, 10))
 
             # 绘制游戏结束界面
             if self.game_over:
@@ -468,7 +519,7 @@ class EcoGrasslandGame:
         except:
             font = pygame.font.Font(None, 24)
 
-        y_offset = SCREEN_HEIGHT - 120
+        y_offset = self.current_height - 120
 
         debug_info = [
             f"摄像机: ({self.camera.x:.0f}, {self.camera.y:.0f})",
@@ -485,7 +536,7 @@ class EcoGrasslandGame:
     def _draw_game_over_screen(self):
         """绘制游戏结束界面"""
         # 创建半透明覆盖层
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        overlay = pygame.Surface((self.current_width, self.current_height))
         overlay.set_alpha(120)  # 降低透明度，让玩家仍能看到游戏世界
         overlay.fill((0, 0, 0))
         self.screen.blit(overlay, (0, 0))
@@ -519,35 +570,35 @@ class EcoGrasslandGame:
 
         # 绘制标题
         title_surface = title_font.render(title_text, True, title_color)
-        title_rect = title_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 100))
+        title_rect = title_surface.get_rect(center=(self.current_width // 2, self.current_height // 2 - 100))
         self.screen.blit(title_surface, title_rect)
 
         # 绘制原因
         reason_surface = text_font.render(self.game_over_reason, True, (255, 255, 255))
-        reason_rect = reason_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40))
+        reason_rect = reason_surface.get_rect(center=(self.current_width // 2, self.current_height // 2 - 40))
         self.screen.blit(reason_surface, reason_rect)
 
         # 绘制存活时间
         survival_time = self.game_over_time / 1000
         time_text = f"生态系统运行时间: {survival_time:.1f} 秒"
         time_surface = text_font.render(time_text, True, (255, 255, 255))
-        time_rect = time_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2))
+        time_rect = time_surface.get_rect(center=(self.current_width // 2, self.current_height // 2))
         self.screen.blit(time_surface, time_rect)
 
         # 绘制操作提示
         action_surface = small_font.render(action_text, True, (200, 255, 200))
-        action_rect = action_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40))
+        action_rect = action_surface.get_rect(center=(self.current_width // 2, self.current_height // 2 + 40))
         self.screen.blit(action_surface, action_rect)
 
         hint1 = "按 R 重新开始游戏"
         hint2 = "按 ESC 退出游戏"
 
         hint1_surface = small_font.render(hint1, True, (200, 255, 200))
-        hint1_rect = hint1_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 70))
+        hint1_rect = hint1_surface.get_rect(center=(self.current_width // 2, self.current_height // 2 + 70))
         self.screen.blit(hint1_surface, hint1_rect)
 
         hint2_surface = small_font.render(hint2, True, (255, 200, 200))
-        hint2_rect = hint2_surface.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 95))
+        hint2_rect = hint2_surface.get_rect(center=(self.current_width // 2, self.current_height // 2 + 95))
         self.screen.blit(hint2_surface, hint2_rect)
 
     def _update_fps(self, dt: float):

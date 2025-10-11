@@ -16,6 +16,8 @@ class Player:
     JUMP_FORCE = -400  # negative because y increases downward
     GRAVITY = 800  # pixels per second squared
     MAX_FALL_SPEED = 400
+    COYOTE_TIME = 0.12
+    JUMP_BUFFER_TIME = 0.15
 
     # Animation constants
     ANIMATION_SPEED = 0.1  # seconds per frame
@@ -39,6 +41,10 @@ class Player:
         self.on_ground = False
         self.facing_right = True
         self.is_big = False  # Super Mario state
+        self.coyote_timer = 0.0
+        self.jump_buffer_timer = 0.0
+        self.air_jumps_remaining = 2  # Allow 2 air jumps (triple jump total)
+        self.jump_triggered = False
 
         # Animation
         self.animation_timer = 0
@@ -49,6 +55,7 @@ class Player:
         self.left_pressed = False
         self.right_pressed = False
         self.jump_pressed = False
+        self.jump_held = False
         self.can_double_jump = bool(cfg.get("skills", {}).get("double_jump", False))
         self.has_dashed = False
         self.enable_dash = bool(cfg.get("skills", {}).get("dash", False))
@@ -99,6 +106,10 @@ class Player:
         self.vy = 0
         self.on_ground = False
         self.is_big = False
+        self.coyote_timer = 0.0
+        self.jump_buffer_timer = 0.0
+        self.air_jumps_remaining = 2
+        self.jump_triggered = False
 
     def move_left(self):
         """Start moving left"""
@@ -120,17 +131,35 @@ class Player:
         self.animation_state = "idle"
 
     def jump(self):
-        """Make the player jump"""
-        if self.on_ground:
-            self.vy = self.JUMP_FORCE
-            self.on_ground = False
+        """Queue a jump or perform an air jump (triple jump support)"""
+        self.jump_pressed = True
+        self.jump_held = True
+        self.jump_buffer_timer = self.JUMP_BUFFER_TIME
+
+        # Immediate air jump when available (2 air jumps = triple jump total)
+        if not self.on_ground and self.air_jumps_remaining > 0:
+            self.vy = self.JUMP_FORCE * 0.85  # Slightly weaker air jumps
             self.animation_state = "jumping"
-            self.jump_pressed = True
-            self.has_dashed = False
-        elif self.can_double_jump and self.jump_pressed:
-            # perform double jump once per air time
-            self.vy = self.JUMP_FORCE * 0.9
-            self.jump_pressed = False
+            self.air_jumps_remaining -= 1
+            self.jump_triggered = True
+            self.jump_buffer_timer = 0.0
+            return True
+
+        return False
+
+    def release_jump(self):
+        """Handle jump key release for variable jump heights"""
+        self.jump_pressed = False
+        self.jump_held = False
+        if self.vy < 0:
+            self.vy = max(self.vy, self.JUMP_FORCE * 0.35)
+
+    def bounce(self, strength: float = 0.6):
+        """Bounce the player upward after stomping an enemy"""
+        self.vy = self.JUMP_FORCE * strength
+        self.on_ground = False
+        self.jump_triggered = True
+        self.air_jumps_remaining = 2  # Reset air jumps on stomp
 
     def grow(self):
         """Make Mario grow into Super Mario"""
@@ -180,6 +209,25 @@ class Player:
 
     def _apply_physics(self, dt, level):
         """Apply physics to the player"""
+        # Update timers
+        if self.on_ground:
+            self.coyote_timer = self.COYOTE_TIME
+            self.air_jumps_remaining = 2  # Reset air jumps on ground
+        else:
+            self.coyote_timer = max(0.0, self.coyote_timer - dt)
+
+        self.jump_buffer_timer = max(0.0, self.jump_buffer_timer - dt)
+
+        # Execute buffered jump when conditions are met
+        if self.jump_buffer_timer > 0 and (self.on_ground or self.coyote_timer > 0):
+            self.vy = self.JUMP_FORCE
+            self.on_ground = False
+            self.jump_triggered = True
+            self.jump_buffer_timer = 0.0
+            self.coyote_timer = 0.0
+            self.animation_state = "jumping"
+            self.has_dashed = False
+
         # Apply gravity
         if not self.on_ground:
             self.vy += self.GRAVITY * dt
@@ -196,45 +244,37 @@ class Player:
 
     def _check_level_collisions(self, level, old_x, old_y):
         """Check collisions with level tiles"""
-        # Get player rect
         player_rect = pygame.Rect(self.x, self.y, self.width, self.height)
-
-        # Check collision with ground/platforms
         self.on_ground = False
 
-        # Simple collision detection with level tiles
-        tiles = level.get_collidable_tiles()
+        for tile_rect in level.get_collidable_tiles():
+            if not player_rect.colliderect(tile_rect):
+                continue
 
-        for tile_rect in tiles:
-            if player_rect.colliderect(tile_rect):
-                # Determine collision direction
-                dx = (player_rect.centerx - tile_rect.centerx)
-                dy = (player_rect.centery - tile_rect.centery)
+            # Determine prior positions to resolve collision axis
+            landing = old_y + self.height <= tile_rect.top + 1
+            hitting_from_below = old_y >= tile_rect.bottom - 1
+            hitting_from_left = old_x + self.width <= tile_rect.left + 1
+            hitting_from_right = old_x >= tile_rect.right - 1
 
-                if abs(dx) > abs(dy):
-                    # Horizontal collision
-                    if dx > 0:
-                        # Player is to the right of tile
-                        self.x = tile_rect.right
-                    else:
-                        # Player is to the left of tile
-                        self.x = tile_rect.left - self.width
-                    self.vx = 0
-                else:
-                    # Vertical collision
-                    if dy > 0:
-                        # Player is below tile (landing)
-                        self.y = tile_rect.top - self.height
-                        self.vy = 0
-                        self.on_ground = True
-                        if self.animation_state == "jumping":
-                            self.animation_state = "idle"
-                    else:
-                        # Player hit tile from below
-                        self.y = tile_rect.bottom
-                        self.vy = 0
+            if landing:
+                self.y = tile_rect.top - self.height
+                self.vy = 0
+                self.on_ground = True
+                self.has_double_jumped = False
+                if self.animation_state == "jumping":
+                    self.animation_state = "idle"
+            elif hitting_from_below:
+                self.y = tile_rect.bottom
+                self.vy = 0
+            elif hitting_from_left:
+                self.x = tile_rect.left - self.width
+                self.vx = 0
+            elif hitting_from_right:
+                self.x = tile_rect.right
+                self.vx = 0
 
-                player_rect = pygame.Rect(self.x, self.y, self.width, self.height)
+            player_rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
     def _check_bounds(self, level):
         """Check if player is within level bounds"""
@@ -249,6 +289,7 @@ class Player:
         # Vertical bounds checking is handled by collision detection
         if self.on_ground:
             self.jump_pressed = False
+            self.jump_held = False
 
     def _update_animation(self, dt):
         """Update player animation"""
@@ -264,7 +305,7 @@ class Player:
             elif self.animation_state == "jumping":
                 self.current_frame = 1  # Jumping frame
 
-    def render(self, screen):
+    def render(self, screen, camera_x: float = 0.0):
         """Render the player"""
         if getattr(self, 'sprite_image', None):
             # Render using generated sprite image; scale to current size
@@ -273,34 +314,34 @@ class Player:
                     img = pygame.transform.smoothscale(self.sprite_image, (int(self.width), int(self.height)))
                 else:
                     img = self.sprite_image
-                screen.blit(img, (self.x, self.y))
+                screen.blit(img, (self.x - camera_x, self.y))
             except Exception:
                 color = (0, 255, 0) if self.is_big else getattr(self, 'color', (255, 0, 0))
-                pygame.draw.rect(screen, color, (self.x, self.y, self.width, self.height))
+                pygame.draw.rect(screen, color, (self.x - camera_x, self.y, self.width, self.height))
         elif self.sprite_sheet:
             # Render with sprite sheet (fallback placeholder)
-            self._render_with_sprites(screen)
+            self._render_with_sprites(screen, camera_x)
         else:
             # Render as colored rectangle
             color = (0, 255, 0) if self.is_big else self.color  # Green for Super Mario
-            pygame.draw.rect(screen, color, (self.x, self.y, self.width, self.height))
+            pygame.draw.rect(screen, color, (self.x - camera_x, self.y, self.width, self.height))
 
-    def _render_with_sprites(self, screen):
+    def _render_with_sprites(self, screen, camera_x: float = 0.0):
         """Render player using sprite sheet"""
         # This would extract frames from the sprite sheet
         # For now, just render a colored rectangle
         color = (0, 255, 0) if self.is_big else self.color
-        pygame.draw.rect(screen, color, (self.x, self.y, self.width, self.height))
+        pygame.draw.rect(screen, color, (self.x - camera_x, self.y, self.width, self.height))
 
         # Add simple eyes for Mario
         eye_color = (255, 255, 255)
         eye_size = 4
         if self.facing_right:
-            pygame.draw.circle(screen, eye_color, (int(self.x + 20), int(self.y + 10)), eye_size)
-            pygame.draw.circle(screen, eye_color, (int(self.x + 12), int(self.y + 10)), eye_size)
+            pygame.draw.circle(screen, eye_color, (int(self.x - camera_x + 20), int(self.y + 10)), eye_size)
+            pygame.draw.circle(screen, eye_color, (int(self.x - camera_x + 12), int(self.y + 10)), eye_size)
         else:
-            pygame.draw.circle(screen, eye_color, (int(self.x + 12), int(self.y + 10)), eye_size)
-            pygame.draw.circle(screen, eye_color, (int(self.x + 20), int(self.y + 10)), eye_size)
+            pygame.draw.circle(screen, eye_color, (int(self.x - camera_x + 12), int(self.y + 10)), eye_size)
+            pygame.draw.circle(screen, eye_color, (int(self.x - camera_x + 20), int(self.y + 10)), eye_size)
 
     def get_rect(self):
         """Get player's collision rectangle"""
@@ -314,3 +355,15 @@ class Player:
     def position(self):
         """Get current position as tuple"""
         return (self.x, self.y)
+
+    def consume_jump_trigger(self) -> bool:
+        """Consume and report if a jump was triggered this frame"""
+        if self.jump_triggered:
+            self.jump_triggered = False
+            return True
+        return False
+
+    @property
+    def velocity(self):
+        """Get current velocity vector"""
+        return self.vx, self.vy

@@ -10,7 +10,6 @@ import sys
 import os
 import random
 from pathlib import Path
-from src.downloader import ResourceDownloader
 from src.player import Player
 from src.level import Level
 from src.scoring import ScoringSystem
@@ -55,6 +54,7 @@ class Game:
         self.lives = 3
         self.time_left = 400  # seconds
         self.music_enabled = True
+        self.camera_x = 0.0
 
         # Menu related
         self.menu_index = 0
@@ -98,12 +98,6 @@ class Game:
         """Load game resources"""
         print("Loading resources...")
 
-        # Download resources if needed
-        downloader = ResourceDownloader()
-        if not downloader.verify_resources():
-            print("Downloading missing resources...")
-            downloader.download_all_resources()
-
         # Initialize font system
         self.text_renderer = get_text_renderer(str(self.assets_dir))
 
@@ -134,12 +128,16 @@ class Game:
             self.level = Level(level_num, self.assets_dir)
             self.player = Player(self.level.player_start_pos, self.assets_dir, self.config.get("player", {}))
             self.time_left = float(self.config["game"].get("time_per_level", 400))  # Reset timer
+            self.camera_x = 0.0
+            self._update_camera()
             print(f"Level {level_num} loaded")
         except Exception as e:
             print(f"Failed to load level {level_num}: {e}")
             # Create a default level if loading fails
             self.level = Level.create_default_level(level_num, self.assets_dir)
             self.player = Player((100, 500), self.assets_dir, self.config.get("player", {}))
+            self.camera_x = 0.0
+            self._update_camera()
 
     def run(self):
         """Main game loop"""
@@ -251,10 +249,13 @@ class Game:
 
             # Update game objects
             self.player.update(dt, self.level)
+            if self.player.consume_jump_trigger():
+                self._play_sound("jump")
             self.level.update(dt, self.player)
 
             # Check collisions and game logic
             self._check_collisions()
+            self._update_camera()
 
             # Check win/lose conditions
             if self.player.y > self.HEIGHT + 100:  # Fell off screen
@@ -268,12 +269,21 @@ class Game:
         """Check for collisions between game objects"""
         # Player vs coins
         coins_collected = self.level.check_coin_collisions(self.player)
-        for coin in coins_collected:
-            self.score += self.scoring.coin_points
+        if coins_collected:
+            for _ in coins_collected:
+                self.scoring.add_coin_score()
+            self.score = self.scoring.get_current_score()
             self._play_sound("coin")
 
         # Player vs enemies
-        if self.level.check_enemy_collisions(self.player):
+        enemy_hit, stomped_count = self.level.check_enemy_collisions(self.player)
+        if stomped_count:
+            self.player.bounce()
+            for _ in range(stomped_count):
+                self.scoring.add_enemy_score()
+            self.score = self.scoring.get_current_score()
+            self._play_sound("enemy_defeat")
+        if enemy_hit and stomped_count == 0:
             self._lose_life()
 
         # Player vs powerups
@@ -281,25 +291,28 @@ class Game:
         for powerup in powerups_collected:
             if isinstance(powerup, dict) and powerup.get('type') == "mushroom":
                 self.player.grow()
-                self.score += self.scoring.powerup_points
+                self.scoring.add_powerup_score()
+                self.score = self.scoring.get_current_score()
                 self._play_sound("powerup")
 
     def _lose_life(self):
         """Handle player losing a life"""
         self.lives -= 1
+        self._play_sound("player_die")
         if self.lives <= 0:
             self._game_over()
         else:
             # Reset player position
             self.player.reset(self.level.player_start_pos)
             self.time_left = float(self.config["game"].get("time_per_level", 400))
+            self._update_camera()
             self._save_progress()
 
     def _level_complete(self):
         """Handle level completion"""
         self.game_state = "level_complete"
-        time_bonus = int(self.time_left * self.scoring.time_bonus_multiplier)
-        self.score += time_bonus + self.scoring.level_complete_bonus
+        self.scoring.add_level_complete_score(self.time_left)
+        self.score = self.scoring.get_current_score()
         self._play_sound("level_complete")
         self._save_progress()
 
@@ -323,6 +336,10 @@ class Game:
                     self.audio_manager.play_level_complete()
                 elif sound_name == "game_over":
                     self.audio_manager.play_game_over()
+                elif sound_name == "enemy_defeat":
+                    self.audio_manager.play_enemy_defeat()
+                elif sound_name == "player_die":
+                    self.audio_manager.play_player_death()
                 else:
                     # Generic sound playback
                     getattr(self.audio_manager, f"play_{sound_name}", lambda: None)()
@@ -331,7 +348,9 @@ class Game:
 
     def _render(self):
         """Render the game"""
-        self._render_gradient_bg()
+        gradient_needed = not (self.game_state == "playing" and self.level and self.level.background_layers)
+        if gradient_needed:
+            self._render_gradient_bg()
 
         if self.game_state == "menu":
             self._render_menu()
@@ -370,10 +389,10 @@ class Game:
     def _render_game(self):
         """Render the game world"""
         # Render level
-        self.level.render(self.screen)
+        self.level.render(self.screen, self.camera_x)
 
         # Render player
-        self.player.render(self.screen)
+        self.player.render(self.screen, self.camera_x)
 
         # Render HUD
         self._render_hud()
@@ -488,6 +507,9 @@ class Game:
         self.score = 0
         self.lives = int(self.config["game"].get("initial_lives", 3))
         self.current_level = max(1, min(self.max_levels, start_level))
+        if self.scoring:
+            self.scoring.reset_game_stats()
+            self.score = self.scoring.get_current_score()
         self._load_level(self.current_level)
         self.game_state = "playing"
         if self.music_enabled:
@@ -503,6 +525,10 @@ class Game:
         self.score = int(data.get("score", 0))
         self.lives = int(data.get("lives", max(1, int(self.config["game"].get("initial_lives", 3)))))
         self.time_left = float(data.get("time_left", self.config["game"].get("time_per_level", 400)))
+        if self.scoring:
+            self.scoring.reset_game_stats()
+            self.scoring.current_score = self.score
+            self.score = self.scoring.get_current_score()
         self._load_level(self.current_level)
         self.game_state = "playing"
         if self.music_enabled:
@@ -537,6 +563,15 @@ class Game:
                 int(top[2] + (bottom[2] - top[2]) * t)
             )
             pygame.draw.line(self.screen, color, (0, y), (self.WIDTH, y))
+
+    def _update_camera(self):
+        """Update camera target based on player position"""
+        if not self.level or not self.player:
+            return
+        half_width = self.WIDTH / 2
+        target = self.player.x + self.player.width / 2 - half_width
+        max_camera = max(0, self.level.width - self.WIDTH)
+        self.camera_x = max(0.0, min(max_camera, target))
 
     def get_score(self):
         """Get current score"""

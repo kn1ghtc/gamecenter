@@ -450,8 +450,12 @@ class ModernPanel:
 class UIManager:
     """用户界面管理器"""
 
-    def __init__(self, font_path: Optional[str] = None):
+    def __init__(self, font_path: Optional[str] = None, screen_width: int = 1200, screen_height: int = 800):
         """初始化UI管理器"""
+        # 屏幕尺寸（用于动态布局）
+        self.screen_width = screen_width
+        self.screen_height = screen_height
+        
         # 初始化字体 - 使用更小的字体以适应面板
         try:
             if font_path:
@@ -502,8 +506,9 @@ class UIManager:
         # 左侧控制面板 - 使用小字体标题
         self.control_panel = ModernPanel(10, 10, 200, 350, "控制面板", self.small_font)
 
-        # 右侧统计面板 - 使用小字体标题
-        self.stats_panel = ModernPanel(1000, 10, 190, 400, "生态统计", self.small_font)
+        # 右侧统计面板 - 使用小字体标题（动态位置）
+        stats_x = self.screen_width - 200
+        self.stats_panel = ModernPanel(stats_x, 10, 190, 400, "生态统计", self.small_font)
 
         # 动物选择按钮
         self.animal_buttons = {}
@@ -541,6 +546,22 @@ class UIManager:
             text = f"{speed}x" if speed != 1.0 else "1x"
             button = ModernButton(x_pos, 240, 35, 25, text, self.small_font, "secondary")
             self.speed_buttons[speed] = button
+    
+    def update_layout(self, width: int, height: int):
+        """更新UI布局以适应新的屏幕尺寸"""
+        self.screen_width = width
+        self.screen_height = height
+        
+        # 更新右侧统计面板位置（右对齐）
+        stats_x = self.screen_width - 200
+        self.stats_panel.rect.x = stats_x
+        
+        # 如果有帮助对话框，也需要更新其位置（居中）
+        if self.help_dialog:
+            dialog_width = self.help_dialog.rect.width
+            dialog_height = self.help_dialog.rect.height
+            self.help_dialog.rect.x = (self.screen_width - dialog_width) // 2
+            self.help_dialog.rect.y = (self.screen_height - dialog_height) // 2
 
     def update(self, dt: float):
         """更新UI动画"""

@@ -5,7 +5,7 @@ import pygame
 import random
 import math
 from typing import List, Tuple
-from game_entities import *
+from gamecenter.Eco_grassland.game_entities import *
 
 class EcoSystem:
     """生态系统管理器"""
@@ -153,10 +153,11 @@ class EcoSystem:
         self.ecosystem_pressure = min(1.0, density_pressure * 0.7 + grass_pressure * 0.3)
 
         # 应用生态压力效果
-        if grass_pressure > 0.3:  # 超过30%草地枯萎
-            # 所有动物的能量消耗增加
-            for animal in self.animals:
-                animal.energy_consumption *= (1 + self.ecosystem_pressure * 0.5)
+        for animal in self.animals:
+            base_consumption = getattr(animal, 'base_energy_consumption', animal.energy_consumption)
+            stress_factor = 0.5 if grass_pressure > 0.3 else 0.2
+            multiplier = 1 + self.ecosystem_pressure * stress_factor
+            animal.energy_consumption = base_consumption * multiplier
 
     def _update_grass(self):
         """更新草地状态"""
@@ -245,124 +246,114 @@ class EcoSystem:
 
         return "生态系统面临严重危机。"
 
-        return "生态系统面临严重危机。"
+    def draw_grass(self, screen: pygame.Surface, camera):
+        """绘制草地（使用摄像机对象进行坐标转换与缩放自适应）"""
+        # 可见区域（世界坐标）
+        vis_x, vis_y, vis_w, vis_h = camera.get_visible_rect()
 
-    def draw_grass(self, screen: pygame.Surface, camera_x: int, camera_y: int):
-        """绘制草地"""
-        # 计算可见区域
-        start_x = max(0, camera_x // 20 - 1)
-        end_x = min(len(self.grass_grid[0]), (camera_x + SCREEN_WIDTH) // 20 + 2)
-        start_y = max(0, camera_y // 20 - 1)
-        end_y = min(len(self.grass_grid), (camera_y + SCREEN_HEIGHT) // 20 + 2)
+        # 扩展一点边距以避免边缘闪烁
+        margin = 40 / max(0.001, camera.zoom)
+
+        start_x = max(0, int((vis_x - margin) // 20))
+        end_x = min(len(self.grass_grid[0]), int((vis_x + vis_w + margin) // 20) + 1)
+        start_y = max(0, int((vis_y - margin) // 20))
+        end_y = min(len(self.grass_grid), int((vis_y + vis_h + margin) // 20) + 1)
+
+        screen_w = screen.get_width()
+        screen_h = screen.get_height()
 
         for y in range(start_y, end_y):
             for x in range(start_x, end_x):
                 grass = self.grass_grid[y][x]
-                draw_x = grass.x - camera_x
-                draw_y = grass.y - camera_y
+                screen_x, screen_y = camera.world_to_screen(grass.x, grass.y)
 
-                if -20 <= draw_x <= SCREEN_WIDTH + 20 and -20 <= draw_y <= SCREEN_HEIGHT + 20:
-                    self._draw_grass_tile(screen, grass, draw_x, draw_y)
+                # 简单可见性裁剪（使用屏幕尺寸）
+                if -40 <= screen_x <= screen_w + 40 and -40 <= screen_y <= screen_h + 40:
+                    self._draw_grass_tile(screen, grass, screen_x, screen_y, camera.zoom)
 
-    def _draw_grass_tile(self, screen: pygame.Surface, grass, draw_x: int, draw_y: int):
+    def _draw_grass_tile(self, screen: pygame.Surface, grass, draw_x: int, draw_y: int, zoom: float):
         """绘制单个草地块"""
         # 使用草地位置作为随机种子，确保每次绘制一致
         random.seed(grass.x * 1000 + grass.y)
 
         base_color = grass.get_color()
+        # 绘制时根据缩放调整像素尺寸
+        tile_size = max(1, int(20 * zoom))
+        half = tile_size // 2
 
         # 绘制地面基色（略深一些）
         ground_color = tuple(max(0, c - 30) for c in base_color)
-        pygame.draw.rect(screen, ground_color, (draw_x - 10, draw_y - 10, 20, 20))
+        pygame.draw.rect(screen, ground_color, (draw_x - half, draw_y - half, tile_size, tile_size))
+
+        # 如果缩放很小，绘制简化版本以提升性能
+        if tile_size < 4:
+            random.seed()
+            return
 
         if grass.state == GrassState.DEAD:
-            # 死草 - 绘制枯黄的残茬
+            # 死草 - 绘制枯黄的残茬（缩放后宽度为1-3）
             for i in range(3):
-                stub_x = draw_x - 8 + i * 8 + random.randint(-2, 2)
-                stub_y = draw_y - 5 + random.randint(-3, 3)
-                pygame.draw.line(screen, (139, 119, 101),
-                               (stub_x, stub_y + 5), (stub_x, stub_y), 2)
+                stub_x = draw_x - int(8 * zoom) + i * int(8 * zoom) + random.randint(-2, 2)
+                stub_y = draw_y - int(5 * zoom) + random.randint(-3, 3)
+                pygame.draw.line(screen, (139, 119, 101), (stub_x, stub_y + int(5*zoom)), (stub_x, stub_y), max(1, int(2*zoom)))
 
         elif grass.state == GrassState.POOR:
-            # 贫瘠的草 - 绘制稀疏的草芽
             for i in range(3):
-                grass_x = draw_x - 6 + i * 6 + random.randint(-1, 1)
-                grass_y = draw_y - 2 + random.randint(-2, 2)
-                grass_height = random.randint(3, 5)
-
-                # 黄绿色
+                grass_x = draw_x - int(6 * zoom) + i * int(6 * zoom) + random.randint(-1, 1)
+                grass_y = draw_y - int(2 * zoom) + random.randint(-2, 2)
+                grass_height = max(1, int(random.randint(3, 5) * zoom))
                 grass_color = (120, 140, 60)
-
-                pygame.draw.line(screen, grass_color,
-                               (grass_x, grass_y + 3), (grass_x, grass_y + 3 - grass_height), 2)
+                pygame.draw.line(screen, grass_color, (grass_x, grass_y + int(3*zoom)), (grass_x, grass_y + int(3*zoom) - grass_height), max(1, int(2*zoom)))
 
         elif grass.state == GrassState.NORMAL:
-            # 普通的草 - 绘制中等茂盛的草丛
             for i in range(5):
-                grass_x = draw_x - 8 + i * 4 + random.randint(-1, 1)
-                grass_y = draw_y - 3 + random.randint(-2, 2)
-
-                # 不同高度的草
-                grass_height = random.randint(4, 7)
-
-                # 绿色
+                grass_x = draw_x - int(8 * zoom) + i * int(4 * zoom) + random.randint(-1, 1)
+                grass_y = draw_y - int(3 * zoom) + random.randint(-2, 2)
+                grass_height = max(1, int(random.randint(4, 7) * zoom))
                 green_base = random.randint(100, 140)
                 grass_color = (40, green_base, 50)
-
-                # 绘制草叶
-                pygame.draw.line(screen, grass_color,
-                               (grass_x, grass_y + 4), (grass_x, grass_y + 4 - grass_height), 2)
+                pygame.draw.line(screen, grass_color, (grass_x, grass_y + int(4*zoom)), (grass_x, grass_y + int(4*zoom) - grass_height), max(1, int(2*zoom)))
 
         elif grass.state == GrassState.RICH:
-            # 丰富的草 - 绘制茂盛的草丛
             for i in range(7):
-                grass_x = draw_x - 8 + i * 2.5 + random.randint(-1, 1)
-                grass_y = draw_y - 3 + random.randint(-2, 2)
-
-                # 不同高度的草
-                grass_height = random.randint(6, 9)
-
-                # 浓绿色
+                grass_x = draw_x - int(8 * zoom) + int(i * 2.5 * zoom) + random.randint(-1, 1)
+                grass_y = draw_y - int(3 * zoom) + random.randint(-2, 2)
+                grass_height = max(1, int(random.randint(6, 9) * zoom))
                 green_base = random.randint(140, 180)
                 grass_color = (20, green_base, 30)
-
-                # 绘制草叶
-                pygame.draw.line(screen, grass_color,
-                               (grass_x, grass_y + 4), (grass_x, grass_y + 4 - grass_height), 2)
-
-                # 添加草尖
+                pygame.draw.line(screen, grass_color, (grass_x, grass_y + int(4*zoom)), (grass_x, grass_y + int(4*zoom) - grass_height), max(1, int(2*zoom)))
                 tip_color = tuple(min(255, c + 20) for c in grass_color)
-                pygame.draw.circle(screen, tip_color, (grass_x, grass_y + 4 - grass_height), 1)
+                pygame.draw.circle(screen, tip_color, (grass_x, grass_y + int(4*zoom) - grass_height), max(1, int(1*zoom)))
 
-            # 偶尔添加小花
-            if random.random() < 0.15:  # 15% 概率有小花
-                flower_x = draw_x + random.randint(-6, 6)
-                flower_y = draw_y + random.randint(-6, 6)
+            if random.random() < 0.15:
+                flower_x = draw_x + random.randint(-int(6*zoom), int(6*zoom))
+                flower_y = draw_y + random.randint(-int(6*zoom), int(6*zoom))
                 flower_colors = [(255, 255, 100), (255, 200, 200), (200, 200, 255), (255, 255, 255)]
                 flower_color = random.choice(flower_colors)
-                pygame.draw.circle(screen, flower_color, (flower_x, flower_y), 2)
+                pygame.draw.circle(screen, flower_color, (flower_x, flower_y), max(1, int(2*zoom)))
 
         # 根据草地状态添加发光效果
-        if grass.state == GrassState.RICH:
-            glow_surface = pygame.Surface((24, 24), pygame.SRCALPHA)
-            glow_color = (*base_color, 30)
-            pygame.draw.circle(glow_surface, glow_color, (12, 12), 12)
-            screen.blit(glow_surface, (draw_x - 12, draw_y - 12))
+        if grass.state == GrassState.RICH and zoom >= 0.6:
+            glow_surface = pygame.Surface((int(24*zoom), int(24*zoom)), pygame.SRCALPHA)
+            glow_color = (*base_color, max(10, int(30 * zoom)))
+            pygame.draw.circle(glow_surface, glow_color, (glow_surface.get_width()//2, glow_surface.get_height()//2), glow_surface.get_width()//2)
+            screen.blit(glow_surface, (draw_x - glow_surface.get_width()//2, draw_y - glow_surface.get_height()//2))
 
-        # 恢复随机种子
         random.seed()
 
-    def draw_water(self, screen: pygame.Surface, camera_x: int, camera_y: int):
-        """绘制水源"""
+    def draw_water(self, screen: pygame.Surface, camera):
+        """绘制水源（使用摄像机对象）"""
+        screen_w = screen.get_width()
+        screen_h = screen.get_height()
         for water in self.water_sources:
-            water.draw(screen, camera_x, camera_y)
+            water.draw(screen, camera)
 
-    def draw_obstacles(self, screen: pygame.Surface, camera_x: int, camera_y: int):
-        """绘制障碍物"""
+    def draw_obstacles(self, screen: pygame.Surface, camera):
+        """绘制障碍物（使用摄像机对象）"""
         for obstacle in self.obstacles:
-            obstacle.draw(screen, camera_x, camera_y)
+            obstacle.draw(screen, camera)
 
-    def draw_animals(self, screen: pygame.Surface, camera_x: int, camera_y: int):
-        """绘制动物"""
+    def draw_animals(self, screen: pygame.Surface, camera):
+        """绘制动物（使用摄像机对象）"""
         for animal in self.animals:
-            animal.draw(screen, camera_x, camera_y)
+            animal.draw(screen, camera)

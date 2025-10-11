@@ -9,6 +9,7 @@ import pygame
 import json
 import random
 from pathlib import Path
+from itertools import islice
 
 class Level:
     """Level class handling level data and rendering"""
@@ -39,6 +40,11 @@ class Level:
         # Goal position
         self.goal_pos = (self.width - 100, 400)
 
+        # Rendering helpers
+        self.background_layers: list[pygame.Surface] = []
+        self.foreground_decorations: list[tuple[pygame.Surface, tuple[int, int]]] = []
+        self._collidable_cache = None
+
         # Load level data
         self._load_level_data()
 
@@ -66,6 +72,7 @@ class Level:
             self.powerups = data.get('powerups', [])
             self.player_start_pos = tuple(data.get('player_start', [100, 500]))
             self.goal_pos = tuple(data.get('goal', [self.width - 100, 400]))
+            self._collidable_cache = None
 
         except Exception as e:
             print(f"Failed to load level {self.level_num}: {e}")
@@ -141,6 +148,8 @@ class Level:
                     'type': 'mushroom'
                 })
 
+        self._collidable_cache = None
+
     @classmethod
     def create_default_level(cls, level_num, assets_dir):
         """Create a simple default level for testing"""
@@ -166,17 +175,16 @@ class Level:
     def _load_assets(self):
         """Load level assets"""
         try:
-            tiles_path = self.assets_dir / "images" / "tiles.png"
-            if tiles_path.exists():
-                self.tileset = pygame.image.load(str(tiles_path)).convert_alpha()
-            else:
-                self.tileset = None
+            tiles_path = self._find_first_asset(["tiles.png", "tilesheet.png", "tilemap.png", "ground.png"])
+            self.tileset = pygame.image.load(str(tiles_path)).convert_alpha() if tiles_path else None
 
             # Load individual sprites
             self.coin_sprite = self._load_sprite("coin")
             self.enemy_sprite = self._load_sprite("enemy")
             self.powerup_sprite = self._load_sprite("powerup")
             self.goal_sprite = self._load_sprite("goal")
+
+            self._load_background_layers()
 
         except Exception as e:
             print(f"Failed to load level assets: {e}")
@@ -185,6 +193,7 @@ class Level:
             self.enemy_sprite = None
             self.powerup_sprite = None
             self.goal_sprite = None
+            self.background_layers = []
 
     def _load_sprite(self, name):
         """Load a single sprite"""
@@ -192,9 +201,45 @@ class Level:
             sprite_path = self.assets_dir / "images" / f"{name}.png"
             if sprite_path.exists():
                 return pygame.image.load(str(sprite_path)).convert_alpha()
+            # Fallback: search recursively for named sprite
+            for candidate in (self.assets_dir / "images").rglob(f"{name}*.png"):
+                return pygame.image.load(str(candidate)).convert_alpha()
         except:
             pass
         return None
+
+    def _find_first_asset(self, candidates):
+        """Find first matching asset file name from list"""
+        images_dir = self.assets_dir / "images"
+        for candidate in candidates:
+            direct = images_dir / candidate
+            if direct.exists():
+                return direct
+        # recursive search fallback
+        lower_candidates = [c.lower() for c in candidates]
+        for path in images_dir.rglob("*.png"):
+            if any(candidate in path.name.lower() for candidate in lower_candidates):
+                return path
+        return None
+
+    def _load_background_layers(self):
+        """Load layered backgrounds for parallax rendering"""
+        images_dir = self.assets_dir / "images"
+        layer_candidates = []
+        patterns = ("background", "bg", "parallax")
+        for path in images_dir.rglob("*.png"):
+            name = path.name.lower()
+            if any(pat in name for pat in patterns):
+                layer_candidates.append(path)
+
+        # Prioritize sorted order to keep near/far layers consistent
+        self.background_layers = []
+        for path in islice(sorted(layer_candidates), 5):
+            try:
+                layer_surface = pygame.image.load(str(path)).convert_alpha()
+                self.background_layers.append(layer_surface)
+            except Exception as exc:  # pragma: no cover - pygame specific
+                print(f"Failed to load background layer {path}: {exc}")
 
     def update(self, dt, player):
         """Update level objects"""
@@ -216,24 +261,39 @@ class Level:
         if enemy['x'] <= 0 or enemy['x'] >= self.width - 32:
             enemy['direction'] *= -1
 
-    def render(self, screen):
+    def render(self, screen, camera_x: float = 0.0):
         """Render the level"""
+        self._render_background(screen, camera_x)
         # Render tiles
-        self._render_tiles(screen)
+        self._render_tiles(screen, camera_x)
 
         # Render coins
-        self._render_coins(screen)
+        self._render_coins(screen, camera_x)
 
         # Render enemies
-        self._render_enemies(screen)
+        self._render_enemies(screen, camera_x)
 
         # Render powerups
-        self._render_powerups(screen)
+        self._render_powerups(screen, camera_x)
 
         # Render goal
-        self._render_goal(screen)
+        self._render_goal(screen, camera_x)
 
-    def _render_tiles(self, screen):
+    def _render_background(self, screen, camera_x: float):
+        if not self.background_layers:
+            return
+
+        for idx, layer in enumerate(self.background_layers):
+            parallax = 0.15 + idx * 0.15
+            width = layer.get_width()
+            height = layer.get_height()
+            y_pos = max(0, self.height - height)
+            offset = - (camera_x * parallax) % width
+            tiles_needed = int((screen.get_width() / width) + 2)
+            for i in range(-1, tiles_needed):
+                screen.blit(layer, (offset + i * width, y_pos))
+
+    def _render_tiles(self, screen, camera_x: float):
         """Render level tiles"""
         for y in range(self.LEVEL_HEIGHT):
             for x in range(self.LEVEL_WIDTH):
@@ -241,13 +301,16 @@ class Level:
                 if tile_type > 0:
                     rect = pygame.Rect(x * self.TILE_SIZE, y * self.TILE_SIZE,
                                      self.TILE_SIZE, self.TILE_SIZE)
+                    draw_rect = rect.move(-camera_x, 0)
+                    if draw_rect.right < 0 or draw_rect.left > screen.get_width():
+                        continue
 
                     if self.tileset and tile_type == 1:
                         # Ground tile
-                        screen.blit(self.tileset, rect, (0, 0, self.TILE_SIZE, self.TILE_SIZE))
+                        screen.blit(self.tileset, draw_rect, (0, 0, self.TILE_SIZE, self.TILE_SIZE))
                     elif self.tileset and tile_type == 2:
                         # Pipe tile
-                        screen.blit(self.tileset, rect, (32, 0, self.TILE_SIZE, self.TILE_SIZE))
+                        screen.blit(self.tileset, draw_rect, (32, 0, self.TILE_SIZE, self.TILE_SIZE))
                     else:
                         # Default colored tiles
                         if tile_type == 1:
@@ -257,62 +320,64 @@ class Level:
                         else:
                             color = (128, 128, 128)  # Gray for others
 
-                        pygame.draw.rect(screen, color, rect)
-                        pygame.draw.rect(screen, (0, 0, 0), rect, 1)  # Black border
+                        pygame.draw.rect(screen, color, draw_rect)
+                        pygame.draw.rect(screen, (0, 0, 0), draw_rect, 1)  # Black border
 
-    def _render_coins(self, screen):
+    def _render_coins(self, screen, camera_x: float):
         """Render coins"""
         for coin_x, coin_y in self.coins:
             if self.coin_sprite:
-                screen.blit(self.coin_sprite, (coin_x, coin_y))
+                screen.blit(self.coin_sprite, (coin_x - camera_x, coin_y))
             else:
                 # Draw coin as yellow circle
-                pygame.draw.circle(screen, (255, 215, 0), (coin_x + 16, coin_y + 16), 12)
-                pygame.draw.circle(screen, (255, 255, 0), (coin_x + 16, coin_y + 16), 8)
+                pygame.draw.circle(screen, (255, 215, 0), (coin_x - camera_x + 16, coin_y + 16), 12)
+                pygame.draw.circle(screen, (255, 255, 0), (coin_x - camera_x + 16, coin_y + 16), 8)
 
-    def _render_enemies(self, screen):
+    def _render_enemies(self, screen, camera_x: float):
         """Render enemies"""
         for enemy in self.enemies:
             if self.enemy_sprite:
-                screen.blit(self.enemy_sprite, (enemy['x'], enemy['y']))
+                screen.blit(self.enemy_sprite, (enemy['x'] - camera_x, enemy['y']))
             else:
                 # Draw enemy as brown rectangle
                 color = (139, 69, 19) if enemy['type'] == 'goomba' else (160, 82, 45)
-                pygame.draw.rect(screen, color, (enemy['x'], enemy['y'], 32, 32))
+                pygame.draw.rect(screen, color, (enemy['x'] - camera_x, enemy['y'], 32, 32))
 
-    def _render_powerups(self, screen):
+    def _render_powerups(self, screen, camera_x: float):
         """Render powerups"""
         for powerup in self.powerups:
             y_offset = powerup.get('y_offset', 0)
             if self.powerup_sprite:
-                screen.blit(self.powerup_sprite, (powerup['x'], powerup['y'] + y_offset))
+                screen.blit(self.powerup_sprite, (powerup['x'] - camera_x, powerup['y'] + y_offset))
             else:
                 # Draw powerup as red mushroom
-                pygame.draw.circle(screen, (255, 0, 0), (powerup['x'] + 16, powerup['y'] + 16 + y_offset), 12)
-                pygame.draw.rect(screen, (255, 0, 0), (powerup['x'] + 8, powerup['y'] + 16 + y_offset, 16, 8))
+                pygame.draw.circle(screen, (255, 0, 0), (powerup['x'] - camera_x + 16, powerup['y'] + 16 + y_offset), 12)
+                pygame.draw.rect(screen, (255, 0, 0), (powerup['x'] - camera_x + 8, powerup['y'] + 16 + y_offset, 16, 8))
 
-    def _render_goal(self, screen):
+    def _render_goal(self, screen, camera_x: float):
         """Render level goal"""
         if self.goal_sprite:
-            screen.blit(self.goal_sprite, self.goal_pos)
+            screen.blit(self.goal_sprite, (self.goal_pos[0] - camera_x, self.goal_pos[1]))
         else:
             # Draw goal as flag
-            pygame.draw.rect(screen, (255, 0, 0), (self.goal_pos[0], self.goal_pos[1], 32, 64))
+            pygame.draw.rect(screen, (255, 0, 0), (self.goal_pos[0] - camera_x, self.goal_pos[1], 32, 64))
             pygame.draw.polygon(screen, (255, 255, 0),
-                              [(self.goal_pos[0] + 32, self.goal_pos[1]),
-                               (self.goal_pos[0] + 32, self.goal_pos[1] + 32),
-                               (self.goal_pos[0] + 48, self.goal_pos[1] + 16)])
+                              [(self.goal_pos[0] - camera_x + 32, self.goal_pos[1]),
+                               (self.goal_pos[0] - camera_x + 32, self.goal_pos[1] + 32),
+                               (self.goal_pos[0] - camera_x + 48, self.goal_pos[1] + 16)])
 
     def get_collidable_tiles(self):
         """Get list of collidable tile rectangles"""
-        collidable = []
-        for y in range(self.LEVEL_HEIGHT):
-            for x in range(self.LEVEL_WIDTH):
-                if self.tiles[y][x] > 0:  # Any non-empty tile is collidable
-                    rect = pygame.Rect(x * self.TILE_SIZE, y * self.TILE_SIZE,
-                                     self.TILE_SIZE, self.TILE_SIZE)
-                    collidable.append(rect)
-        return collidable
+        if self._collidable_cache is None:
+            collidable = []
+            for y in range(self.LEVEL_HEIGHT):
+                for x in range(self.LEVEL_WIDTH):
+                    if self.tiles[y][x] > 0:  # Any non-empty tile is collidable
+                        rect = pygame.Rect(x * self.TILE_SIZE, y * self.TILE_SIZE,
+                                         self.TILE_SIZE, self.TILE_SIZE)
+                        collidable.append(rect)
+            self._collidable_cache = collidable
+        return self._collidable_cache
 
     def check_coin_collisions(self, player):
         """Check for coin collection"""
@@ -333,14 +398,30 @@ class Level:
     def check_enemy_collisions(self, player):
         """Check for enemy collisions"""
         player_rect = player.get_rect()
+        _, vy = player.velocity
+        hit_player = False
+        stomped_count = 0
+        defeated = []
 
         for enemy in self.enemies:
             enemy_rect = pygame.Rect(enemy['x'], enemy['y'], 32, 32)
-            if player_rect.colliderect(enemy_rect):
-                # Simple collision - player dies
-                return True
+            if not player_rect.colliderect(enemy_rect):
+                continue
 
-        return False
+            top_overlap = player_rect.bottom - enemy_rect.top
+            if vy > 0 and 0 <= top_overlap <= 24:
+                stomped_count += 1
+                defeated.append(enemy)
+            else:
+                hit_player = True
+
+        for enemy in defeated:
+            try:
+                self.enemies.remove(enemy)
+            except ValueError:
+                pass
+
+        return hit_player, stomped_count
 
     def check_powerup_collisions(self, player):
         """Check for powerup collection"""

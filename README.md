@@ -1,6 +1,6 @@
 # Game Center 开发文档
 
-> 最后更新：2025-09-30（北京时间）
+> 最后更新：2025-10-11（北京时间）
 
 Game Center 是一个汇集多款 Python 游戏与工具的项目集合，覆盖 3D/2.5D 格斗、平台跳跃、棋类 AI 以及资源处理脚本。本指南聚焦于统一的项目结构、运行方式和当前可用功能，便于后续维护与扩展。
 
@@ -11,10 +11,11 @@ Game Center 是一个汇集多款 Python 游戏与工具的项目集合，覆盖
 3. [环境准备与通用依赖](#环境准备与通用依赖)
 4. [快速开始](#快速开始)
 5. [StreetBattle——3D/2.5D 格斗平台](#streetbattle3d25d-格斗平台)
-6. [其他子项目概览](#其他子项目概览)
-7. [开发工具脚本](#开发工具脚本)
-8. [贡献流程](#贡献流程)
-9. [许可证与资源来源](#许可证与资源来源)
+6. [Eco Grassland——生态平衡模拟](#eco-grassland生态平衡模拟)
+7. [其他子项目概览](#其他子项目概览)
+8. [开发工具脚本](#开发工具脚本)
+9. [贡献流程](#贡献流程)
+10. [许可证与资源来源](#许可证与资源来源)
 
 ---
 
@@ -35,7 +36,7 @@ gamecenter/
 ├─ superMario/          # Super Mario Brothers 平台跳跃
 # Game Center 开发手册
 
-> 最后更新：2025-09-27（北京时间）
+> 最后更新：2025-10-11（北京时间）
 
 Game Center 集成了五款 Python 游戏（Chess、StreetBattle、Stickman Game、Super Mario、Tank Battle），统一了资源治理、测试流程和运维策略。本手册作为唯一权威文档，对整体环境、各子模块特性、常用脚本与质量保证手段进行系统说明，便于团队协同维护与版本迭代。
 
@@ -49,9 +50,10 @@ Game Center 集成了五款 Python 游戏（Chess、StreetBattle、Stickman Game
    1. [Chess](#chess)
    2. [Military Chess（中国军棋）](#military-chess中国军棋)
    3. [StreetBattle](#streetbattle)
-   4. [Stickman Game](#stickman-game)
-   5. [Super Mario Bros](#super-mario-bros)
-   6. [Tank Battle](#tank-battle)
+   4. [Eco Grassland](#eco-grassland生态平衡模拟)
+   5. [Stickman Game](#stickman-game)
+   6. [Super Mario Bros](#super-mario-bros)
+   7. [Tank Battle](#tank-battle)
 6. [工具与自动化脚本](#工具与自动化脚本)
 7. [质量保障与测试](#质量保障与测试)
 8. [贡献流程](#贡献流程)
@@ -282,6 +284,30 @@ pytest streetBattle/tests/test_twod5_roster.py
 
 ---
 
+### Eco Grassland——生态平衡模拟
+
+**概览**：生态平衡教学模拟器，玩家可在大地图中观察羊、兔、牛、草地与水源之间的动态循环，配合实时生态统计与预警提示，适用于课堂演示与玩法扩展。
+
+**最新更新（2025-10-11）**
+- 修复生态压力累乘导致动物能量消耗指数级膨胀的问题，现按基础能量线性调节。
+- 动物新增寻水/饮水行为链，饮水过程会随时间线性降低口渴值并重置移动目标。
+- 进食过程仅在草地仍有营养时才降低饥饿值，避免出现“空气充饥”。
+- 新增 `gamecenter/tests/test_ecosystem_logic.py`，覆盖进食、饮水与生态压力回归场景。
+
+**运行与测试**
+```powershell
+cd gamecenter/Eco_grassland
+python main.py
+python -m pytest gamecenter/tests/test_ecosystem_logic.py
+```
+
+**关键模块**
+- `main.py`：游戏入口、摄像机与 UI 管理。
+- `ecosystem.py`：生态压力评估、草地网格、动物生成与统计出口。
+- `game_entities.py`：动物 AI 状态机、草地生长逻辑与渲染细节。
+
+---
+
 ### Stickman Game
 
 **概览**：单人火柴人动作冒险，包含 30 关卡、武器切换、全屏增益与多彩 UI。
@@ -389,6 +415,7 @@ python main.py --smoke-test --frames 300
 
 - **Military Chess（军棋）**：`python test_smoke.py` 验证游戏逻辑、AI 引擎和包导入；支持直接运行和包导入两种方式的测试。
 - **StreetBattle**：`python -m pytest streetBattle/tests/test_smoke.py`（验证 manifest、技能、设置）；建议定期运行 `test_combat.py` 和 `test_rollback_sim.py`。
+- **Eco Grassland**：`python -m pytest gamecenter/tests/test_ecosystem_logic.py` 覆盖生态压力、进食与饮水逻辑，确保教学模式稳定运行。
 - **Chess**：`python -m pytest` 覆盖 GUI、规则、AI 接口；训练脚本支持离线验证。
 - **Tank Battle**：提供 `--smoke-test` 模式快速回归，训练脚本内置日志。
 - **Super Mario / Stickman**：暂未提供自动化测试，需要通过快速通关、资源加载、输入回放进行人工冒烟；建议在后续迭代补充 pytest 框架。

@@ -171,12 +171,15 @@ class WaterSource:
         self.radius = radius
         self.rect = pygame.Rect(x - radius, y - radius, radius * 2, radius * 2)
 
-    def draw(self, screen: pygame.Surface, camera_x: int, camera_y: int):
-        """绘制水源"""
-        draw_x = self.x - camera_x
-        draw_y = self.y - camera_y
-        if -50 <= draw_x <= SCREEN_WIDTH + 50 and -50 <= draw_y <= SCREEN_HEIGHT + 50:
-            pygame.draw.circle(screen, COLORS['water'], (draw_x, draw_y), self.radius)
+    def draw(self, screen: pygame.Surface, camera):
+        """绘制水源（使用摄像机）"""
+        screen_x, screen_y = camera.world_to_screen(self.x, self.y)
+        screen_w = screen.get_width()
+        screen_h = screen.get_height()
+
+        if -50 <= screen_x <= screen_w + 50 and -50 <= screen_y <= screen_h + 50:
+            r = max(1, int(self.radius * camera.zoom))
+            pygame.draw.circle(screen, COLORS['water'], (int(screen_x), int(screen_y)), r)
 
 class Obstacle:
     """障碍物类"""
@@ -189,13 +192,18 @@ class Obstacle:
         self.type = obstacle_type
         self.rect = pygame.Rect(x, y, width, height)
 
-    def draw(self, screen: pygame.Surface, camera_x: int, camera_y: int):
-        """绘制障碍物"""
-        draw_x = self.x - camera_x
-        draw_y = self.y - camera_y
-        if -50 <= draw_x <= SCREEN_WIDTH + 50 and -50 <= draw_y <= SCREEN_HEIGHT + 50:
+    def draw(self, screen: pygame.Surface, camera):
+        """绘制障碍物（使用摄像机）"""
+        screen_x, screen_y = camera.world_to_screen(self.x, self.y)
+        screen_w = screen.get_width()
+        screen_h = screen.get_height()
+        zoom = camera.zoom
+
+        if -50 <= screen_x <= screen_w + 50 and -50 <= screen_y <= screen_h + 50:
             color = COLORS['rock'] if self.type == 'rock' else COLORS['tree']
-            pygame.draw.rect(screen, color, (draw_x, draw_y, self.width, self.height))
+            w = max(1, int(self.width * zoom))
+            h = max(1, int(self.height * zoom))
+            pygame.draw.rect(screen, color, (int(screen_x), int(screen_y), w, h))
 
 class Animal(pygame.sprite.Sprite):
     """动物基类"""
@@ -212,6 +220,7 @@ class Animal(pygame.sprite.Sprite):
         self.energy = 80
         self.max_health = 100
         self.health = 100
+        self.energy_consumption = 0.15  # 默认能量消耗，用于被物种特性覆盖
 
         # 新增：生态系统相关属性
         self.hunger = 20  # 饥饿值 (0-100，越高越饿)
@@ -237,11 +246,14 @@ class Animal(pygame.sprite.Sprite):
         self.direction = random.uniform(0, 2 * math.pi)
         self.target_x = None
         self.target_y = None
+        self.target_radius = None
+        self._thirst_before_drink = 0.0
 
         # 时间相关
         self.last_update_time = pygame.time.get_ticks()
         self.state_change_time = 0
         self.eating_time = 0
+        self.drinking_time = 0
         self.last_reproduction_time = 0
 
         # 视觉相关
@@ -298,6 +310,9 @@ class Animal(pygame.sprite.Sprite):
             self.hunger_threshold = 40
             self.social_need = 50  # 牛有一定社交需求
 
+        # 记录基础能量消耗，用于生态压力调整
+        self.base_energy_consumption = self.energy_consumption
+
     def update(self, ecosystem, current_time: int):
         """更新动物状态"""
         # 计算时间差
@@ -329,6 +344,8 @@ class Animal(pygame.sprite.Sprite):
             self._wander(ecosystem)
         elif self.state == AnimalState.SEEKING_FOOD:
             self._seek_food(ecosystem)
+        elif self.state == AnimalState.SEEKING_WATER:
+            self._seek_water(ecosystem)
         elif self.state == AnimalState.EATING:
             self._eat(ecosystem, current_time)
         elif self.state == AnimalState.DRINKING:
@@ -389,6 +406,7 @@ class Animal(pygame.sprite.Sprite):
             self.state = AnimalState.SEEKING_FOOD
             self.target_x = None
             self.target_y = None
+            self.target_radius = None
             return
 
         # 口渴检查
@@ -396,6 +414,7 @@ class Animal(pygame.sprite.Sprite):
             self.state = AnimalState.SEEKING_WATER
             self.target_x = None
             self.target_y = None
+            self.target_radius = None
             return
 
         # 疲劳检查
@@ -493,6 +512,7 @@ class Animal(pygame.sprite.Sprite):
             if best_grass:
                 self.target_x = best_grass.x
                 self.target_y = best_grass.y
+                self.target_radius = None
             else:
                 # 没找到食物，随机游走
                 self.state = AnimalState.WANDERING
@@ -519,6 +539,48 @@ class Animal(pygame.sprite.Sprite):
             if not self._check_collision(new_x, new_y, ecosystem):
                 self.x = new_x
                 self.y = new_y
+                self.target_radius = None
+
+    def _seek_water(self, ecosystem):
+        """寻找水源行为"""
+        if self.target_x is None or self.target_y is None:
+            nearest_water = None
+            nearest_distance = float('inf')
+
+            for water in ecosystem.water_sources:
+                distance = math.sqrt((water.x - self.x) ** 2 + (water.y - self.y) ** 2) - water.radius
+                if distance < nearest_distance:
+                    nearest_distance = distance
+                    nearest_water = water
+
+            if nearest_water is None:
+                self.state = AnimalState.WANDERING
+                return
+
+            self.target_x = nearest_water.x
+            self.target_y = nearest_water.y
+            self.target_radius = nearest_water.radius
+
+        dx = self.target_x - self.x
+        dy = self.target_y - self.y
+        distance = math.sqrt(dx ** 2 + dy ** 2)
+        radius = self.target_radius if self.target_radius is not None else self.size
+
+        if distance <= max(self.size, radius * 0.9):
+            self.state = AnimalState.DRINKING
+            self.drinking_time = pygame.time.get_ticks()
+            self._thirst_before_drink = self.thirst
+        else:
+            move_speed = self.speed * (0.5 if self.energy < 20 else 1.0)
+            dx = (dx / max(distance, 0.001)) * move_speed
+            dy = (dy / max(distance, 0.001)) * move_speed
+
+            new_x = self.x + dx
+            new_y = self.y + dy
+
+            if not self._check_collision(new_x, new_y, ecosystem):
+                self.x = new_x
+                self.y = new_y
 
     def _eat(self, ecosystem, current_time: int):
         """进食行为"""
@@ -534,9 +596,13 @@ class Animal(pygame.sprite.Sprite):
                 eating_amount = getattr(self, 'eating_amount', 1)
                 food_gained = grass.eat(current_time, eating_amount)
 
-                # 恢复能量
-                energy_gain = food_gained * 15
-                self.energy = min(self.max_energy, self.energy + energy_gain)
+                if food_gained > 0:
+                    # 恢复能量并降低饥饿
+                    energy_gain = food_gained * 15
+                    self.energy = min(self.max_energy, self.energy + energy_gain)
+                    hunger_reduction = max(5, food_gained * 30)
+                    self.hunger = max(0, self.hunger - hunger_reduction)
+                    self.tiredness = max(0, self.tiredness - food_gained * 2)
 
             # 进食后状态转换
             if self.energy > self.hunger_threshold + 20:
@@ -546,14 +612,25 @@ class Animal(pygame.sprite.Sprite):
 
             self.target_x = None
             self.target_y = None
+            self.target_radius = None
 
     def _drink(self, ecosystem, current_time: int):
         """饮水行为"""
-        # 恢复能量
-        self.energy = min(self.max_energy, self.energy + 0.5)
+        drinking_duration = 1500  # 毫秒
+        elapsed = current_time - self.drinking_time
+        progress = max(0.0, min(1.0, elapsed / drinking_duration))
 
-        if self.energy > self.thirst_threshold + 30:
+        # 根据喝水进度线性降低口渴度
+        self.thirst = max(0.0, self._thirst_before_drink * (1 - progress))
+        self.energy = min(self.max_energy, self.energy + 0.3)
+
+        if progress >= 1.0 or self.thirst <= self.thirst_threshold * 0.5:
+            self.thirst = max(0.0, self.thirst - 5)
             self.state = AnimalState.WANDERING
+            self.target_x = None
+            self.target_y = None
+            self.target_radius = None
+            self._thirst_before_drink = 0.0
 
     def _update_group_behavior(self, ecosystem):
         """更新群体行为（仅适用于羊）"""
@@ -594,105 +671,94 @@ class Animal(pygame.sprite.Sprite):
 
         return False
 
-    def draw(self, screen: pygame.Surface, camera_x: int, camera_y: int):
-        """绘制动物"""
-        draw_x = int(self.x - camera_x)
-        draw_y = int(self.y - camera_y)
+    def draw(self, screen: pygame.Surface, camera):
+        """绘制动物（使用摄像机）"""
+        draw_x, draw_y = camera.world_to_screen(self.x, self.y)
+        screen_w = screen.get_width()
+        screen_h = screen.get_height()
+        zoom = camera.zoom
 
-        if -50 <= draw_x <= SCREEN_WIDTH + 50 and -50 <= draw_y <= SCREEN_HEIGHT + 50:
-            # 绘制阴影
-            shadow_offset = 3
-            pygame.draw.ellipse(screen, (0, 0, 0, 50),
-                              (draw_x - self.size + shadow_offset,
-                               draw_y - self.size//2 + shadow_offset,
-                               self.size * 2, self.size))
+        if -50 <= draw_x <= screen_w + 50 and -50 <= draw_y <= screen_h + 50:
+            # 缩放尺寸
+            size = max(1, int(self.size * zoom))
+            shadow_offset = max(1, int(3 * zoom))
+
+            # 绘制阴影（简单不透明阴影以避免 alpha 问题）
+            shadow_rect = pygame.Rect(int(draw_x - size + shadow_offset), int(draw_y - size//2 + shadow_offset), size * 2, size)
+            pygame.draw.ellipse(screen, (30, 30, 30), shadow_rect)
 
             # 根据动物类型绘制不同形状
             if self.animal_type == AnimalType.SHEEP:
-                # 绘制羊 - 蓬松的圆形身体
-                body_color = (245, 245, 245)  # 白色
-                pygame.draw.circle(screen, body_color, (draw_x, draw_y), self.size)
-                pygame.draw.circle(screen, (220, 220, 220), (draw_x, draw_y), self.size, 2)
+                body_color = (245, 245, 245)
+                pygame.draw.circle(screen, body_color, (int(draw_x), int(draw_y)), size)
+                pygame.draw.circle(screen, (220, 220, 220), (int(draw_x), int(draw_y)), size, max(1, int(2 * zoom)))
 
-                # 绘制头部
-                head_color = (200, 180, 160)  # 浅棕色
-                head_x = draw_x + int(self.size * 0.7 * math.cos(self.direction))
-                head_y = draw_y + int(self.size * 0.7 * math.sin(self.direction))
-                pygame.draw.circle(screen, head_color, (head_x, head_y), self.size//2)
+                head_color = (200, 180, 160)
+                head_x = int(draw_x + size * 0.7 * math.cos(self.direction))
+                head_y = int(draw_y + size * 0.7 * math.sin(self.direction))
+                pygame.draw.circle(screen, head_color, (head_x, head_y), max(1, size//2))
 
-                # 绘制耳朵
-                ear_size = 4
+                ear_size = max(1, int(4 * zoom))
                 ear1_x = head_x + int(ear_size * math.cos(self.direction + math.pi/3))
                 ear1_y = head_y + int(ear_size * math.sin(self.direction + math.pi/3))
                 ear2_x = head_x + int(ear_size * math.cos(self.direction - math.pi/3))
                 ear2_y = head_y + int(ear_size * math.sin(self.direction - math.pi/3))
-                pygame.draw.circle(screen, head_color, (ear1_x, ear1_y), 3)
-                pygame.draw.circle(screen, head_color, (ear2_x, ear2_y), 3)
+                pygame.draw.circle(screen, head_color, (ear1_x, ear1_y), max(1, int(3 * zoom)))
+                pygame.draw.circle(screen, head_color, (ear2_x, ear2_y), max(1, int(3 * zoom)))
 
             elif self.animal_type == AnimalType.RABBIT:
-                # 绘制兔子 - 椭圆形身体
-                body_color = (160, 120, 80)  # 棕色
-                body_rect = pygame.Rect(draw_x - self.size, draw_y - self.size//2,
-                                      self.size * 2, self.size)
+                body_color = (160, 120, 80)
+                body_rect = pygame.Rect(int(draw_x - size), int(draw_y - size//2), size * 2, size)
                 pygame.draw.ellipse(screen, body_color, body_rect)
-                pygame.draw.ellipse(screen, (140, 100, 60), body_rect, 2)
+                pygame.draw.ellipse(screen, (140, 100, 60), body_rect, max(1, int(2 * zoom)))
 
-                # 绘制头部
-                head_x = draw_x + int(self.size * 0.8 * math.cos(self.direction))
-                head_y = draw_y + int(self.size * 0.8 * math.sin(self.direction))
-                pygame.draw.circle(screen, body_color, (head_x, head_y), self.size//2)
+                head_x = int(draw_x + size * 0.8 * math.cos(self.direction))
+                head_y = int(draw_y + size * 0.8 * math.sin(self.direction))
+                pygame.draw.circle(screen, body_color, (head_x, head_y), max(1, size//2))
 
-                # 绘制长耳朵
-                ear_length = 8
+                ear_length = max(1, int(8 * zoom))
                 ear1_x = head_x + int(ear_length * math.cos(self.direction + math.pi/4))
                 ear1_y = head_y + int(ear_length * math.sin(self.direction + math.pi/4))
                 ear2_x = head_x + int(ear_length * math.cos(self.direction - math.pi/4))
                 ear2_y = head_y + int(ear_length * math.sin(self.direction - math.pi/4))
-                pygame.draw.line(screen, body_color, (head_x, head_y), (ear1_x, ear1_y), 3)
-                pygame.draw.line(screen, body_color, (head_x, head_y), (ear2_x, ear2_y), 3)
+                pygame.draw.line(screen, body_color, (head_x, head_y), (ear1_x, ear1_y), max(1, int(3 * zoom)))
+                pygame.draw.line(screen, body_color, (head_x, head_y), (ear2_x, ear2_y), max(1, int(3 * zoom)))
 
-                # 绘制尾巴
-                tail_x = draw_x - int(self.size * 0.8 * math.cos(self.direction))
-                tail_y = draw_y - int(self.size * 0.8 * math.sin(self.direction))
-                pygame.draw.circle(screen, (255, 255, 255), (tail_x, tail_y), 3)
+                tail_x = int(draw_x - size * 0.8 * math.cos(self.direction))
+                tail_y = int(draw_y - size * 0.8 * math.sin(self.direction))
+                pygame.draw.circle(screen, (255, 255, 255), (tail_x, tail_y), max(1, int(3 * zoom)))
 
             elif self.animal_type == AnimalType.COW:
-                # 绘制牛 - 矩形身体
-                body_color = (80, 60, 40)  # 深棕色
-                body_rect = pygame.Rect(draw_x - self.size, draw_y - self.size//2,
-                                      self.size * 2, self.size)
-                pygame.draw.rect(screen, body_color, body_rect, border_radius=5)
-                pygame.draw.rect(screen, (60, 40, 20), body_rect, 2, border_radius=5)
+                body_color = (80, 60, 40)
+                body_rect = pygame.Rect(int(draw_x - size), int(draw_y - size//2), size * 2, size)
+                pygame.draw.rect(screen, body_color, body_rect, border_radius=max(1, int(5 * zoom)))
+                pygame.draw.rect(screen, (60, 40, 20), body_rect, max(1, int(2 * zoom)), border_radius=max(1, int(5 * zoom)))
 
-                # 绘制斑点
                 spot_color = (40, 30, 20)
                 for i in range(3):
-                    spot_x = draw_x + random.randint(-self.size//2, self.size//2)
-                    spot_y = draw_y + random.randint(-self.size//3, self.size//3)
-                    pygame.draw.circle(screen, spot_color, (spot_x, spot_y), 4)
+                    spot_x = int(draw_x + random.randint(-size//2, size//2))
+                    spot_y = int(draw_y + random.randint(-size//3, size//3))
+                    pygame.draw.circle(screen, spot_color, (spot_x, spot_y), max(1, int(4 * zoom)))
 
-                # 绘制头部
                 head_color = (100, 80, 60)
-                head_x = draw_x + int(self.size * 0.9 * math.cos(self.direction))
-                head_y = draw_y + int(self.size * 0.9 * math.sin(self.direction))
-                head_rect = pygame.Rect(head_x - self.size//2, head_y - self.size//3,
-                                      self.size, self.size//1.5)
-                pygame.draw.rect(screen, head_color, head_rect, border_radius=3)
+                head_x = int(draw_x + size * 0.9 * math.cos(self.direction))
+                head_y = int(draw_y + size * 0.9 * math.sin(self.direction))
+                head_rect = pygame.Rect(int(head_x - size//2), int(head_y - size//3), max(1, size), max(1, int(size//1.5)))
+                pygame.draw.rect(screen, head_color, head_rect, border_radius=max(1, int(3 * zoom)))
 
-                # 绘制角
-                horn_length = 6
+                horn_length = max(1, int(6 * zoom))
                 horn1_x = head_x + int(horn_length * math.cos(self.direction + math.pi/6))
                 horn1_y = head_y + int(horn_length * math.sin(self.direction + math.pi/6))
                 horn2_x = head_x + int(horn_length * math.cos(self.direction - math.pi/6))
                 horn2_y = head_y + int(horn_length * math.sin(self.direction - math.pi/6))
-                pygame.draw.line(screen, (240, 240, 240), (head_x, head_y), (horn1_x, horn1_y), 2)
-                pygame.draw.line(screen, (240, 240, 240), (head_x, head_y), (horn2_x, horn2_y), 2)
+                pygame.draw.line(screen, (240, 240, 240), (head_x, head_y), (horn1_x, horn1_y), max(1, int(2 * zoom)))
+                pygame.draw.line(screen, (240, 240, 240), (head_x, head_y), (horn2_x, horn2_y), max(1, int(2 * zoom)))
 
             # 绘制健康状态条
-            health_bar_width = self.size * 2
-            health_bar_height = 4
-            health_bar_x = draw_x - health_bar_width // 2
-            health_bar_y = draw_y - self.size - 10
+            health_bar_width = max(10, size * 2)
+            health_bar_height = max(2, int(4 * zoom))
+            health_bar_x = int(draw_x - health_bar_width // 2)
+            health_bar_y = int(draw_y - size - int(10 * zoom))
 
             # 背景
             pygame.draw.rect(screen, (100, 100, 100),
@@ -708,11 +774,10 @@ class Animal(pygame.sprite.Sprite):
             else:
                 health_color = (255, 0, 0)
 
-            pygame.draw.rect(screen, health_color,
-                           (health_bar_x, health_bar_y, health_width, health_bar_height))
+            pygame.draw.rect(screen, health_color, (health_bar_x, health_bar_y, health_width, health_bar_height))
 
             # 绘制状态指示器
-            indicator_y = draw_y - self.size - 20
+            indicator_y = int(draw_y - size - int(20 * zoom))
             if self.state == AnimalState.EATING:
                 pygame.draw.circle(screen, (0, 255, 0), (draw_x, indicator_y), 4)
                 # 绘制小草图标
@@ -741,13 +806,13 @@ class Animal(pygame.sprite.Sprite):
                 health_indicator_color = (255, 255, 0)  # 黄色 - 一般
             else:
                 health_indicator_color = (255, 0, 0)  # 红色 - 危险
-            pygame.draw.circle(screen, health_indicator_color, (draw_x + self.size - 5, draw_y - self.size + 5), 2)
+            pygame.draw.circle(screen, health_indicator_color, (int(draw_x + size - max(1, int(5*zoom))), int(draw_y - size + max(1, int(5*zoom)))), max(1, int(2 * zoom)))
 
             # 绘制能量条
-            bar_width = self.size * 2
-            bar_height = 4
-            bar_x = draw_x - bar_width // 2
-            bar_y = draw_y - self.size - 15
+            bar_width = max(10, size * 2)
+            bar_height = max(2, int(4 * zoom))
+            bar_x = int(draw_x - bar_width // 2)
+            bar_y = int(draw_y - size - int(15 * zoom))
 
             # 背景
             pygame.draw.rect(screen, (255, 0, 0), (bar_x, bar_y, bar_width, bar_height))
