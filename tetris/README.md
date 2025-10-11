@@ -86,17 +86,14 @@ cd d:\pyproject
 python -c "from gamecenter.tetris.main import main; main()"
 ```
 
-### 可选：下载音效资源
+### 资源说明
 
-游戏会自动使用系统字体和静音模式运行，无需额外资源。
-如果想要音效支持，可以运行资源下载工具：
+游戏资源已集成到`assets`目录，包括：
+- **音效**: 来自OpenGameArt "512 Sound Effects (8-bit style)" by Juhani Junkala (CC0授权)
+- **背景音乐**: 来自FreePD "Bit Bit Loop" by Kevin MacLeod (CC0授权)
+- **字体**: 优先使用Windows系统字体（微软雅黑、黑体、Arial）
 
-```bash
-cd d:\pyproject\gamecenter\tetris
-python download_resources.py
-```
-
-**注意**: 资源下载是完全可选的，不影响游戏核心功能。
+所有资源均为公共域（CC0），可免费商用。
 
 ## 📁 项目结构
 
@@ -189,7 +186,6 @@ pytest tests/test_game.py -v
 ## 🐛 已知问题
 
 - 在低分辨率屏幕（<800x600）上UI可能显示不完整
-- 默认使用静音模式，需要音效请运行 `download_resources.py`
 
 ## 🔮 后续计划
 
@@ -208,14 +204,21 @@ pytest tests/test_game.py -v
 
 ## 📜 版本历史
 
-### v2.0.1 (2025-01-11)
+### v2.0.2 (2025-01-11 14:30 UTC+8)
+- 🎵 集成高质量CC0音效资源（OpenGameArt 512音效包）
+- 🎶 集成8bit风格背景音乐（FreePD "Bit Bit Loop"）
+- ⚡ 保持快速启动（1.47秒）
+- 🔊 完整音效系统：旋转、移动、消除、下落、升级、游戏结束
+- 📦 所有资源打包到assets目录，无需下载
+
+### v2.0.1 (2025-01-11 12:00 UTC+8)
 - ⚡ 优化启动速度，移除启动时资源下载
 - 🔇 默认静音模式，使用系统字体
 - 🎵 音效变为可选功能
 - ✨ 添加独立的资源下载工具
 - 🐛 修复404资源下载错误
 
-### v2.0.0 (2025-01-11)
+### v2.0.0 (2025-01-11 10:00 UTC+8)
 - 🎉 完全重构游戏
 - ✨ 实现100关卡系统
 - 🎨 添加3D方块渲染效果
@@ -242,9 +245,10 @@ kn1ghtc - 网络安全研究员
 
 ## 🙏 致谢
 
-- Pygame社区提供的优秀游戏开发框架
-- Freesound.org提供的CC0音效资源
-- Google Fonts提供的免费字体资源
+- **Pygame社区** - 优秀的游戏开发框架
+- **Juhani Junkala** - OpenGameArt "512 Sound Effects (8-bit style)" CC0音效包
+- **Kevin MacLeod** - FreePD "Bit Bit Loop" CC0背景音乐
+- **Microsoft** - Windows系统字体（微软雅黑）
 
 ---
 

@@ -1,61 +1,52 @@
 """
 资源管理器模块
 
-负责从互联网下载字体、音效、背景图片等资源，
-实现自动下载和本地缓存机制
+所有资源已集成到assets目录，无需在线下载
+音效来自OpenGameArt "512 Sound Effects (8-bit style)" by Juhani Junkala (CC0)
+背景音乐来自FreePD "Bit Bit Loop" by Kevin MacLeod (CC0)
 """
 import os
-import sys
-import urllib.request
-import shutil
 from typing import Optional, Dict
 from .settings import FONTS_DIR, SOUNDS_DIR, IMAGES_DIR
+
 
 class ResourceManager:
     """资源管理器类"""
     
-    # CC0授权的免费资源URL
-    RESOURCE_URLS = {
-        # 字体资源
+    # 资源路径映射（所有资源已集成到assets目录）
+    RESOURCE_PATHS = {
+        # 字体资源 - 系统字体优先，无需下载
         'font_main': {
-            'url': 'https://github.com/google/fonts/raw/main/ofl/pressstart2p/PressStart2P-Regular.ttf',
             'path': os.path.join(FONTS_DIR, 'PressStart2P.ttf'),
             'type': 'font'
         },
-        # 音效资源（使用freesound.org的CC0资源）
+        # 音效资源 - 已集成到assets/sounds目录
         'sound_rotate': {
-            'url': 'https://freesound.org/data/previews/341/341695_5121236-lq.mp3',
-            'path': os.path.join(SOUNDS_DIR, 'rotate.mp3'),
+            'path': os.path.join(SOUNDS_DIR, 'rotate.wav'),
             'type': 'sound'
         },
         'sound_move': {
-            'url': 'https://freesound.org/data/previews/341/341695_5121236-lq.mp3',
-            'path': os.path.join(SOUNDS_DIR, 'move.mp3'),
+            'path': os.path.join(SOUNDS_DIR, 'move.wav'),
             'type': 'sound'
         },
         'sound_clear': {
-            'url': 'https://freesound.org/data/previews/270/270319_5123851-lq.mp3',
-            'path': os.path.join(SOUNDS_DIR, 'clear.mp3'),
+            'path': os.path.join(SOUNDS_DIR, 'clear.wav'),
             'type': 'sound'
         },
         'sound_drop': {
-            'url': 'https://freesound.org/data/previews/341/341695_5121236-lq.mp3',
-            'path': os.path.join(SOUNDS_DIR, 'drop.mp3'),
+            'path': os.path.join(SOUNDS_DIR, 'drop.wav'),
             'type': 'sound'
         },
         'sound_level_up': {
-            'url': 'https://freesound.org/data/previews/270/270404_5123851-lq.mp3',
-            'path': os.path.join(SOUNDS_DIR, 'level_up.mp3'),
+            'path': os.path.join(SOUNDS_DIR, 'level_up.wav'),
             'type': 'sound'
         },
         'sound_game_over': {
-            'url': 'https://freesound.org/data/previews/277/277403_5123851-lq.mp3',
-            'path': os.path.join(SOUNDS_DIR, 'game_over.mp3'),
+            'path': os.path.join(SOUNDS_DIR, 'game_over.wav'),
             'type': 'sound'
         },
-        # 背景音乐
+        # 背景音乐 - 已集成
         'music_bg': {
-            'url': 'https://freesound.org/data/previews/198/198876_1648170-lq.mp3',
             'path': os.path.join(SOUNDS_DIR, 'background.mp3'),
             'type': 'sound'
         },
@@ -66,115 +57,52 @@ class ResourceManager:
         初始化资源管理器
         
         参数:
-            auto_download: 是否自动下载资源（默认False，提升启动速度）
+            auto_download: 兼容参数（已移除在线下载功能）
         """
         self.cached_resources: Dict[str, str] = {}
-        self.auto_download = auto_download
         self._ensure_directories()
+        self._cache_existing_resources()
     
     def _ensure_directories(self):
         """确保所有资源目录存在"""
         for dir_path in [FONTS_DIR, SOUNDS_DIR, IMAGES_DIR]:
             os.makedirs(dir_path, exist_ok=True)
     
-    def download_resource(self, key: str, force: bool = False) -> Optional[str]:
-        """
-        下载指定资源
-        
-        参数:
-            key: 资源键名
-            force: 是否强制重新下载
-            
-        返回:
-            资源本地路径，失败返回None
-        """
-        if key not in self.RESOURCE_URLS:
-            print(f"警告: 未知的资源键 '{key}'")
-            return None
-        
-        resource_info = self.RESOURCE_URLS[key]
-        local_path = resource_info['path']
-        
-        # 如果文件已存在且不强制下载，直接返回路径
-        if os.path.exists(local_path) and not force:
-            self.cached_resources[key] = local_path
-            return local_path
-        
-        # 下载资源
-        try:
-            print(f"正在下载资源: {key}...")
-            
-            # 设置User-Agent避免403错误
-            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-            request = urllib.request.Request(resource_info['url'], headers=headers)
-            
-            with urllib.request.urlopen(request, timeout=30) as response:
-                with open(local_path, 'wb') as out_file:
-                    shutil.copyfileobj(response, out_file)
-            
-            print(f"✓ 资源下载成功: {key}")
-            self.cached_resources[key] = local_path
-            return local_path
-            
-        except Exception as e:
-            print(f"✗ 资源下载失败 {key}: {e}")
-            return None
-    
-    def download_all_resources(self, progress_callback=None):
-        """
-        下载所有资源
-        
-        参数:
-            progress_callback: 进度回调函数 (current, total)
-        """
-        total = len(self.RESOURCE_URLS)
-        current = 0
-        
-        print(f"\n开始下载游戏资源 (共{total}个文件)...")
-        print("=" * 50)
-        
-        for key in self.RESOURCE_URLS.keys():
-            current += 1
-            if progress_callback:
-                progress_callback(current, total)
-            
-            self.download_resource(key)
-        
-        print("=" * 50)
-        print(f"资源下载完成! 成功: {len(self.cached_resources)}/{total}\n")
+    def _cache_existing_resources(self):
+        """缓存已存在的资源路径"""
+        for key, info in self.RESOURCE_PATHS.items():
+            path = info['path']
+            if os.path.exists(path):
+                self.cached_resources[key] = path
     
     def get_resource_path(self, key: str) -> Optional[str]:
         """
-        获取资源路径（如果不存在且启用自动下载则尝试下载）
+        获取资源路径
         
         参数:
             key: 资源键名
             
         返回:
-            资源本地路径
+            资源本地路径，如果不存在则返回None
         """
         if key in self.cached_resources:
             return self.cached_resources[key]
         
-        # 检查本地是否存在
-        if key in self.RESOURCE_URLS:
-            local_path = self.RESOURCE_URLS[key]['path']
+        # 检查资源是否存在
+        if key in self.RESOURCE_PATHS:
+            local_path = self.RESOURCE_PATHS[key]['path']
             if os.path.exists(local_path):
                 self.cached_resources[key] = local_path
                 return local_path
         
-        # 只有启用自动下载时才尝试下载
-        if self.auto_download:
-            return self.download_resource(key)
-        
         return None
     
-    def get_font_path(self, fallback: bool = True) -> str:
+    def get_font_path(self, fallback: bool = True) -> Optional[str]:
         """
         获取字体路径
         
         参数:
-            fallback: 如果下载失败是否使用系统默认字体
+            fallback: 如果资源字体不存在是否使用系统默认字体
             
         返回:
             字体路径或None（使用pygame默认字体）
@@ -199,13 +127,13 @@ class ResourceManager:
     
     def check_all_resources(self) -> Dict[str, bool]:
         """
-        检查所有资源是否已下载
+        检查所有资源是否存在
         
         返回:
             资源状态字典 {key: exists}
         """
         status = {}
-        for key, info in self.RESOURCE_URLS.items():
+        for key, info in self.RESOURCE_PATHS.items():
             status[key] = os.path.exists(info['path'])
         return status
     
@@ -218,30 +146,18 @@ class ResourceManager:
         """
         status = self.check_all_resources()
         return [key for key, exists in status.items() if not exists]
-    
-    def cleanup_resources(self):
-        """清理所有下载的资源"""
-        for key, info in self.RESOURCE_URLS.items():
-            path = info['path']
-            if os.path.exists(path):
-                try:
-                    os.remove(path)
-                    print(f"已删除: {path}")
-                except Exception as e:
-                    print(f"删除失败 {path}: {e}")
-        
-        self.cached_resources.clear()
 
 
 # 全局资源管理器实例
 _resource_manager = None
+
 
 def get_resource_manager(auto_download=False) -> ResourceManager:
     """
     获取全局资源管理器实例
     
     参数:
-        auto_download: 是否启用自动下载（默认False）
+        auto_download: 兼容参数（已移除在线下载功能）
     """
     global _resource_manager
     if _resource_manager is None:
@@ -250,18 +166,9 @@ def get_resource_manager(auto_download=False) -> ResourceManager:
 
 
 if __name__ == '__main__':
-    # 测试资源下载
-    print("测试资源管理器...")
+    # 测试资源管理器
+    print("检查资源状态...")
     rm = ResourceManager()
-    
-    # 检查缺失资源
-    missing = rm.get_missing_resources()
-    if missing:
-        print(f"\n缺失资源: {missing}")
-        print("\n开始下载...")
-        rm.download_all_resources()
-    else:
-        print("\n所有资源已就绪!")
     
     # 显示资源状态
     print("\n资源状态:")
@@ -269,3 +176,11 @@ if __name__ == '__main__':
     for key, exists in status.items():
         symbol = "✓" if exists else "✗"
         print(f"  {symbol} {key}")
+    
+    # 检查缺失资源
+    missing = rm.get_missing_resources()
+    if missing:
+        print(f"\n⚠ 缺失资源: {missing}")
+        print("游戏将在静音模式下运行")
+    else:
+        print("\n✓ 所有资源已就绪!")
