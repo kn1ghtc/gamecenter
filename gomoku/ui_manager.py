@@ -10,7 +10,7 @@ import math
 import random
 import time
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Sequence
+from typing import Dict, List, Optional, Tuple, Sequence
 
 import pygame
 
@@ -74,65 +74,51 @@ class AdaptiveLayout:
         self.window_height = window_height
         self.board_size = board_size
         
-        self.ui_panel_width = LAYOUT['ui_panel_width']
-        self.board_margin = LAYOUT['board_margin']
+        self._base_panel_width = LAYOUT.get('ui_panel_width', 300)
+        self._panel_ratio = LAYOUT.get('ui_panel_ratio', 0.28)
+        self._panel_max_width = LAYOUT.get('ui_panel_max_width', self._base_panel_width + 160)
+        self._base_board_margin = LAYOUT.get('board_margin', 15)
+        self.board_margin = float(self._base_board_margin)
         
         self._calculate_layout()
     
     def _calculate_layout(self) -> None:
         """计算布局参数"""
-        effective_width = self.window_width - self.ui_panel_width - self.board_margin * 2
-        effective_height = self.window_height - self.board_margin * 2
+        self.ui_panel_width = self._compute_panel_width()
+        self.panel_x = max(0, int(round(self.window_width - self.ui_panel_width)))
 
-        max_width = max(1.0, float(effective_width))
-        max_height = max(1.0, float(effective_height))
+        self.board_margin = self._compute_board_margin()
+
+        left_area_width = max(1.0, float(self.panel_x))
+        usable_width = max(1.0, left_area_width - self.board_margin * 2)
+        usable_height = max(1.0, float(self.window_height) - self.board_margin * 2)
         divisor = float(max(1, self.board_size - 1))
 
-        width_limit = max_width / divisor
-        height_limit = max_height / divisor
-        is_width_limited = width_limit <= height_limit
-        if is_width_limited:
-            self.cell_size = max(1.0, width_limit)
-        else:
-            self.cell_size = max(1.0, height_limit)
-
+        self.cell_size = max(1.0, min(usable_width, usable_height) / divisor)
         self.board_width = self.cell_size * divisor
         self.board_height = self.cell_size * divisor
 
-        # 计算右侧面板起点，确保不会出现负值
-        self.panel_x = max(0, self.window_width - self.ui_panel_width)
+        centered_x = (left_area_width - self.board_width) / 2.0
+        self.board_x = max(self.board_margin, centered_x)
+        max_allowed_x = max(self.board_margin, self.panel_x - self.board_width - self.board_margin)
+        self.board_x = min(self.board_x, max_allowed_x)
+        self.board_x = max(self.board_margin, self.board_x)
 
-        # 左侧保留边距，必要时向左压缩以保证棋盘完全可见
-        left_bound = self.board_margin
-        right_bound = self.panel_x - self.board_margin
-
-        if right_bound <= left_bound:
-            # 面板占据多数宽度时退化为贴边展示
-            available_x = self.panel_x - self.board_width - self.board_margin
-            self.board_x = max(0.0, available_x)
-        else:
-            usable_width = right_bound - left_bound
-            if is_width_limited and self.board_width <= usable_width:
-                # 左右同时贴合可用区域
-                self.board_x = left_bound
-                self.board_width = usable_width
-                self.cell_size = self.board_width / divisor
-                self.board_height = self.cell_size * divisor
-            else:
-                # 宽度不足时仍保持右缘贴近面板并防止超出左界
-                self.board_x = max(0.0, right_bound - self.board_width)
-
-        vertical_space = self.window_height - self.board_height - self.board_margin * 2
-        if vertical_space > 0:
-            self.board_y = self.board_margin + vertical_space // 2
-        else:
-            self.board_y = self.board_margin
+        vertical_space = float(self.window_height) - self.board_height
+        self.board_y = max(self.board_margin, vertical_space / 2.0)
         
-        # 棋子半径
         self.stone_radius = max(2, int(self.cell_size * 0.45))
-        
-        # UI面板区域
         self.panel_y = 0
+
+    def _compute_panel_width(self) -> float:
+        dynamic_width = float(self.window_width) * float(self._panel_ratio)
+        clamped = max(self._base_panel_width, min(self._panel_max_width, dynamic_width))
+        return float(clamped)
+
+    def _compute_board_margin(self) -> float:
+        ratio = LAYOUT.get('board_margin_ratio', 0.035)
+        dynamic_margin = min(self.window_width, self.window_height) * float(ratio)
+        return max(float(self._base_board_margin), float(dynamic_margin))
     
     def board_to_pixel(self, row: int, col: int) -> Tuple[int, int]:
         """将棋盘坐标转换为像素坐标
@@ -186,6 +172,9 @@ class BoardRenderer:
         """
         self.layout = layout
         self.wood_texture = self._generate_wood_texture()
+        self.board_border_radius = max(12, int(self.layout.cell_size * 0.5))
+        self.shadow_surface, self._shadow_padding = self._generate_shadow_surface()
+        self.highlight_surface = self._generate_highlight_surface()
     
     def _generate_wood_texture(self) -> pygame.Surface:
         """生成木纹纹理"""
@@ -206,6 +195,31 @@ class BoardRenderer:
                 pygame.draw.line(surface, line_color, (0, y), (width, y), 1)
         
         return surface
+
+    def _generate_shadow_surface(self) -> Tuple[pygame.Surface, int]:
+        width = int(math.ceil(self.layout.board_width + self.layout.board_margin * 2))
+        height = int(math.ceil(self.layout.board_height + self.layout.board_margin * 2))
+        padding = max(6, int(self.layout.cell_size * 0.2))
+        surface = pygame.Surface((width + padding * 2, height + padding * 2), pygame.SRCALPHA)
+        rect = pygame.Rect(padding, padding, width, height)
+        pygame.draw.rect(surface, (0, 0, 0, 110), rect, border_radius=self.board_border_radius + 6)
+        return surface, padding
+
+    def _generate_highlight_surface(self) -> pygame.Surface:
+        width = int(math.ceil(self.layout.board_width + self.layout.board_margin * 2))
+        height = int(math.ceil(self.layout.board_height + self.layout.board_margin * 2))
+        surface = pygame.Surface((width, height), pygame.SRCALPHA)
+        outer_rect = surface.get_rect()
+        pygame.draw.rect(surface, (255, 255, 255, 30), outer_rect, border_radius=self.board_border_radius)
+        inner_rect = outer_rect.inflate(-8, -8)
+        pygame.draw.rect(
+            surface,
+            (255, 255, 255, 20),
+            inner_rect,
+            border_radius=max(0, self.board_border_radius - 4),
+            width=2,
+        )
+        return surface
     
     def draw_board(self, screen: pygame.Surface) -> None:
         """绘制棋盘
@@ -213,17 +227,18 @@ class BoardRenderer:
         Args:
             screen: Pygame屏幕Surface
         """
-        # 绘制木纹背景
         board_rect = pygame.Rect(
             int(round(self.layout.board_x - self.layout.board_margin)),
             int(round(self.layout.board_y - self.layout.board_margin)),
             int(math.ceil(self.layout.board_width + self.layout.board_margin * 2)),
             int(math.ceil(self.layout.board_height + self.layout.board_margin * 2))
         )
+
+        shadow_pos = (board_rect.x - self._shadow_padding, board_rect.y - self._shadow_padding)
+        screen.blit(self.shadow_surface, shadow_pos)
         screen.blit(self.wood_texture, board_rect.topleft)
-        
-        # 绘制边框
-        pygame.draw.rect(screen, COLORS['board_border'], board_rect, 3)
+        screen.blit(self.highlight_surface, board_rect.topleft)
+        pygame.draw.rect(screen, COLORS['board_border'], board_rect, 3, border_radius=self.board_border_radius)
         
         # 绘制棋盘线
         for i in range(self.layout.board_size):
@@ -442,26 +457,67 @@ class UIManager:
         # 交互状态
         self.hover_pos: Optional[Tuple[int, int]] = None
         
-        # 创建按钮
+        self.background_surface: Optional[pygame.Surface] = None
+        self.panel_surface: Optional[pygame.Surface] = None
+
         self._create_buttons()
+        self._build_background_surfaces()
     
-    def _create_buttons(self) -> None:
+    def _create_buttons(self, preserved: Optional[Dict[str, Tuple[str, bool]]] = None) -> None:
         """创建UI按钮"""
-        panel_x = self.layout.panel_x + LAYOUT['panel_padding']
-        spacing = LAYOUT['button_spacing']
-        btn_width = LAYOUT['button_width']
-        btn_height = LAYOUT['button_height']
+        padding = LAYOUT.get('panel_padding', 15)
+        panel_x = self.layout.panel_x + padding
+        spacing = LAYOUT.get('button_spacing', 12)
+        btn_height = LAYOUT.get('button_height', 48)
+        inner_width = max(140, int(self.layout.ui_panel_width - padding * 2))
 
         # 初始位置占位，实际布局在绘制面板时动态调整
         base_y = self.layout.window_height // 2
         self.buttons = {
-            'new_game': Button(panel_x, base_y, btn_width, btn_height, '新游戏'),
-            'undo': Button(panel_x, base_y + (btn_height + spacing), btn_width, btn_height, '悔棋'),
-            'difficulty': Button(panel_x, base_y + (btn_height + spacing) * 2, btn_width, btn_height, 'AI难度: 中等'),
-            'mode': Button(panel_x, base_y + (btn_height + spacing) * 3, btn_width, btn_height, '模式: 人机对战'),
-            'save': Button(panel_x, base_y + (btn_height + spacing) * 4, btn_width, btn_height, '保存棋局'),
+            'new_game': Button(panel_x, base_y, inner_width, btn_height, '新游戏'),
+            'undo': Button(panel_x, base_y + (btn_height + spacing), inner_width, btn_height, '悔棋'),
+            'difficulty': Button(panel_x, base_y + (btn_height + spacing) * 2, inner_width, btn_height, 'AI难度: 中等'),
+            'mode': Button(panel_x, base_y + (btn_height + spacing) * 3, inner_width, btn_height, '模式: 人机对战'),
+            'save': Button(panel_x, base_y + (btn_height + spacing) * 4, inner_width, btn_height, '保存棋局'),
         }
         self._button_order = ['new_game', 'undo', 'difficulty', 'mode', 'save']
+        if preserved:
+            for name, (text, enabled) in preserved.items():
+                if name in self.buttons:
+                    self.buttons[name].text = text
+                    self.buttons[name].enabled = enabled
+
+    def _build_background_surfaces(self) -> None:
+        width = max(1, int(round(self.layout.window_width)))
+        height = max(1, int(round(self.layout.window_height)))
+
+        top_bg = self._shift_color(COLORS['ui_bg'], 24)
+        bottom_bg = self._shift_color(COLORS['ui_bg'], -24)
+        self.background_surface = self._create_vertical_gradient(width, height, top_bg, bottom_bg)
+
+        panel_width = max(1, int(round(self.layout.ui_panel_width)))
+        top_panel = self._shift_color(COLORS['ui_panel'], 16)
+        bottom_panel = self._shift_color(COLORS['ui_panel'], -12)
+        self.panel_surface = self._create_vertical_gradient(panel_width, height, top_panel, bottom_panel)
+
+    @staticmethod
+    def _create_vertical_gradient(width: int, height: int,
+                                   top_color: Tuple[int, int, int],
+                                   bottom_color: Tuple[int, int, int]) -> pygame.Surface:
+        """Create a vertical gradient surface for soft background transitions."""
+        surface = pygame.Surface((width, height))
+        if height <= 1:
+            surface.fill(top_color)
+            return surface
+
+        for y in range(height):
+            ratio = y / (height - 1)
+            color = tuple(
+                int(top_color[i] + (bottom_color[i] - top_color[i]) * ratio)
+                for i in range(3)
+            )
+            pygame.draw.line(surface, color, (0, y), (width, y))
+        return surface
     
     def update(self, dt: float) -> None:
         """更新动画
@@ -490,8 +546,10 @@ class UIManager:
             board: 棋盘实例
             sidebar_state: 侧边栏渲染状态
         """
-        # 清屏
-        screen.fill(COLORS['ui_bg'])
+        if self.background_surface and self.background_surface.get_size() == screen.get_size():
+            screen.blit(self.background_surface, (0, 0))
+        else:
+            screen.fill(COLORS['ui_bg'])
         
         # 绘制棋盘
         self.board_renderer.draw_board(screen)
@@ -535,12 +593,16 @@ class UIManager:
     def _draw_ui_panel(self, screen: pygame.Surface, board: Board, sidebar_state: UISidebarState) -> None:
         """绘制UI面板"""
         panel_rect = pygame.Rect(
-            self.layout.panel_x,
+            int(self.layout.panel_x),
             0,
-            self.layout.ui_panel_width,
-            self.layout.window_height,
+            int(self.layout.ui_panel_width),
+            int(self.layout.window_height),
         )
-        pygame.draw.rect(screen, COLORS['ui_panel'], panel_rect)
+        if self.panel_surface and self.panel_surface.get_size() == (panel_rect.width, panel_rect.height):
+            screen.blit(self.panel_surface, panel_rect.topleft)
+        else:
+            pygame.draw.rect(screen, COLORS['ui_panel'], panel_rect)
+        pygame.draw.rect(screen, COLORS.get('panel_border_inactive', COLORS['ui_text']), panel_rect, 2)
 
         padding = LAYOUT.get('panel_padding', 15)
         player_height = LAYOUT.get('player_info_height', 140)
@@ -556,9 +618,9 @@ class UIManager:
         screen.blit(title_surf, title_rect)
 
         # 玩家面板
-        panel_width = self.layout.ui_panel_width - padding * 2
-        panel_x = panel_rect.left + padding
-        current_y = title_rect.bottom + panel_spacing
+        panel_width = max(0, int(self.layout.ui_panel_width - padding * 2))
+        panel_x = int(panel_rect.left + padding)
+        current_y = int(title_rect.bottom + panel_spacing)
 
         for player_data in sidebar_state.players:
             player_rect = pygame.Rect(panel_x, current_y, panel_width, player_height)
@@ -627,11 +689,14 @@ class UIManager:
             screen.blit(thinking_surf, (text_x, current_y + total_surf.get_height() + 4))
 
     def _layout_buttons(self, panel_rect: pygame.Rect, start_y: int) -> None:
-        panel_x = panel_rect.left + LAYOUT.get('panel_padding', 15)
+        padding = LAYOUT.get('panel_padding', 15)
+        panel_x = panel_rect.left + padding
         spacing = LAYOUT.get('button_spacing', 12)
+        inner_width = max(140, panel_rect.width - padding * 2)
         for index, name in enumerate(self._button_order):
             button = self.buttons[name]
             button.rect.x = panel_x
+            button.rect.width = inner_width
             button.rect.y = start_y + index * (button.rect.height + spacing)
 
     def _button_bottom(self) -> int:
@@ -720,6 +785,14 @@ class UIManager:
             window_width: 新窗口宽度
             window_height: 新窗口高度
         """
+        preserved = None
+        if hasattr(self, 'buttons'):
+            preserved = {
+                name: (button.text, button.enabled)
+                for name, button in self.buttons.items()
+            }
+
         self.layout = AdaptiveLayout(window_width, window_height)
         self.board_renderer = BoardRenderer(self.layout)
-        self._create_buttons()
+        self._create_buttons(preserved)
+        self._build_background_surfaces()

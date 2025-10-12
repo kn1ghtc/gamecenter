@@ -14,7 +14,8 @@ import time
 from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Deque, Dict, Optional, Tuple
+from datetime import datetime, timezone
+from typing import Any, Deque, Dict, Optional, Tuple
 
 import pygame
 
@@ -42,6 +43,7 @@ _ENGINE_DEFAULTS = _CONFIG.get_engine_defaults()
 _DEFAULT_SETTINGS = _CONFIG.get_default_settings()
 _SETTINGS_FILENAME = _CONFIG.get_path('settings_file', 'user_settings.json')
 _SAVE_DIR = _CONFIG.get_path('save_dir', 'saves')
+_SESSION_FILE = _CONFIG.get_path('session_file', 'saves/last_session.json')
 _AUDIO_CONFIG = _CONFIG.get_audio_config()
 
 WINDOW_MIN_WIDTH = _WINDOW_CONFIG.get('min_width', 800)
@@ -79,21 +81,34 @@ class PlayerRuntimeState:
 class GomokuGame:
     """五子棋游戏主类"""
     
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        save_dir_override: Optional[Path] = None,
+        session_path_override: Optional[Path] = None,
+        settings_path_override: Optional[Path] = None,
+    ):
         """初始化游戏"""
         pygame.init()
-        self.settings_path = Path(__file__).parent / _SETTINGS_FILENAME
+        self.save_dir = Path(save_dir_override) if save_dir_override else Path(__file__).parent / _SAVE_DIR
+        self.session_path = Path(session_path_override) if session_path_override else Path(__file__).parent / _SESSION_FILE
+        self.settings_path = Path(settings_path_override) if settings_path_override else Path(__file__).parent / _SETTINGS_FILENAME
         
         # 加载设置
         self.settings = self._load_settings()
-        
-        # 创建窗口
-        width = self.settings['display']['window_width']
-        height = self.settings['display']['window_height']
-        self.screen = pygame.display.set_mode(
-            (width, height), 
-            pygame.RESIZABLE
-        )
+        self._normalize_display_settings()
+
+        display_settings = self.settings['display']
+        width = display_settings['window_width']
+        height = display_settings['window_height']
+        self.fullscreen = bool(display_settings.get('fullscreen', False))
+
+        if self.fullscreen:
+            self.screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+            info = pygame.display.Info()
+            width, height = info.current_w, info.current_h
+        else:
+            self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
         pygame.display.set_caption("五子棋 Gomoku - Modern Edition")
         
         # 创建游戏对象
@@ -120,15 +135,14 @@ class GomokuGame:
         self._sync_player_profiles()
         self._log_info("新局初始化完成")
 
-        difficulty_configs = _CONFIG.get_difficulty_names()
-        difficulty_config = difficulty_configs.get(difficulty_name)
-        if 'difficulty' in self.ui_manager.buttons and difficulty_config:
-            self.ui_manager.buttons['difficulty'].text = f"AI难度: {difficulty_config.display_name}"
+        self._load_saved_session_if_available()
+        self._refresh_ui_labels()
+        if 'undo' in self.ui_manager.buttons:
+            self.ui_manager.buttons['undo'].enabled = self.game_manager.can_undo()
         
         # 时钟
         self.clock = pygame.time.Clock()
         self.running = True
-        self.fullscreen = False
     
     def _load_settings(self) -> dict:
         """加载设置"""
@@ -154,6 +168,188 @@ class GomokuGame:
                 json.dump(self.settings, fp, indent=2, ensure_ascii=False)
         except Exception as exc:  # pragma: no cover - 仅日志输出
             print(f"保存设置失败: {exc}")
+        else:
+            try:
+                state = self._serialize_runtime_state()
+                self._write_state_to_file(state, self.session_path)
+            except Exception as exc:  # pragma: no cover - 仅日志输出
+                print(f"保存会话状态失败: {exc}")
+
+    def _normalize_display_settings(self) -> None:
+        """Ensure window settings use supported defaults and constraints."""
+        display = self.settings.setdefault('display', {})
+
+        def _coerce(value: Any, fallback: int) -> int:
+            try:
+                coerced = int(value)
+            except (TypeError, ValueError):
+                return fallback
+            return coerced
+
+        width = _coerce(display.get('window_width', WINDOW_DEFAULT_WIDTH), WINDOW_DEFAULT_WIDTH)
+        height = _coerce(display.get('window_height', WINDOW_DEFAULT_HEIGHT), WINDOW_DEFAULT_HEIGHT)
+
+        # 自动迁移旧版默认值
+        if width == 1000 and height == 900:
+            width, height = WINDOW_DEFAULT_WIDTH, WINDOW_DEFAULT_HEIGHT
+
+        width = max(WINDOW_MIN_WIDTH, width)
+        height = max(WINDOW_MIN_HEIGHT, height)
+
+        display['window_width'] = width
+        display['window_height'] = height
+        display['fullscreen'] = bool(display.get('fullscreen', False))
+
+    def _refresh_ui_labels(self) -> None:
+        """根据当前设置刷新侧边栏按钮文字。"""
+        difficulty_name = self.settings['game'].get('ai_difficulty', AI_DEFAULT_DIFFICULTY)
+        difficulty_configs = _CONFIG.get_difficulty_names()
+        config = difficulty_configs.get(difficulty_name)
+        label = config.display_name if config else difficulty_name.title()
+        if 'difficulty' in self.ui_manager.buttons:
+            self.ui_manager.buttons['difficulty'].text = f"AI难度: {label}"
+
+        if 'mode' in self.ui_manager.buttons:
+            mode_text = "模式: " + ("人机对战" if self.game_mode == 'pvc' else "双人对战")
+            self.ui_manager.buttons['mode'].text = mode_text
+
+    def _serialize_runtime_state(self) -> Dict[str, Any]:
+        """构建可序列化的运行时状态快照。"""
+        current_time = time.time()
+        elapsed = max(0.0, current_time - self.turn_start_time) if self.turn_start_time else 0.0
+
+        def _serialize_state(state: PlayerRuntimeState) -> Dict[str, Any]:
+            return {
+                'name': state.name,
+                'is_ai': state.is_ai,
+                'score': state.score,
+                'last_move': list(state.last_move) if state.last_move else None,
+                'last_move_time': state.last_move_time,
+                'total_time': state.total_time,
+            }
+
+        player_blob = {
+            player.name: _serialize_state(state)
+            for player, state in self.player_states.items()
+        }
+
+        return {
+            'version': 1,
+            'saved_at': datetime.now(timezone.utc).isoformat(),
+            'settings': self.settings,
+            'game_mode': self.game_mode,
+            'ai_player': self.ai_player.value,
+            'player_states': player_blob,
+            'status_messages': list(self.status_messages),
+            'game_result_recorded': self.game_result_recorded,
+            'game_manager': {
+                'max_undo': self.game_manager.max_undo,
+                'undo_count': self.game_manager.undo_count,
+            },
+            'timers': {
+                'current_turn_elapsed': elapsed,
+            },
+            'board': self.game_manager.board.to_dict(),
+        }
+
+    def _write_state_to_file(self, state: Dict[str, Any], path: Path) -> None:
+        """将状态写入目标文件。"""
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, 'w', encoding='utf-8') as fp:
+            json.dump(state, fp, indent=2, ensure_ascii=False)
+
+    def _restore_player_states(self, payload: Dict[str, Any]) -> None:
+        """从存档数据恢复玩家积分与历史信息。"""
+        for player in (Player.BLACK, Player.WHITE):
+            data = payload.get(player.name)
+            if not isinstance(data, dict):
+                continue
+
+            state = self.player_states[player]
+            state.name = data.get('name', state.name)
+            state.is_ai = bool(data.get('is_ai', state.is_ai))
+            state.score = int(data.get('score', state.score))
+
+            last_move = data.get('last_move')
+            if isinstance(last_move, (list, tuple)) and len(last_move) == 2:
+                state.last_move = (int(last_move[0]), int(last_move[1]))
+            else:
+                state.last_move = None
+
+            last_move_time = data.get('last_move_time')
+            state.last_move_time = float(last_move_time) if last_move_time is not None else None
+
+            total_time = data.get('total_time')
+            state.total_time = float(total_time) if total_time is not None else 0.0
+
+            state.thinking = False
+            state.thinking_duration = 0.0
+
+    def _load_saved_session_if_available(self) -> None:
+        """尝试加载最近一次保存的会话。"""
+        if not self.session_path.exists():
+            return
+
+        try:
+            with open(self.session_path, 'r', encoding='utf-8') as fp:
+                data = json.load(fp)
+        except Exception as exc:  # pragma: no cover - 容错日志
+            print(f"加载存档失败: {exc}")
+            return
+
+        board_blob = data.get('board')
+        if not isinstance(board_blob, dict):
+            return
+
+        settings_blob = data.get('settings')
+        if isinstance(settings_blob, dict):
+            self.settings = settings_blob
+            self._normalize_display_settings()
+
+        self.game_mode = data.get('game_mode', self.game_mode)
+        self._sync_player_profiles()
+
+        ai_player_value = data.get('ai_player')
+        if ai_player_value is not None:
+            try:
+                self.ai_player = Player(ai_player_value)
+            except ValueError:  # pragma: no cover - 容错处理
+                pass
+
+        board = Board.from_dict(board_blob)
+        manager_blob = data.get('game_manager', {})
+        max_undo = int(manager_blob.get('max_undo', self.game_manager.max_undo))
+        self.game_manager = GameManager(board, max_undo=max_undo)
+        self.game_manager.undo_count = int(manager_blob.get('undo_count', 0))
+
+        player_states_blob = data.get('player_states', {})
+        if isinstance(player_states_blob, dict):
+            self._restore_player_states(player_states_blob)
+
+        messages = data.get('status_messages')
+        if isinstance(messages, list):
+            self.status_messages = deque(messages, maxlen=3)
+        else:
+            self.status_messages = deque(maxlen=3)
+
+        timers = data.get('timers', {})
+        elapsed = timers.get('current_turn_elapsed', 0.0)
+        try:
+            elapsed_float = float(elapsed)
+        except (TypeError, ValueError):
+            elapsed_float = 0.0
+        self.turn_start_time = time.time() - max(0.0, elapsed_float)
+
+        self.game_result_recorded = bool(data.get('game_result_recorded', False))
+
+        difficulty = self.settings['game'].get('ai_difficulty', AI_DEFAULT_DIFFICULTY)
+        self.ai_controller.set_difficulty(difficulty)
+
+        self._log_info("已加载上次保存的棋局")
+        self.ui_manager.resize(self.screen.get_width(), self.screen.get_height())
+        self._refresh_ui_labels()
+        if 'undo' in self.ui_manager.buttons:
+            self.ui_manager.buttons['undo'].enabled = self.game_manager.can_undo()
 
     def _log_info(self, message: str) -> None:
         """记录状态信息供侧边栏显示"""
@@ -353,6 +549,8 @@ class GomokuGame:
                 self.ui_manager.resize(event.w, event.h)
                 self.settings['display']['window_width'] = event.w
                 self.settings['display']['window_height'] = event.h
+                self.settings['display']['fullscreen'] = False
+                self.fullscreen = False
             
             elif event.type == pygame.KEYDOWN:
                 self._handle_key_press(event.key)
@@ -383,6 +581,7 @@ class GomokuGame:
                 width = self.settings['display']['window_width']
                 height = self.settings['display']['window_height']
                 self.screen = pygame.display.set_mode((width, height), pygame.RESIZABLE)
+            self.settings['display']['fullscreen'] = self.fullscreen
             
             # 更新布局
             info = pygame.display.Info()
@@ -512,27 +711,14 @@ class GomokuGame:
         
         self.settings['game']['ai_difficulty'] = new_difficulty
         self.ai_controller.set_difficulty(new_difficulty)
-        
-        # 更新按钮文字
-        config = difficulty_configs.get(new_difficulty)
-        if config:
-            display_label = config.display_name
-        else:
-            display_label = new_difficulty.title()
-        self.ui_manager.buttons['difficulty'].text = f"AI难度: {display_label}"
+        self._refresh_ui_labels()
     
     def _toggle_game_mode(self) -> None:
         """切换游戏模式（人机/双人）"""
         if self.game_mode == 'pvp':
             self.game_mode = 'pvc'
-            mode_text = "人机对战"
         else:
             self.game_mode = 'pvp'
-            mode_text = "双人对战"
-        
-        # 更新UI（如果有模式按钮）
-        if 'mode' in self.ui_manager.buttons:
-            self.ui_manager.buttons['mode'].text = f"模式: {mode_text}"
 
         self._sync_player_profiles()
         self._reset_scores()
@@ -543,18 +729,22 @@ class GomokuGame:
         self.turn_start_time = time.time()
         self.game_result_recorded = False
         self.status_messages.clear()
-        self._log_info(f"切换为{mode_text}")
+        self._refresh_ui_labels()
+        mode_desc = "人机对战" if self.game_mode == 'pvc' else "双人对战"
+        self._log_info(f"切换为{mode_desc}")
     
     def _save_game(self) -> None:
         """保存游戏"""
-        save_dir = Path(__file__).parent / _SAVE_DIR
-        save_dir.mkdir(parents=True, exist_ok=True)
-        
-        filename = f"gomoku_save_{len(self.game_manager.board.history)}.json"
-        filepath = save_dir / filename
-        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"gomoku_save_{timestamp}.json"
+        filepath = self.save_dir / filename
+
+        state = self._serialize_runtime_state()
+
         try:
-            self.game_manager.board.save_to_file(str(filepath))
+            self._write_state_to_file(state, filepath)
+            self._write_state_to_file(state, self.session_path)
+            self._log_info("棋局已保存")
             print(f"游戏已保存: {filepath}")
         except Exception as e:
             print(f"保存失败: {e}")
