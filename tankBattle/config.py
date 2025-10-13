@@ -44,7 +44,7 @@ PLAYER_CONFIG = {
     'MAX_HEALTH': 100,
     'SPEED': 4,
     'ROTATION_SPEED': 0.005,  # 弧度
-    'RELOAD_TIME': 30,  # 帧数 - 显著减少冷却时间，更快响应
+    'RELOAD_TIME': 60,  # 帧数 - 显著减少冷却时间，更快响应
     'TURRET_LENGTH': 28,
     'TURRET_WIDTH': 7,
     'COLOR': COLORS['PLAYER'],
