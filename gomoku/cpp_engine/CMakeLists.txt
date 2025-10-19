@@ -30,11 +30,23 @@ set_target_properties(gomoku_engine PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 
-# Windows: generate .dll
-# Linux: generate .so
+# Platform-specific library naming
 if(WIN32)
+    # Windows: generate .dll
     set_target_properties(gomoku_engine PROPERTIES
         PREFIX ""
         SUFFIX ".dll"
+    )
+elseif(APPLE)
+    # macOS: generate .dylib
+    set_target_properties(gomoku_engine PROPERTIES
+        PREFIX "lib"
+        SUFFIX ".dylib"
+    )
+else()
+    # Linux: generate .so
+    set_target_properties(gomoku_engine PROPERTIES
+        PREFIX "lib"
+        SUFFIX ".so"
     )
 endif()

@@ -31,7 +31,7 @@ class RuleBasedAI:
         self.pathfinder = AdvancedPathfinding() if PATH_OK else None
         self.current_path: List[Tuple[int, int]] = []
         self.path_step = 0
-        
+
         # 路径规划超时和强制移动机制
         self.path_stale_frames = 0  # 当前路径使用了多少帧
         self.no_movement_frames = 0  # 连续多少帧没有有效移动
@@ -66,7 +66,7 @@ class RuleBasedAI:
         # 4) 移动与路径规划
         move_forward = 0
         rotate = 0
-        
+
         if fire_ok:
             # 可以直打时：对准目标并靠近
             angle_diff = self._angle_diff(self.tank.angle, angle_to_target)
@@ -202,14 +202,14 @@ class RuleBasedAI:
         """更新移动跟踪状态"""
         # 检查是否有有效移动
         movement_threshold = 5  # 像素阈值
-        if (abs(tank_pos[0] - self.last_position[0]) > movement_threshold or 
+        if (abs(tank_pos[0] - self.last_position[0]) > movement_threshold or
             abs(tank_pos[1] - self.last_position[1]) > movement_threshold):
             self.no_movement_frames = 0  # 重置无移动计数
         else:
             self.no_movement_frames += 1
-        
+
         self.last_position = tank_pos
-        
+
         # 增加路径过期计数
         if self.current_path:
             self.path_stale_frames += 1
@@ -217,18 +217,18 @@ class RuleBasedAI:
     def _should_force_action(self):
         """判断是否需要强制行动"""
         # 路径规划超时或长时间无移动时强制行动
-        return (self.path_stale_frames > self.max_path_stale_frames or 
+        return (self.path_stale_frames > self.max_path_stale_frames or
                 self.no_movement_frames > self.max_no_movement_frames)
 
     def _get_force_action(self, walls, tank_pos, angle_to_target, target_pos):
         """获取强制行动决策"""
         self.force_clear_obstacles = True
-        
+
         # 清空当前路径，强制重新规划或直接移动
         self.current_path = []
         self.path_step = 0
         self.path_stale_frames = 0
-        
+
         # 尝试清除前方障碍
         blocking_wall = self._find_blocking_wall_to_target(walls, tank_pos, angle_to_target)
         if blocking_wall is not None:
@@ -237,7 +237,7 @@ class RuleBasedAI:
             tank_cx, tank_cy = tank_pos
             wall_angle = math.atan2(by - tank_cy, bx - tank_cx)
             angle_diff = self._angle_diff(self.tank.angle, wall_angle)
-            
+
             if abs(angle_diff) > 0.1:
                 return {
                     'move_forward': 0,
@@ -250,7 +250,7 @@ class RuleBasedAI:
                     'rotate': 0,
                     'fire': True
                 }
-        
+
         # 如果没有可清除的障碍，尝试强制移动
         return self._get_force_movement(tank_pos, target_pos)
 
@@ -258,13 +258,13 @@ class RuleBasedAI:
         """强制移动决策"""
         tank_cx, tank_cy = tank_pos
         target_x, target_y = target_pos
-        
+
         # 尝试绕行：选择一个偏移角度
         base_angle = math.atan2(target_y - tank_cy, target_x - tank_cx)
-        
+
         # 尝试左右偏移90度的方向
         offset_angles = [base_angle + math.pi/2, base_angle - math.pi/2, base_angle + math.pi]
-        
+
         for offset_angle in offset_angles:
             angle_diff = self._angle_diff(self.tank.angle, offset_angle)
             if abs(angle_diff) > 0.15:
@@ -279,7 +279,7 @@ class RuleBasedAI:
                     'rotate': 0,
                     'fire': False
                 }
-        
+
         # 最后手段：后退
         return {
             'move_forward': -1,
@@ -288,20 +288,39 @@ class RuleBasedAI:
         }
 
     def _handle_pathfinding(self, tank_pos, target_pos, walls, angle_to_target):
-        """处理路径规划逻辑"""
+        """处理路径规划逻辑 - 优化版:减少路径重新规划频率"""
         move_forward = 0
         rotate = 0
-        
+
         if self.pathfinder is not None:
-            # 检查是否需要重新规划路径
-            if (not self.current_path or self.path_step >= len(self.current_path) or
-                self.path_stale_frames > self.max_path_stale_frames // 2):  # 中途检查
-                
+            # 检查目标是否变化显著(超过50像素)
+            target_changed = False
+            if hasattr(self, '_last_target'):
+                dist_to_last = math.sqrt(
+                    (target_pos[0] - self._last_target[0])**2 +
+                    (target_pos[1] - self._last_target[1])**2
+                )
+                target_changed = dist_to_last > 50
+
+            # 只在以下情况重新规划:
+            # 1. 没有路径
+            # 2. 路径已完成
+            # 3. 路径过期(更长的时间: max_path_stale_frames)
+            # 4. 目标变化显著
+            should_replan = (
+                not self.current_path or
+                self.path_step >= len(self.current_path) or
+                self.path_stale_frames > self.max_path_stale_frames or  # 从//2改为完整时间
+                target_changed
+            )
+
+            if should_replan:
                 self.current_path = self.pathfinder.find_tactical_path(
                     tank_pos, target_pos, walls, self.tank.size
                 ) or []
                 self.path_step = 0
                 self.path_stale_frames = 0
+                self._last_target = target_pos
 
             waypoint = None
             if self.current_path:
@@ -312,7 +331,7 @@ class RuleBasedAI:
                 wpx, wpy = waypoint
                 to_wp_angle = math.atan2(wpy - tank_cy, wpx - tank_cx)
                 angle_diff = self._angle_diff(self.tank.angle, to_wp_angle)
-                
+
                 if abs(angle_diff) > 0.15:
                     rotate = 3 if angle_diff > 0 else -3
                 else:
@@ -326,13 +345,13 @@ class RuleBasedAI:
         else:
             # 无路径规划器时，使用直接移动
             move_forward, rotate = self._fallback_direct_movement(tank_pos, target_pos, angle_to_target)
-        
+
         return move_forward, rotate
 
     def _fallback_direct_movement(self, tank_pos, target_pos, angle_to_target):
         """回退的直接移动策略"""
         angle_diff = self._angle_diff(self.tank.angle, angle_to_target)
-        
+
         if abs(angle_diff) > 0.2:
             return 0, 3 if angle_diff > 0 else -3
         else:
@@ -343,5 +362,5 @@ class RuleBasedAI:
                 random_diff = self._angle_diff(self.tank.angle, random_angle)
                 if abs(random_diff) > 0.2:
                     return 0, 3 if random_diff > 0 else -3
-            
+
             return 1, 0  # 直接前进

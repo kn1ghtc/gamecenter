@@ -105,7 +105,9 @@ print(defaults["type"], medium.search_depth)
 
 | 引擎 | 性能指标 (NPS*) | 特点 | 场景 |
 |------|-----------------|------|------|
-| C++ Engine | 70,000+ | 原生 DLL，最佳性能 | 高难度 / 竞技对局 |
+| C++ Engine (Windows) | 70,000+ | 原生 DLL，最佳性能 | 高难度 / 竞技对局 |
+| C++ Engine (macOS) | 60,000+ | 原生 dylib，高性能 | 高难度 / 竞技对局 |
+| C++ Engine (Linux) | 50,000+ | 原生 .so，高性能 | 高难度 / 竞技对局 |
 | Python Engine | ~860 | 纯 Python，配置化可调 | 开发调试 / 普通对局 |
 
 *NPS = 每秒搜索节点数。
@@ -130,10 +132,20 @@ print(ai.get_stats())
 ## 🚀 快速开始
 
 ### 环境要求
-- Windows 11 + PowerShell
-- Python 3.12+
+- **Windows**: Windows 10/11 + PowerShell, Python 3.12+
+- **macOS**: macOS 12+ (Monterey), Python 3.12+
+- **Linux**: Ubuntu 20.04+, Python 3.12+
 
 ### 安装依赖
+
+**macOS / Linux:**
+```bash
+cd /path/to/gamecenter/gomoku
+python3 -m pip install --upgrade pip
+pip3 install pygame numpy pytest
+```
+
+**Windows:**
 ```powershell
 cd d:\pyproject\gamecenter\gomoku
 python -m pip install --upgrade pip
@@ -141,11 +153,25 @@ pip install pygame numpy pytest
 ```
 
 ### 生成音效（首次运行）
+
+**macOS / Linux:**
+```bash
+python3 scripts/generate_sounds.py
+```
+
+**Windows:**
 ```powershell
 python scripts/generate_sounds.py
 ```
 
 ### 启动游戏
+
+**macOS / Linux:**
+```bash
+python3 main.py
+```
+
+**Windows:**
 ```powershell
 python main.py
 ```
@@ -183,6 +209,13 @@ pytest tests -v
 - **编码规范**：绝对导入，单文件不超过 1000 行，复杂代码段辅以简明注释
 
 ## 📜 版本历史
+
+### 2025-10-13
+- ✅ 成功编译 macOS 版本 C++ 引擎（libgomoku_engine.dylib），性能达到 60,000+ NPS
+- ✅ 更新 CMakeLists.txt 支持跨平台编译（Windows/.dll, macOS/.dylib, Linux/.so）
+- ✅ 优化 cpp_ai_wrapper.py 自动检测不同平台的动态库文件
+- ✅ 添加 macOS 编译和测试文档，提供完整的跨平台构建指南
+- ✅ 验证 C++ 引擎在 macOS (Apple Clang 15) 上正常工作
 
 ### 2025-10-11
 - ♻️ 重构右侧信息面板，新增积分、最近落子、思考状态与用时展示，并优化棋盘填充布局

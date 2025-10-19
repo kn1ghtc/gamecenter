@@ -3,12 +3,17 @@
 包含所有游戏参数和设置
 """
 import os
+from pathlib import Path
+
+# 获取项目根目录
+TANK_BATTLE_DIR = Path(__file__).parent
+ASSETS_DIR = TANK_BATTLE_DIR / 'assets'
 
 # 游戏窗口设置
 GAME_CONFIG = {
     'WIDTH': 1600,
     'HEIGHT': 900,
-    'FPS': 120,
+    'FPS': 60,  # 降低到60FPS以减少CPU使用
     'TITLE': 'Tank Battle',
     'BG_COLOR': (30, 30, 30)
 }
@@ -48,7 +53,7 @@ PLAYER_CONFIG = {
     'TURRET_LENGTH': 28,
     'TURRET_WIDTH': 7,
     'COLOR': COLORS['PLAYER'],
-    'IMAGE': os.path.join('assets', 'PNG', 'Tanks', 'tankGreen.png')
+    'IMAGE': str(ASSETS_DIR / 'PNG' / 'Tanks' / 'tankGreen.png')
 }
 
 # 敌方坦克配置
@@ -62,7 +67,7 @@ ENEMY_CONFIG = {
     'TURRET_LENGTH': 28,
     'TURRET_WIDTH': 7,
     'COLOR': COLORS['ENEMY'],
-    'IMAGE': os.path.join('assets', 'PNG', 'Tanks', 'tankRed.png'),
+    'IMAGE': str(ASSETS_DIR / 'PNG' / 'Tanks' / 'tankRed.png'),
     'FIRE_RATE': 0.35,  # 大幅提高射击频率，让AI更积极攻击
     'AI_ROTATION_THRESHOLD': 0.15,  # 稍微放宽旋转阈值，更流畅
     'AI_VISION_RANGE': 380,  # 扩大视野范围
@@ -70,12 +75,12 @@ ENEMY_CONFIG = {
     'AI_CLOSE_COMBAT_RANGE': 100,  # 近战范围
     'AI_OBSTACLE_DETECTION_DISTANCE': 80,  # 增强障碍物检测
     'AI_STUCK_THRESHOLD': 20,  # 降低被困阈值，更快脱困
-    'AI_PATH_PLANNING_COOLDOWN': 60,  # 减少路径规划冷却时间
+    'AI_PATH_PLANNING_COOLDOWN': 120,  # 路径规划冷却时间(帧) - 提高以减少CPU负载
     'AI_PURSUIT_RANGE': 350,  # 追击范围
     'AI_MIN_FIRE_DISTANCE': 5,  # 减少最小开火距离
     'AI_MAX_FIRE_DISTANCE': 380,  # 最大开火距离，与视野范围匹配
     'AI_AGGRESSIVE_THRESHOLD': 0.8,  # 提高攻击性阈值
-    'AI_DECISION_FREQUENCY': 1,  # 每帧都进行决策，更快响应
+    'AI_DECISION_FREQUENCY': 3,  # 每3帧决策一次，降低CPU负载
     'AI_MOVEMENT_DECISIVENESS': 0.7,  # 移动决策的坚决程度
     'AI_COMBAT_AGGRESSIVENESS': 0.8,  # 战斗积极性
 }
@@ -86,18 +91,18 @@ AI_CONFIG = {
     'ENABLED': True,  # 是否启用AI系统
     'DEFAULT_LEVEL': 'auto',  # 默认AI级别: 'basic', 'smart', 'enhanced', 'auto'
     'AUTO_SWITCH': True,  # 是否根据性能自动切换AI级别
-    'PERFORMANCE_MONITOR': True,  # 是否启用性能监控
+    'PERFORMANCE_MONITOR': False,  # 禁用性能监控以减少开销
 
-    # AI决策配置 - 新增更激进的参数
+    # AI决策配置 - 优化性能参数
     'DECISION_CONFIG': {
-        'decision_timeout': 5,  # 极大减少决策超时时间，更快响应
-        'strategy_timeout': 10,  # 减少策略超时时间
-        'tactical_timeout': 5,   # 减少战术超时时间
-        'operational_timeout': 3,  # 减少操作超时时间
-        'reactive_timeout': 1,   # 反应层超时时间最短，快速响应
-        'stuck_recovery_timeout': 15,  # 减少脱困时间
-        'pathfinding_timeout': 10,  # 减少路径查找时间
-        'decision_interval': 1,  # 每帧都决策，让AI更活跃
+        'decision_timeout': 15,  # 增加超时时间，减少频繁计算
+        'strategy_timeout': 30,  # 策略计算频率(帧) - 进一步降频
+        'tactical_timeout': 12,  # 战术决策适度降频
+        'operational_timeout': 8,  # 操作层决策间隔
+        'reactive_timeout': 3,   # 反应层保持较快响应(从2增到3)
+        'stuck_recovery_timeout': 30,  # 脱困不需要太频繁
+        'pathfinding_timeout': 20,  # 路径查找降频(从15增到20)
+        'decision_interval': 5,  # 每5帧决策一次(从3增到5),进一步降低CPU使用
         'learning_interval': 300,  # 学习间隔保持不变
         'max_concurrent_decisions': 3,  # 允许更多并发决策
         'min_decision_confidence': 0.4,  # 降低决策置信度要求，更容易做决策
@@ -173,13 +178,13 @@ AI_CONFIG = {
 BULLET_TYPES = {
     'NORMAL': {
         'RADIUS': 5,
-        'SPEED': 3,
+        'SPEED': 4,
         'DAMAGE': 1,
         'CAN_PIERCE_WALL': False,
         'COLOR': None,  # 根据所有者决定
         'WALL_DAMAGE': 1,
-        'MAX_RANGE': 400,  # 最大射程
-        'LIFETIME': 57  # 生命周期(帧数) = MAX_RANGE / SPEED
+        'MAX_RANGE': 1600,  # 最大射程
+        'LIFETIME': 400  # 生命周期(帧数) = MAX_RANGE / SPEED
     },
     'PIERCING': {
         'RADIUS': 6,
@@ -189,7 +194,7 @@ BULLET_TYPES = {
         'COLOR': (255, 255, 0),  # 黄色
         'WALL_DAMAGE': 2,
         'MAX_RANGE': 1600,  # 全屏射程
-        'LIFETIME': 100  # 1600 / 8 = 200
+        'LIFETIME': 200  # 1600 / 8 = 200
     },
     'EXPLOSIVE': {
         'RADIUS': 8,
@@ -200,8 +205,8 @@ BULLET_TYPES = {
         'WALL_DAMAGE': 3,
         'EXPLOSION_RADIUS': 50,
         'EXPLOSION_DAMAGE': 6,
-        'MAX_RANGE': 300,  # 较短射程但爆炸伤害
-        'LIFETIME': 60  # 300 / 5 = 60
+        'MAX_RANGE': 1600,  # 较短射程但爆炸伤害
+        'LIFETIME': 320  # 1600 / 5 = 320
     },
     'RAPID': {
         'RADIUS': 4,
@@ -210,8 +215,8 @@ BULLET_TYPES = {
         'CAN_PIERCE_WALL': False,
         'COLOR': (100, 255, 100),  # 绿色
         'WALL_DAMAGE': 1,
-        'MAX_RANGE': 350,  # 中等射程
-        'LIFETIME': 35  # 350 / 10 = 35
+        'MAX_RANGE': 1600,  # 中等射程
+        'LIFETIME': 160  # 1600 / 10 = 160
     },
     'HEAVY': {
         'RADIUS': 10,
@@ -220,12 +225,12 @@ BULLET_TYPES = {
         'CAN_PIERCE_WALL': False,
         'COLOR': (255, 50, 50),  # 红色
         'WALL_DAMAGE': 4,
-        'MAX_RANGE': 250,  # 短射程但高伤害
-        'LIFETIME': 62  # 250 / 4 ≈ 62
+        'MAX_RANGE': 1600,  # 短射程但高伤害
+        'LIFETIME': 400  # 1600 / 4 = 400
     },
     'BARRICADE': {
         'RADIUS': 7,
-        'SPEED': 6,
+        'SPEED': 8,
         'DAMAGE': 0,  # 掩体弹不造成伤害
         'CAN_PIERCE_WALL': False,
         'COLOR': (150, 75, 0),  # 棕色
@@ -234,8 +239,8 @@ BULLET_TYPES = {
         'BARRICADE_HEALTH': 5,  # 生成的掩体墙血量
         'BARRICADE_SIZE': (50, 25),  # 掩体墙尺寸 (宽, 高)
         'COOLDOWN': 180,  # 冷却时间(帧数) - 3秒@60FPS
-        'MAX_RANGE': 200,  # 短射程，用于近距离部署
-        'LIFETIME': 33  # 200 / 6 ≈ 33
+        'MAX_RANGE': 1600,  # 短射程，用于近距离部署
+        'LIFETIME': 200  # 1600 / 8 = 200
     }
 }
 
@@ -256,17 +261,17 @@ ENEMY_BULLET_CONFIG = {
 
 # 墙壁配置
 WALL_CONFIG = {
-    'HEALTH': 3,
+    'HEALTH': 2,
     'COLOR': COLORS['WALL']
 }
 
 # 隔离围墙配置
 BARRIER_WALL_CONFIG = {
-    'HEALTH': 20,  # 可被攻击的围墙（按需调整）
+    'HEALTH': 10,  # 可被攻击的围墙（按需调整）
     'COLOR': (80, 80, 150),  # 深蓝色，区别于普通围墙
     'THICKNESS': 2,  # 双排围墙厚度
-    'PASSAGE_COUNT': 3,  # 随机预留3个通道
-    'PASSAGE_WIDTH': 2,  # 每个通道宽度（网格单位）
+    'PASSAGE_COUNT': 4,  # 随机预留5个通道
+    'PASSAGE_WIDTH': 5,  # 每个通道宽度（网格单位）
     'DESTRUCTIBLE': True,  # 允许被攻击摧毁
     'PIERCING_PASSABLE': True  # 穿甲子弹可以穿过
 }
@@ -291,8 +296,8 @@ BASE_CONFIG = {
 
 # 音效文件路径
 SOUND_CONFIG = {
-    'EXPLOSION': os.path.join('assets', 'explosion.wav'),
-    'SHOOT': os.path.join('assets', 'shoot.wav')
+    'EXPLOSION': str(ASSETS_DIR / 'explosion.wav'),
+    'SHOOT': str(ASSETS_DIR / 'shoot.wav')
 }
 
 # 胜利条件配置
