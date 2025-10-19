@@ -61,8 +61,8 @@ class Game:
         self.menu_options = []  # will be set after resources and save detection
         self.selected_level = 1
 
-        # Assets path
-        self.assets_dir = Path("assets")
+        # Assets path - use absolute path from project root
+        self.assets_dir = Path(__file__).resolve().parent.parent / "assets"
 
         # Initialize Pygame
         pygame.init()
@@ -114,7 +114,7 @@ class Game:
         self._load_level(self.current_level)
 
     def _ensure_levels(self):
-        levels_dir = Path("levels")
+        levels_dir = Path(__file__).resolve().parent.parent / "levels"
         try:
             if not levels_dir.exists() or not any(levels_dir.glob("level_*.json")):
                 Level.generate_and_save_levels(self.max_levels, levels_dir)

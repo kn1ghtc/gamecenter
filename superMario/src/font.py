@@ -15,7 +15,7 @@ class FontManager:
 
     def __init__(self, assets_dir="assets"):
         """Initialize font manager"""
-        self.assets_dir = Path(assets_dir)
+        self.assets_dir = Path(assets_dir).resolve()
         self.fonts_dir = self.assets_dir / "fonts"
 
         # Font cache

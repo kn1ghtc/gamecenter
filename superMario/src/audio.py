@@ -14,7 +14,7 @@ class AudioSystem:
 
     def __init__(self, assets_dir="assets"):
         """Initialize audio system"""
-        self.assets_dir = Path(assets_dir)
+        self.assets_dir = Path(assets_dir).resolve()
         self.sounds_dir = self.assets_dir / "sounds"
 
         # Audio settings

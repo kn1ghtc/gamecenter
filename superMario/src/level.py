@@ -22,7 +22,7 @@ class Level:
     def __init__(self, level_num, assets_dir):
         """Initialize level"""
         self.level_num = level_num
-        self.assets_dir = Path(assets_dir)
+        self.assets_dir = Path(assets_dir).resolve()
 
         # Level data
         self.tiles = []  # 2D list of tile types
@@ -53,7 +53,7 @@ class Level:
 
     def _load_level_data(self):
         """Load level data from file or generate procedurally"""
-        level_file = Path("levels") / f"level_{self.level_num}.json"
+        level_file = Path(__file__).resolve().parent.parent / "levels" / f"level_{self.level_num}.json"
 
         if level_file.exists():
             self._load_from_file(level_file)
@@ -466,7 +466,7 @@ class Level:
             lvl = Level.__new__(Level)
             # minimal init
             lvl.level_num = i
-            lvl.assets_dir = Path("assets")
+            lvl.assets_dir = Path(__file__).resolve().parent.parent / "assets"
             lvl.width = Level.LEVEL_WIDTH * Level.TILE_SIZE
             lvl.height = Level.LEVEL_HEIGHT * Level.TILE_SIZE
             lvl.coins = []

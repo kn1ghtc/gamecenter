@@ -7,6 +7,16 @@ A complete Super Mario game with 30 levels, scoring system, and automatic resour
 
 import sys
 import os
+from pathlib import Path
+
+# Set up path to ensure proper module resolution
+PROJECT_ROOT = Path(__file__).resolve().parent
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
+# Change to project directory to ensure assets can be found
+os.chdir(PROJECT_ROOT)
+
 import pygame
 from src.game import Game
 

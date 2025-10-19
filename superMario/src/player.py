@@ -24,7 +24,7 @@ class Player:
 
     def __init__(self, start_pos, assets_dir, config: dict | None = None):
         """Initialize the player"""
-        self.assets_dir = Path(assets_dir)
+        self.assets_dir = Path(assets_dir).resolve()
         cfg = config or {}
 
         # Position and physics
