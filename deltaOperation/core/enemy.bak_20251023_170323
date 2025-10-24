@@ -1,0 +1,484 @@
+"""
+敌人AI系统 - 处理敌人行为和战斗逻辑
+"""
+
+import sys
+from pathlib import Path
+# 添加项目根目录到sys.path
+_project_root = Path(__file__).parent.parent.parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
+import pygame
+from typing import Optional, List, Tuple
+from enum import Enum
+import random
+import math
+
+from gamecenter.deltaOperation import config
+from gamecenter.deltaOperation.core.physics import PhysicsBody, PhysicsEngine, AABB
+from gamecenter.deltaOperation.core.weapon import Weapon, WeaponFactory, WeaponType
+
+
+class EnemyState(Enum):
+    """敌人AI状态枚举"""
+    PATROL = "patrol"      # 巡逻
+    ALERT = "alert"        # 警戒
+    COMBAT = "combat"      # 战斗
+    RETREAT = "retreat"    # 撤退
+    DEATH = "death"        # 死亡
+
+
+class Enemy(PhysicsBody):
+    """
+    敌人基类
+    实现基于状态机的AI行为
+    """
+    
+    def __init__(self, x: float, y: float, enemy_type: str = "grunt"):
+        """
+        初始化敌人
+        
+        Args:
+            x: 初始X坐标
+            y: 初始Y坐标
+            enemy_type: 敌人类型(grunt/elite/boss)
+        """
+        # 从配置加载敌人数据
+        enemy_data = config.ENEMY_TYPES.get(enemy_type, config.ENEMY_TYPES["grunt"])
+        
+        # 初始化物理实体(使用玩家尺寸)
+        super().__init__(x, y, 48, 64)
+        
+        self.enemy_type = enemy_type
+        
+        # 敌人属性
+        self.max_health = enemy_data["health"]
+        self.health = self.max_health
+        self.damage = enemy_data["damage"]
+        self.move_speed = enemy_data["move_speed"]
+        self.score_value = enemy_data.get("score_value", 100)
+        
+        # AI状态
+        self.state = EnemyState.PATROL
+        self.facing_right = True
+        
+        # 武器系统
+        weapon_type = enemy_data.get("weapon", "pistol")
+        self.weapon = self._create_weapon(weapon_type)
+        
+        # 巡逻系统
+        self.patrol_points: List[Tuple[float, float]] = []
+        self.current_patrol_index = 0
+        self.patrol_wait_time = 0
+        self.patrol_wait_duration = 2.0  # 秒
+        
+        # 警戒系统
+        self.alert_level = 0.0  # 0-1
+        self.alert_threshold = 0.7
+        self.vision_range = 300  # 像素
+        self.vision_angle = 90   # 度数
+        
+        # 战斗系统
+        self.target = None  # 目标玩家引用
+        self.last_seen_pos = None
+        self.search_timer = 0
+        self.search_duration = 5.0  # 秒
+        self.attack_cooldown = 0
+        
+        # 撤退系统
+        self.retreat_health_threshold = 0.3  # 30%血量撤退
+        self.retreat_destination = None
+        
+        # 动画
+        self.animation_frame = 0
+        self.animation_timer = 0
+        self.animation_speed = 0.1
+        
+        # 创建精灵(占位)
+        self._load_sprites()
+    
+    def _create_weapon(self, weapon_type: str) -> Weapon:
+        """根据类型创建武器"""
+        weapon_map = {
+            "pistol": WeaponType.PISTOL,
+            "rifle": WeaponType.RIFLE,
+            "sniper": WeaponType.SNIPER,
+            "shotgun": WeaponType.SHOTGUN
+        }
+        wtype = weapon_map.get(weapon_type, WeaponType.PISTOL)
+        return Weapon(wtype)
+    
+    def _load_sprites(self):
+        """加载敌人精灵(占位)"""
+        # 根据敌人类型设置颜色
+        colors = {
+            "grunt": (255, 100, 100),    # 红色
+            "elite": (255, 150, 0),      # 橙色
+            "boss": (180, 0, 0)          # 深红
+        }
+        color = colors.get(self.enemy_type, (255, 100, 100))
+        
+        self.sprites = {}
+        for state in EnemyState:
+            frames = []
+            for i in range(4):
+                surface = pygame.Surface((int(self.width), int(self.height)), 
+                                        pygame.SRCALPHA)
+                brightness = 1.0 - (i * 0.1)
+                adjusted_color = tuple(int(c * brightness) for c in color)
+                pygame.draw.rect(surface, adjusted_color, 
+                               surface.get_rect(), border_radius=5)
+                # 绘制敌人类型标识
+                font = pygame.font.Font(None, 20)
+                text = font.render(self.enemy_type[0].upper(), True, (255, 255, 255))
+                text_rect = text.get_rect(center=(self.width // 2, self.height // 2))
+                surface.blit(text, text_rect)
+                frames.append(surface)
+            self.sprites[state] = frames
+    
+    def set_patrol_points(self, points: List[Tuple[float, float]]):
+        """设置巡逻路径"""
+        self.patrol_points = points
+        if points:
+            self.current_patrol_index = 0
+    
+    def can_see_target(self, target_pos: Tuple[float, float], 
+                      obstacles: Optional[List[AABB]] = None) -> bool:
+        """
+        检测是否能看到目标
+        
+        Args:
+            target_pos: 目标位置
+            obstacles: 障碍物列表(用于视线遮挡检测)
+        
+        Returns:
+            是否在视野内
+        """
+        # 计算距离
+        dx = target_pos[0] - self.position.x
+        dy = target_pos[1] - self.position.y
+        distance = math.sqrt(dx * dx + dy * dy)
+        
+        # 超出视野范围
+        if distance > self.vision_range:
+            return False
+        
+        # 计算角度
+        angle = math.degrees(math.atan2(dy, dx))
+        if not self.facing_right:
+            angle = 180 - angle
+        
+        # 检测是否在视锥内
+        if abs(angle) > self.vision_angle / 2:
+            return False
+        
+        # TODO: 射线检测视线遮挡(需要物理引擎支持)
+        
+        return True
+    
+    def update_patrol(self, delta_time: float):
+        """更新巡逻状态"""
+        if not self.patrol_points:
+            # 无巡逻点,原地等待
+            self.velocity.x = 0
+            return
+        
+        target_point = self.patrol_points[self.current_patrol_index]
+        
+        # 到达巡逻点
+        if abs(self.position.x - target_point[0]) < 10:
+            self.velocity.x = 0
+            self.patrol_wait_time += delta_time
+            
+            if self.patrol_wait_time >= self.patrol_wait_duration:
+                # 前往下一个巡逻点
+                self.patrol_wait_time = 0
+                self.current_patrol_index = (self.current_patrol_index + 1) % len(self.patrol_points)
+        else:
+            # 移动到巡逻点
+            direction = 1 if target_point[0] > self.position.x else -1
+            self.velocity.x = direction * self.move_speed * 0.5
+            self.facing_right = direction > 0
+    
+    def update_alert(self, delta_time: float):
+        """更新警戒状态"""
+        # 警戒级别自然衰减
+        self.alert_level = max(0, self.alert_level - delta_time * 0.2)
+        
+        # 搜索目标
+        if self.last_seen_pos:
+            dx = self.last_seen_pos[0] - self.position.x
+            if abs(dx) > 20:
+                direction = 1 if dx > 0 else -1
+                self.velocity.x = direction * self.move_speed * 0.7
+                self.facing_right = direction > 0
+            else:
+                self.velocity.x = 0
+            
+            # 搜索超时
+            self.search_timer += delta_time
+            if self.search_timer >= self.search_duration:
+                self.search_timer = 0
+                self.last_seen_pos = None
+                self.state = EnemyState.PATROL
+        else:
+            self.velocity.x = 0
+        
+        # 警戒级别下降到阈值以下,返回巡逻
+        if self.alert_level < 0.3:
+            self.state = EnemyState.PATROL
+    
+    def update_combat(self, delta_time: float):
+        """更新战斗状态"""
+        if not self.target or not self.target.is_alive():
+            self.state = EnemyState.ALERT
+            return
+        
+        target_pos = (self.target.position.x, self.target.position.y)
+        
+        # 保持与目标的距离
+        dx = target_pos[0] - self.position.x
+        dy = target_pos[1] - self.position.y
+        distance = math.sqrt(dx * dx + dy * dy)
+        
+        # 根据武器类型调整最佳距离
+        optimal_distance = 150  # 默认
+        if self.weapon.weapon_type == WeaponType.SNIPER:
+            optimal_distance = 250
+        elif self.weapon.weapon_type == WeaponType.SHOTGUN:
+            optimal_distance = 80
+        
+        if distance > optimal_distance + 30:
+            # 靠近目标
+            direction = 1 if dx > 0 else -1
+            self.velocity.x = direction * self.move_speed
+            self.facing_right = direction > 0
+        elif distance < optimal_distance - 30:
+            # 远离目标
+            direction = -1 if dx > 0 else 1
+            self.velocity.x = direction * self.move_speed * 0.5
+            self.facing_right = not (direction > 0)
+        else:
+            # 停止移动,专注射击
+            self.velocity.x = 0
+        
+        # 攻击冷却
+        if self.attack_cooldown > 0:
+            self.attack_cooldown -= delta_time
+        else:
+            # 射击
+            if self.can_see_target(target_pos):
+                muzzle_pos = self.get_muzzle_position()
+                aim_dir = pygame.math.Vector2(dx, dy).normalize()
+                
+                # 添加一定的不准确度(非boss)
+                if self.enemy_type != "boss":
+                    spread = random.uniform(-5, 5)
+                    aim_dir = aim_dir.rotate(spread)
+                
+                self.weapon.shoot(muzzle_pos, aim_dir, owner_id=-1)
+                self.attack_cooldown = 1.0 / self.weapon.fire_rate
+        
+        # 检查是否需要撤退
+        health_ratio = self.health / self.max_health
+        if health_ratio < self.retreat_health_threshold:
+            self.state = EnemyState.RETREAT
+    
+    def update_retreat(self, delta_time: float):
+        """更新撤退状态"""
+        if not self.retreat_destination:
+            # 选择撤退目标(远离玩家)
+            if self.target:
+                dx = self.position.x - self.target.position.x
+                retreat_x = self.position.x + (100 if dx > 0 else -100)
+                self.retreat_destination = (retreat_x, self.position.y)
+        
+        if self.retreat_destination:
+            dx = self.retreat_destination[0] - self.position.x
+            if abs(dx) > 20:
+                direction = 1 if dx > 0 else -1
+                self.velocity.x = direction * self.move_speed * 1.2  # 撤退速度加快
+                self.facing_right = direction > 0
+            else:
+                # 到达撤退点,尝试换弹
+                self.velocity.x = 0
+                if self.weapon.can_reload():
+                    self.weapon.start_reload()
+                self.retreat_destination = None
+                # 血量回复后回到战斗
+                if self.health / self.max_health > 0.5:
+                    self.state = EnemyState.COMBAT
+    
+    def update(self, delta_time: float, physics_engine: PhysicsEngine,
+              players: List, tilemap: Optional[List[List[int]]] = None):
+        """
+        更新敌人
+        
+        Args:
+            delta_time: 时间步长
+            physics_engine: 物理引擎
+            players: 玩家列表
+            tilemap: 瓦片地图
+        """
+        if self.state == EnemyState.DEATH:
+            return
+        
+        # 更新物理
+        physics_engine.update_body(self, delta_time)
+        
+        # 瓦片地图碰撞
+        if tilemap:
+            collisions = physics_engine.check_tilemap_collision(self, tilemap)
+            for collision in collisions:
+                physics_engine.resolve_collision(self, collision)
+        
+        # 检测玩家
+        for player in players:
+            if player.is_alive():
+                player_pos = (player.position.x, player.position.y)
+                if self.can_see_target(player_pos):
+                    self.target = player
+                    self.last_seen_pos = player_pos
+                    self.alert_level = min(1.0, self.alert_level + delta_time * 0.5)
+                    
+                    if self.alert_level >= self.alert_threshold:
+                        if self.state != EnemyState.COMBAT and self.state != EnemyState.RETREAT:
+                            self.state = EnemyState.COMBAT
+        
+        # 状态机更新
+        if self.state == EnemyState.PATROL:
+            self.update_patrol(delta_time)
+        elif self.state == EnemyState.ALERT:
+            self.update_alert(delta_time)
+        elif self.state == EnemyState.COMBAT:
+            self.update_combat(delta_time)
+        elif self.state == EnemyState.RETREAT:
+            self.update_retreat(delta_time)
+        
+        # 更新武器
+        self.weapon.update(delta_time)
+        self.weapon.update_bullets(delta_time, physics_engine, tilemap)
+        
+        # 更新动画
+        self._update_animation(delta_time)
+    
+    def _update_animation(self, delta_time: float):
+        """更新动画帧"""
+        self.animation_timer += delta_time
+        if self.animation_timer >= self.animation_speed:
+            self.animation_timer = 0
+            self.animation_frame += 1
+            if self.animation_frame >= len(self.sprites[self.state]):
+                self.animation_frame = 0
+    
+    def render(self, screen: pygame.Surface, camera_offset: tuple = (0, 0)):
+        """
+        渲染敌人
+        
+        Args:
+            screen: 渲染目标
+            camera_offset: 摄像机偏移
+        """
+        if self.state == EnemyState.DEATH:
+            return
+        
+        # 获取当前帧精灵
+        sprite = self.sprites[self.state][self.animation_frame]
+        
+        # 水平翻转
+        if not self.facing_right:
+            sprite = pygame.transform.flip(sprite, True, False)
+        
+        # 渲染位置
+        render_pos = (
+            int(self.position.x - camera_offset[0]),
+            int(self.position.y - camera_offset[1])
+        )
+        
+        screen.blit(sprite, render_pos)
+        
+        # 渲染血量条
+        self._render_healthbar(screen, render_pos)
+        
+        # 渲染状态指示器(调试用)
+        self._render_state_indicator(screen, render_pos)
+        
+        # 渲染武器子弹
+        self.weapon.render_bullets(screen, camera_offset)
+    
+    def _render_healthbar(self, screen: pygame.Surface, pos: tuple):
+        """渲染血量条"""
+        bar_width = int(self.width)
+        bar_height = 4
+        bar_x = pos[0]
+        bar_y = pos[1] - 8
+        
+        # 背景(红色)
+        pygame.draw.rect(screen, (100, 0, 0),
+                        (bar_x, bar_y, bar_width, bar_height))
+        
+        # 当前血量(绿色/黄色/红色)
+        health_ratio = max(0, self.health / self.max_health)
+        current_width = int(bar_width * health_ratio)
+        
+        if health_ratio > 0.6:
+            color = (0, 200, 0)
+        elif health_ratio > 0.3:
+            color = (200, 200, 0)
+        else:
+            color = (200, 0, 0)
+        
+        pygame.draw.rect(screen, color,
+                        (bar_x, bar_y, current_width, bar_height))
+    
+    def _render_state_indicator(self, screen: pygame.Surface, pos: tuple):
+        """渲染状态指示器"""
+        state_colors = {
+            EnemyState.PATROL: (100, 100, 255),
+            EnemyState.ALERT: (255, 255, 0),
+            EnemyState.COMBAT: (255, 0, 0),
+            EnemyState.RETREAT: (255, 128, 0)
+        }
+        color = state_colors.get(self.state, (255, 255, 255))
+        
+        indicator_size = 6
+        indicator_pos = (pos[0] + self.width - indicator_size - 2, pos[1] + 2)
+        pygame.draw.circle(screen, color, 
+                          (int(indicator_pos[0] + indicator_size/2), 
+                           int(indicator_pos[1] + indicator_size/2)),
+                          indicator_size // 2)
+    
+    def get_muzzle_position(self) -> Tuple[float, float]:
+        """获取枪口位置"""
+        offset_x = 20 if self.facing_right else -20
+        offset_y = 15
+        return (
+            self.position.x + self.width / 2 + offset_x,
+            self.position.y + offset_y
+        )
+    
+    def take_damage(self, damage: int):
+        """
+        受到伤害
+        
+        Args:
+            damage: 伤害值
+        """
+        if self.state == EnemyState.DEATH:
+            return
+        
+        self.health -= damage
+        self.health = max(0, self.health)
+        
+        # 提升警戒级别
+        self.alert_level = min(1.0, self.alert_level + 0.3)
+        
+        if self.health <= 0:
+            self.state = EnemyState.DEATH
+        elif self.state == EnemyState.PATROL:
+            self.state = EnemyState.ALERT
+    
+    def is_alive(self) -> bool:
+        """检查是否存活"""
+        return self.health > 0 and self.state != EnemyState.DEATH

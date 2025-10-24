@@ -1,0 +1,421 @@
+"""
+武器系统 - 处理射击、弹药、弹道
+"""
+
+import sys
+from pathlib import Path
+# 添加项目根目录到sys.path
+_project_root = Path(__file__).parent.parent.parent.parent
+if str(_project_root) not in sys.path:
+    sys.path.insert(0, str(_project_root))
+
+import pygame
+from typing import List, Optional, Dict
+from enum import Enum
+import time
+from gamecenter.deltaOperation.utils.enhanced_visuals import get_particle_system
+
+from gamecenter.deltaOperation import config
+from gamecenter.deltaOperation.core.physics import PhysicsBody, PhysicsEngine
+
+
+class WeaponType(Enum):
+    """武器类型枚举"""
+    PISTOL = "pistol"
+    RIFLE = "rifle"
+    SNIPER = "sniper"
+    SHOTGUN = "shotgun"
+
+
+class Bullet(PhysicsBody):
+    """
+    子弹类
+    """
+    
+    def __init__(self, x: float, y: float, direction: pygame.math.Vector2,
+                 speed: float, damage: int, owner_id: int):
+        """
+        初始化子弹
+        
+        Args:
+            x: 初始X坐标
+            y: 初始Y坐标
+            direction: 飞行方向(单位向量)
+            speed: 飞行速度
+            damage: 伤害值
+            owner_id: 发射者ID
+        """
+        super().__init__(x, y, 8, 4)  # 子弹尺寸
+        
+        self.direction = direction.normalize()
+        self.speed = speed
+        self.damage = damage
+        self.owner_id = owner_id
+        
+        # 设置初始速度
+        self.velocity = self.direction * speed
+        self.gravity_enabled = False  # 默认不受重力影响
+        
+        # 生命周期
+        self.lifetime = 3.0  # 3秒后自动销毁
+        self.alive_time = 0
+        
+        # 是否击中目标
+        self.hit = False
+        
+        # 创建精灵
+        self._create_sprite()
+    
+    def _create_sprite(self):
+        """创建子弹精灵"""
+        self.sprite = pygame.Surface((int(self.width), int(self.height)), 
+                                    pygame.SRCALPHA)
+        # 黄色子弹
+        pygame.draw.ellipse(self.sprite, (255, 255, 0), 
+                           self.sprite.get_rect())
+        # 添加发光效果
+        pygame.draw.ellipse(self.sprite, (255, 255, 128), 
+                           self.sprite.get_rect().inflate(-2, -2))
+    
+    def update(self, delta_time: float, physics_engine: PhysicsEngine,
+              tilemap: Optional[List[List[int]]] = None):
+        """
+        更新子弹
+        
+        Args:
+            delta_time: 时间步长
+            physics_engine: 物理引擎
+            tilemap: 瓦片地图
+        """
+        if self.hit:
+            return
+        
+        # 更新生命周期
+        self.alive_time += delta_time
+        if self.alive_time >= self.lifetime:
+            self.hit = True
+            return
+        
+        # 更新物理
+        physics_engine.update_body(self, delta_time)
+        
+        # 检测瓦片地图碰撞
+        if tilemap:
+            collisions = physics_engine.check_tilemap_collision(self, tilemap)
+            if collisions:
+                self.hit = True
+    
+    def render(self, screen: pygame.Surface, camera_offset: tuple = (0, 0)):
+        """
+        渲染子弹
+        
+        Args:
+            screen: 渲染目标
+            camera_offset: 摄像机偏移
+        """
+        if self.hit:
+            return
+        
+        # 计算旋转角度(根据飞行方向)
+        angle = pygame.math.Vector2(1, 0).angle_to(self.direction)
+        rotated_sprite = pygame.transform.rotate(self.sprite, -angle)
+        
+        # 渲染位置
+        render_pos = (
+            int(self.position.x - camera_offset[0] - rotated_sprite.get_width() / 2),
+            int(self.position.y - camera_offset[1] - rotated_sprite.get_height() / 2)
+        )
+        
+        screen.blit(rotated_sprite, render_pos)
+    
+    def is_active(self) -> bool:
+        """检查子弹是否活跃"""
+        return not self.hit and self.alive_time < self.lifetime
+
+
+class Weapon:
+    """
+    武器基类
+    """
+    
+    def __init__(self, weapon_type: WeaponType):
+        """
+        初始化武器
+        
+        Args:
+            weapon_type: 武器类型
+        """
+        self.weapon_type = weapon_type
+        
+        # 从配置加载武器数据
+        weapon_data = config.WEAPON_DATABASE[weapon_type.value]
+        
+        self.name = weapon_data["name"]
+        self.damage = weapon_data["damage"]
+        self.fire_rate = weapon_data["fire_rate"]  # 发/秒
+        self.bullet_speed = weapon_data["bullet_speed"]
+        self.magazine_size = weapon_data["magazine_size"]
+        self.reload_time = weapon_data["reload_time"]
+        self.accuracy = weapon_data["accuracy"]  # 0-1, 1为完美精度
+        
+        # 弹药状态
+        self.current_ammo = self.magazine_size
+        self.reserve_ammo = weapon_data.get("reserve_ammo", 999)  # 备弹
+        
+        # 射击状态
+        self.last_shot_time = 0
+        self.is_reloading = False
+        self.reload_start_time = 0
+        
+        # 子弹列表
+        self.bullets: List[Bullet] = []
+    
+    def can_shoot(self) -> bool:
+        """检查是否可以射击"""
+        current_time = time.time()
+        fire_interval = 1.0 / self.fire_rate
+        
+        return (not self.is_reloading and 
+                self.current_ammo > 0 and
+                current_time - self.last_shot_time >= fire_interval)
+    
+    def shoot(self, position: tuple, direction: pygame.math.Vector2, 
+             owner_id: int = 0) -> Optional[Bullet]:
+        """
+        射击
+        
+        Args:
+            position: 射击位置
+            direction: 射击方向
+            owner_id: 射击者ID
+            
+        Returns:
+            创建的子弹对象,如果无法射击返回None
+        """
+        if not self.can_shoot():
+            return None
+            
+        # 🆕 粒子效果: 枪口火焰 + 弹壳抛出
+        particle_sys = get_particle_system()
+        weapon_type_map = {
+            "M9 Pistol": "pistol",
+            "M4A1": "rifle",
+            "SPAS-12": "shotgun",
+            "M24": "sniper"
+        }
+        
+        # 计算射击角度
+        import math
+        shoot_angle = math.degrees(math.atan2(direction.y, direction.x))
+        
+        # 枪口火焰效果
+        particle_sys.create_muzzle_flash(
+            x=position[0],
+            y=position[1],
+            angle=shoot_angle,
+            weapon_type=weapon_type_map.get(self.name, "rifle")
+        )
+        
+        # 弹壳抛出效果
+        particle_sys.create_bullet_shell(
+            x=position[0],
+            y=position[1],
+            angle=shoot_angle,
+            weapon_type=weapon_type_map.get(self.name, "rifle")
+        )
+        
+        # 应用精度散布
+        spread_angle = (1.0 - self.accuracy) * 10  # 最大10度散布
+        import random
+        angle_offset = random.uniform(-spread_angle, spread_angle)
+        
+        # 旋转方向向量
+        spread_direction = direction.rotate(angle_offset)
+        
+        # 创建子弹
+        bullet = Bullet(position[0], position[1], spread_direction,
+                       self.bullet_speed, self.damage, owner_id)
+        
+        # 特殊武器逻辑
+        if self.weapon_type == WeaponType.SHOTGUN:
+            # 霰弹枪发射多颗子弹
+            self.bullets.append(bullet)
+            for i in range(5):  # 额外5颗子弹
+                spread = random.uniform(-15, 15)
+                pellet_direction = direction.rotate(spread)
+                pellet = Bullet(position[0], position[1], pellet_direction,
+                              self.bullet_speed, self.damage // 6, owner_id)
+                self.bullets.append(pellet)
+        else:
+            self.bullets.append(bullet)
+        
+        # 更新状态
+        self.current_ammo -= 1
+        self.last_shot_time = time.time()
+        
+        return bullet
+    
+    def can_reload(self) -> bool:
+        """检查是否可以换弹"""
+        return (not self.is_reloading and 
+                self.current_ammo < self.magazine_size and
+                self.reserve_ammo > 0)
+    
+    def start_reload(self):
+        """开始换弹"""
+        if not self.can_reload():
+            return
+        
+        self.is_reloading = True
+        self.reload_start_time = time.time()
+    
+    def reload(self):
+        """完成换弹"""
+        if not self.is_reloading:
+            return
+        
+        # 计算需要装填的子弹数
+        ammo_needed = self.magazine_size - self.current_ammo
+        ammo_to_load = min(ammo_needed, self.reserve_ammo)
+        
+        # 装填子弹
+        self.current_ammo += ammo_to_load
+        self.reserve_ammo -= ammo_to_load
+        
+        self.is_reloading = False
+    
+    def update(self, delta_time: float):
+        """
+        更新武器状态
+        
+        Args:
+            delta_time: 时间步长
+        """
+        # 检查换弹是否完成
+        if self.is_reloading:
+            current_time = time.time()
+            if current_time - self.reload_start_time >= self.reload_time:
+                self.reload()
+        
+        # 清理已销毁的子弹
+        self.bullets = [b for b in self.bullets if b.is_active()]
+    
+    def update_bullets(self, delta_time: float, physics_engine: PhysicsEngine,
+                      tilemap: Optional[List[List[int]]] = None):
+        """
+        更新所有子弹
+        
+        Args:
+            delta_time: 时间步长
+            physics_engine: 物理引擎
+            tilemap: 瓦片地图
+        """
+        for bullet in self.bullets:
+            bullet.update(delta_time, physics_engine, tilemap)
+    
+    def render_bullets(self, screen: pygame.Surface, camera_offset: tuple = (0, 0)):
+        """
+        渲染所有子弹
+        
+        Args:
+            screen: 渲染目标
+            camera_offset: 摄像机偏移
+        """
+        for bullet in self.bullets:
+            bullet.render(screen, camera_offset)
+    
+    def get_active_bullets(self) -> List[Bullet]:
+        """获取所有活跃子弹"""
+        return [b for b in self.bullets if b.is_active()]
+    
+    def add_ammo(self, amount: int):
+        """
+        添加备弹
+        
+        Args:
+            amount: 数量
+        """
+        self.reserve_ammo += amount
+    
+    def to_dict(self) -> Dict:
+        """
+        序列化为字典
+        
+        Returns:
+            武器数据字典
+        """
+        return {
+            "weapon_type": self.weapon_type.value,
+            "current_ammo": self.current_ammo,
+            "reserve_ammo": self.reserve_ammo,
+            "is_reloading": self.is_reloading
+        }
+    
+    @classmethod
+    def from_dict(cls, data: Dict) -> 'Weapon':
+        """
+        从字典反序列化
+        
+        Args:
+            data: 武器数据字典
+            
+        Returns:
+            武器对象
+        """
+        weapon_type = WeaponType(data["weapon_type"])
+        weapon = cls(weapon_type)
+        weapon.current_ammo = data["current_ammo"]
+        weapon.reserve_ammo = data["reserve_ammo"]
+        weapon.is_reloading = data["is_reloading"]
+        
+        return weapon
+
+
+class WeaponFactory:
+    """
+    武器工厂
+    用于创建不同类型的武器
+    """
+    
+    @staticmethod
+    def create_weapon(weapon_type: WeaponType) -> Weapon:
+        """
+        创建武器
+        
+        Args:
+            weapon_type: 武器类型
+            
+        Returns:
+            武器对象
+        """
+        return Weapon(weapon_type)
+    
+    @staticmethod
+    def create_pistol() -> Weapon:
+        """创建手枪"""
+        return Weapon(WeaponType.PISTOL)
+    
+    @staticmethod
+    def create_rifle() -> Weapon:
+        """创建步枪"""
+        return Weapon(WeaponType.RIFLE)
+    
+    @staticmethod
+    def create_sniper() -> Weapon:
+        """创建狙击枪"""
+        return Weapon(WeaponType.SNIPER)
+    
+    @staticmethod
+    def create_shotgun() -> Weapon:
+        """创建霰弹枪"""
+        return Weapon(WeaponType.SHOTGUN)
+    
+    @staticmethod
+    def get_all_weapons() -> List[Weapon]:
+        """获取所有武器"""
+        return [
+            Weapon(WeaponType.PISTOL),
+            Weapon(WeaponType.RIFLE),
+            Weapon(WeaponType.SNIPER),
+            Weapon(WeaponType.SHOTGUN)
+        ]
