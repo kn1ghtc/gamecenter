@@ -46,7 +46,8 @@ Game Center 集成了五款 Python 游戏（Chess、StreetBattle、Stickman Game
 2. [目录结构](#目录结构)
 3. [环境准备](#环境准备)
 4. [运行方式概览](#运行方式概览)
-5. [游戏模块总览](#游戏模块总览)
+5. [Web 游戏中心 (webGameCenter)](#web-游戏中心-webgamecenter-🆕)
+6. [游戏模块总览](#游戏模块总览)
    1. [Chess](#chess)
    2. [Gomoku（五子棋）](#gomoku五子棋)
    3. [Military Chess（中国军棋）](#military-chess中国军棋)
@@ -55,10 +56,10 @@ Game Center 集成了五款 Python 游戏（Chess、StreetBattle、Stickman Game
    6. [Stickman Game](#stickman-game)
    7. [Super Mario Bros](#super-mario-bros)
    8. [Tank Battle](#tank-battle)
-6. [工具与自动化脚本](#工具与自动化脚本)
-7. [质量保障与测试](#质量保障与测试)
-8. [贡献流程](#贡献流程)
-9. [许可证与资源来源](#许可证与资源来源)
+7. [工具与自动化脚本](#工具与自动化脚本)
+8. [质量保障与测试](#质量保障与测试)
+9. [贡献流程](#贡献流程)
+10. [许可证与资源来源](#许可证与资源来源)
 
 ---
 
@@ -76,6 +77,7 @@ Game Center 集成了五款 Python 游戏（Chess、StreetBattle、Stickman Game
 ```
 gamecenter/
 ├─ README.md                 # 本文档（唯一项目文档）
+├─ webGameCenter/            # 🆕 Web网页游戏中心（Flask + HTML5）
 ├─ chess/                    # 国际象棋 + AI 陪伴系统
 ├─ gomoku/                   # 五子棋 + 三级智能 AI
 ├─ militaryChess/            # 中国军棋（陆战棋）+ 智能 AI
@@ -148,6 +150,102 @@ VS Code 提示：
    - Super Mario：`cd superMario; python main.py`
    - Tank Battle：`cd tankBattle; python main.py`
 3. 如需运行工具或测试，参见相应章节。
+
+---
+
+## Web 游戏中心 (webGameCenter) 🆕
+
+**概览**：现代化的网页游戏平台，基于 Flask 后端 + HTML5 前端，集成多款经典网页小游戏。提供完整的用户管理、游戏分类、积分排行系统。
+
+**核心功能**
+- ✅ **用户系统**：注册、登录、资料编辑（JWT 认证）
+- ✅ **游戏中心**：分类浏览、在线游戏、进度保存
+- ✅ **排行系统**：全球排行榜、游戏排行、个人排名
+- ✅ **5+ 款游戏**：
+  - 🎮 动作游戏：魂斗罗 (Contra)、拳皇格斗 (KOF)
+  - 🎯 射击游戏：坦克大战 (Tank Battle)、太空射击
+  - 🎰 益智游戏：2048、推箱子
+  - 🐍 街机游戏：贪吃蛇、吃豆人
+  - 🦅 休闲游戏：飞鸟、恐龙跑酷
+
+**快速开始**
+```powershell
+cd gamecenter/webGameCenter
+pip install -r requirements.txt
+python run.py
+# 访问 http://localhost:5000
+```
+
+**项目结构**
+```
+webGameCenter/
+├─ app.py                   # Flask 主应用
+├─ config.py                # 配置与游戏定义
+├─ run.py                   # 启动脚本
+├─ requirements.txt         # Python 依赖
+├─ backend/
+│  ├─ database/db.py       # SQLAlchemy 数据模型
+│  └─ routes/
+│     ├─ auth.py           # 认证 API
+│     ├─ games.py          # 游戏 API
+│     └─ scores.py         # 积分 API
+└─ frontend/
+   ├─ index.html           # 首页
+   ├─ login.html           # 登录页
+   ├─ game.html            # 游戏容器
+   ├─ leaderboard.html     # 排行榜
+   ├─ dashboard.html       # 个人中心
+   ├─ css/style.css        # 样式表
+   ├─ js/api.js            # API 客户端
+   ├─ js/ui.js             # UI 工具函数
+   ├─ js/main.js           # 主应用逻辑
+   └─ games/               # 5+ 款游戏
+      ├─ action/
+      ├─ shooting/
+      ├─ arcade/
+      ├─ puzzle/
+      └─ casual/
+```
+
+**API 文档**
+- 认证：`POST /api/auth/register`, `POST /api/auth/login`
+- 游戏：`GET /api/games/categories`, `GET /api/games/list`
+- 记录：`POST /api/games/record`, `GET /api/games/records`
+- 排名：`GET /api/scores/leaderboard`, `GET /api/scores/game/<id>`
+
+**前端框架**
+- Bootstrap 5：响应式设计
+- Vanilla JavaScript：轻量级交互
+- Canvas 2D：游戏渲染
+- JWT：客户端认证
+
+**后端栈**
+- Flask 3.0：Web 框架
+- SQLAlchemy 2.0：ORM
+- Flask-JWT-Extended：认证
+- SQLite/PostgreSQL：数据库
+
+**文档**
+- `README.md`：完整项目文档
+- `QUICKSTART.md`：5分钟快速开始
+- `TECHNICAL.md`：技术实现细节
+- `COMPLETION_REPORT.md`：项目交付清单
+- `verify_setup.py`：环境验证脚本
+
+**部署**
+```powershell
+# 验证环境
+python verify_setup.py
+
+# 数据库初始化
+python manage.py init_db
+
+# 生产启动
+set FLASK_ENV=production
+python run.py --host 0.0.0.0 --port 8000
+```
+
+详见 `webGameCenter/QUICKSTART.md` 和 `webGameCenter/README.md`。
 
 ---
 

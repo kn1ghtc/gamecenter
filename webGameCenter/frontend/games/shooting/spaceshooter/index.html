@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>太空射击 - Space Shooter</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a0033 0%, #330066 100%);
+            font-family: Arial, sans-serif;
+            color: #fff;
+        }
+        
+        .game-container {
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #00ff00;
+        }
+        
+        #gameCanvas {
+            border: 3px solid #00ff00;
+            background-color: #000;
+            display: block;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 20px #00ff00;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        
+        .info-item {
+            background: rgba(0, 255, 0, 0.1);
+            padding: 10px 20px;
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        
+        .restart-btn {
+            background-color: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .restart-btn:hover {
+            background-color: #00cc00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🚀 太空射击 Space Shooter 🚀</h1>
+        <canvas id="gameCanvas" width="600" height="700"></canvas>
+        
+        <div class="game-info">
+            <div class="info-item">🎯 得分: <span id="score">0</span></div>
+            <div class="info-item">❤️ 生命: <span id="lives">3</span></div>
+            <div class="info-item">📊 关卡: <span id="level">1</span></div>
+        </div>
+        
+        <div class="controls">
+            <p>🎮 <strong>操作方式:</strong></p>
+            <p>← → 移动飞船 | 空格/点击 射击</p>
+            <p>按 R 重新开始 | 按 P 暂停/继续</p>
+        </div>
+        
+        <button class="restart-btn" onclick="location.reload()">🔄 重新开始</button>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>推箱子 - Sokoban</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #8B7355 0%, #D2B48C 100%);
+            font-family: Arial, sans-serif;
+            color: #fff;
+        }
+        
+        .game-container {
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+        
+        #gameCanvas {
+            border: 5px solid #654321;
+            background-color: #f5deb3;
+            display: block;
+            margin: 0 auto 20px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.4);
+            image-rendering: pixelated;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        
+        .info-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border: 2px solid #fff;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .controls {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
+            border: 2px solid #fff;
+        }
+        
+        .restart-btn {
+            background-color: #654321;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 10px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .restart-btn:hover {
+            background-color: #8B5A2B;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.4);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>📦 推箱子 Sokoban 📦</h1>
+        <canvas id="gameCanvas" width="480" height="480"></canvas>
+        
+        <div class="game-info">
+            <div class="info-item">🎯 关卡: <span id="level">1</span></div>
+            <div class="info-item">📊 步数: <span id="moves">0</span></div>
+            <div class="info-item">🎁 目标: <span id="progress">0</span>/<span id="total">3</span></div>
+        </div>
+        
+        <div class="controls">
+            <p>🎮 <strong>操作方式:</strong></p>
+            <p>← → ↑ ↓ 移动 | 空格 重启 | R 下一关</p>
+            <p>推动所有箱子到目标位置</p>
+        </div>
+        
+        <button class="restart-btn" onclick="location.reload()">🔄 重新开始</button>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>

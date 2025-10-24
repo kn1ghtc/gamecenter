@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>贪吃蛇 - 网页游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #222; }
+        #gameContainer { text-align: center; }
+        #gameCanvas { border: 3px solid #0F0; background: #000; display: block; margin: 20px auto; box-shadow: 0 0 20px rgba(0, 255, 0, 0.5); }
+        #score { color: #0F0; font-size: 24px; font-weight: bold; font-family: Arial; margin-bottom: 10px; }
+        .controls { color: #999; font-size: 14px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="score">分数: 0</div>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div class="controls">方向键或 WASD 移动 | Space 暂停</div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>

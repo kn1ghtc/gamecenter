@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>排行榜 - 网页游戏中心</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@6.4.0/css/all.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-gamepad"></i> 网页游戏中心
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/leaderboard.html">排行榜</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard.html">我的信息</a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm" id="logoutBtn" style="display:none;">登出</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-5">
+        <!-- 排行榜标题 -->
+        <section class="mb-5">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-4 fw-bold">
+                        <i class="fas fa-trophy" style="color: #ffc107;"></i> 全球排行榜
+                    </h1>
+                    <p class="lead text-muted">与全球玩家一起竞争排名！</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="card" style="border-radius: 10px;">
+                        <div class="card-body">
+                            <div class="h6 text-muted mb-1">你的排名</div>
+                            <div class="h3 fw-bold" id="myRank">-</div>
+                            <small class="text-muted" id="myPercentile">-</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 选项卡 -->
+        <ul class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="global-tab" data-bs-toggle="tab" data-bs-target="#global" type="button" role="tab">全球排行</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="game-tab" data-bs-toggle="tab" data-bs-target="#game" type="button" role="tab">游戏排行</button>
+            </li>
+        </ul>
+
+        <!-- 排行榜内容 -->
+        <div class="tab-content">
+            <!-- 全球排行 -->
+            <div class="tab-pane fade show active" id="global" role="tabpanel">
+                <div class="card" style="border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 leaderboard-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">排名</th>
+                                        <th style="width: 40%;">玩家</th>
+                                        <th style="width: 25%;">总分</th>
+                                        <th style="width: 25%;">游戏次数</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="globalLeaderboardBody">
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4">
+                                            <div class="spinner"></div>
+                                            <p class="mt-2">加载中...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 游戏排行 -->
+            <div class="tab-pane fade" id="game" role="tabpanel">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">选择游戏</label>
+                        <select class="form-select" id="gameSelect">
+                            <option value="">选择游戏...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card" style="border-radius: 15px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0 leaderboard-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 10%;">排名</th>
+                                        <th style="width: 35%;">玩家</th>
+                                        <th style="width: 20%;">最高分</th>
+                                        <th style="width: 20%;">平均分</th>
+                                        <th style="width: 15%;">游戏次数</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gameLeaderboardBody">
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4 text-muted">
+                                            选择游戏以查看排行榜
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2024 网页游戏中心</p>
+        </div>
+    </footer>
+
+    <!-- 脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/ui.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 检查登录
+            if (!api.getToken()) {
+                showError('请先登录');
+                setTimeout(() => {
+                    window.location.href = '/login.html';
+                }, 2000);
+                return;
+            }
+
+            // 绑定登出事件
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                api.clearToken();
+                window.location.href = '/';
+            });
+
+            // 加载全球排行榜
+            await loadGlobalLeaderboard();
+
+            // 加载游戏列表
+            await loadGamesList();
+
+            // 绑定游戏选择事件
+            document.getElementById('gameSelect').addEventListener('change', async (e) => {
+                if (e.target.value) {
+                    await loadGameLeaderboard(e.target.value);
+                }
+            });
+
+            // 加载用户排名
+            await loadUserRank();
+
+            // 显示登出按钮
+            document.getElementById('logoutBtn').style.display = 'block';
+        });
+
+        // 加载全球排行榜
+        async function loadGlobalLeaderboard() {
+            try {
+                const leaderboard = await api.getLeaderboard(100);
+                const tbody = document.getElementById('globalLeaderboardBody');
+                
+                let html = '';
+                leaderboard.forEach((record, index) => {
+                    html += `
+                        <tr>
+                            <td>${getRankBadgeHTML(record.rank)}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                        ${record.username.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span>${record.username}</span>
+                                </div>
+                            </td>
+                            <td><strong>${formatNumber(record.total_score)}</strong></td>
+                            <td>${record.games_played}</td>
+                        </tr>
+                    `;
+                });
+                
+                tbody.innerHTML = html;
+            } catch (error) {
+                console.error('加载排行榜失败:', error);
+                showError('加载排行榜失败');
+            }
+        }
+
+        // 加载游戏列表
+        async function loadGamesList() {
+            try {
+                const categories = await api.getCategories();
+                const gameSelect = document.getElementById('gameSelect');
+                
+                for (const category of categories) {
+                    const categoryGames = await api.getCategoryGames(category.id);
+                    
+                    for (const game of categoryGames.games) {
+                        const option = document.createElement('option');
+                        option.value = game.game_id;
+                        option.textContent = `${game.name} (${category.name})`;
+                        gameSelect.appendChild(option);
+                    }
+                }
+            } catch (error) {
+                console.error('加载游戏列表失败:', error);
+            }
+        }
+
+        // 加载游戏排行榜
+        async function loadGameLeaderboard(gameId) {
+            try {
+                const leaderboard = await api.getGameLeaderboard(gameId, 50);
+                const tbody = document.getElementById('gameLeaderboardBody');
+                
+                let html = '';
+                leaderboard.forEach((record) => {
+                    html += `
+                        <tr>
+                            <td>${getRankBadgeHTML(record.rank)}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                                        ${record.username.charAt(0).toUpperCase()}
+                                    </div>
+                                    <span>${record.username}</span>
+                                </div>
+                            </td>
+                            <td><strong>${formatNumber(record.max_score)}</strong></td>
+                            <td>${formatNumber(Math.round(record.avg_score))}</td>
+                            <td>${record.play_count}</td>
+                        </tr>
+                    `;
+                });
+                
+                tbody.innerHTML = html;
+            } catch (error) {
+                console.error('加载游戏排行榜失败:', error);
+                showError('加载游戏排行榜失败');
+            }
+        }
+
+        // 加载用户排名
+        async function loadUserRank() {
+            try {
+                const rankData = await api.getUserRank();
+                document.getElementById('myRank').textContent = `#${rankData.rank}`;
+                document.getElementById('myPercentile').textContent = `前${rankData.percentile}%`;
+            } catch (error) {
+                console.error('加载用户排名失败:', error);
+            }
+        }
+    </script>
+</body>
+</html>

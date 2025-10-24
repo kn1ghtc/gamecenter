@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拳皇格斗 - 网页游戏</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #000; }
+        #gameContainer { position: relative; width: 800px; height: 500px; background: linear-gradient(to bottom, #1a0f00 0%, #000 100%); border: 3px solid #FFD700; overflow: hidden; }
+        .fighter { position: absolute; font-size: 80px; }
+        #player { left: 100px; bottom: 100px; }
+        #opponent { right: 100px; bottom: 100px; transform: scaleX(-1); }
+        #ui { position: absolute; top: 20px; width: 100%; text-align: center; color: #FFD700; font-size: 24px; font-weight: bold; }
+        .health-bar { position: absolute; top: 70px; width: 150px; height: 30px; border: 2px solid #FFD700; }
+        #playerHealth { left: 20px; }
+        #opponentHealth { right: 20px; }
+        .health-fill { height: 100%; background: #FFD700; width: 100%; }
+        .controls { position: absolute; bottom: 10px; width: 100%; text-align: center; color: #FFF; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="ui">拳皇格斗</div>
+        <div class="health-bar" id="playerHealth"><div class="health-fill"></div></div>
+        <div class="health-bar" id="opponentHealth"><div class="health-fill"></div></div>
+        <div id="player" class="fighter">🥋</div>
+        <div id="opponent" class="fighter">👤</div>
+        <div class="controls">A/D 移动 | Space 攻击 | W 跳跃</div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>

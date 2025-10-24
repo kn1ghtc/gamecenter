@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>吃豆人 - 网页游戏中心</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .game-container {
+            text-align: center;
+        }
+        h1 {
+            color: #fff;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+        canvas {
+            border: 3px solid #FFD700;
+            background: #000;
+            display: block;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+        }
+        .game-info {
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        .score-info {
+            margin: 20px 0;
+            background: rgba(255, 215, 0, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #FFD700;
+        }
+        .score {
+            font-size: 18px;
+            font-weight: bold;
+            color: #FFD700;
+        }
+        .controls {
+            margin-top: 20px;
+            color: #aaa;
+        }
+        button {
+            background: #FFD700;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #FFF;
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🎮 吃豆人</h1>
+        <canvas id="gameCanvas" width="448" height="496"></canvas>
+        <div class="score-info">
+            <div class="score">得分: <span id="score">0</span> | 等级: <span id="level">1</span></div>
+        </div>
+        <div class="controls">
+            <p>⬆️ ⬇️ ⬅️ ➡️ 移动 | 空格 暂停</p>
+            <button onclick="location.reload()">重新开始</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>

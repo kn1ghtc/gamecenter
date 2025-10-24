@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - 网页游戏中心</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@6.4.0/css/all.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-gamepad"></i> 网页游戏中心
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/leaderboard.html">排行榜</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/dashboard.html">我的信息</a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm" id="logoutBtn">登出</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-5">
+        <!-- 用户头部信息 -->
+        <div class="dashboard-card">
+            <div class="row align-items-center">
+                <div class="col-md-3 text-center">
+                    <div style="width: 100px; height: 100px; border-radius: 50%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center; color: white; font-size: 3rem; font-weight: bold; margin: 0 auto;">
+                        <span id="avatarChar">-</span>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <h2 id="username">-</h2>
+                    <p class="text-muted mb-1" id="email">-</p>
+                    <small class="text-muted" id="joinDate">-</small>
+                </div>
+                <div class="col-md-3">
+                    <button class="btn btn-primary w-100" data-bs-toggle="modal" data-bs-target="#editProfileModal">编辑资料</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 用户统计 -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #007bff;">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="totalScore">0</div>
+                        <div class="stat-label">总积分</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #28a745;">
+                        <i class="fas fa-gamepad"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="gamesPlayed">0</div>
+                        <div class="stat-label">游戏次数</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #ffc107;">
+                        <i class="fas fa-fire"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="avgScore">0</div>
+                        <div class="stat-label">平均分</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-icon" style="background: #dc3545;">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="stat-content">
+                        <div class="stat-value" id="maxScore">0</div>
+                        <div class="stat-label">最高分</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最佳游戏 -->
+        <div class="dashboard-card">
+            <h3>最佳游戏</h3>
+            <div id="bestGamesContainer" class="row g-3">
+                <p class="text-muted">加载中...</p>
+            </div>
+        </div>
+
+        <!-- 最近游戏 -->
+        <div class="dashboard-card">
+            <h3>最近游戏记录</h3>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>游戏</th>
+                            <th>分数</th>
+                            <th>时长</th>
+                            <th>状态</th>
+                            <th>日期</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recentGamesBody">
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <div class="spinner"></div>
+                                <p class="mt-2">加载中...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- 编辑资料模态框 -->
+    <div class="modal fade" id="editProfileModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">编辑资料</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editProfileForm">
+                        <div class="mb-3">
+                            <label for="editEmail" class="form-label">邮箱</label>
+                            <input type="email" class="form-control" id="editEmail" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="saveProfileBtn">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2024 网页游戏中心</p>
+        </div>
+    </footer>
+
+    <!-- 脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/ui.js"></script>
+    <script>
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // 检查登录
+            if (!api.getToken()) {
+                showError('请先登录');
+                setTimeout(() => {
+                    window.location.href = '/login.html';
+                }, 2000);
+                return;
+            }
+
+            // 加载用户信息
+            await loadUserProfile();
+
+            // 加载用户统计
+            await loadUserStats();
+
+            // 加载最佳游戏
+            await loadBestGames();
+
+            // 加载最近游戏
+            await loadRecentGames();
+
+            // 绑定事件
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                api.clearToken();
+                window.location.href = '/';
+            });
+
+            document.getElementById('saveProfileBtn').addEventListener('click', async () => {
+                const email = document.getElementById('editEmail').value;
+                try {
+                    await api.updateProfile(currentUser.avatar, email);
+                    showSuccess('资料更新成功');
+                    bootstrap.Modal.getInstance(document.getElementById('editProfileModal')).hide();
+                    await loadUserProfile();
+                } catch (error) {
+                    showError(error.message);
+                }
+            });
+        });
+
+        // 加载用户资料
+        async function loadUserProfile() {
+            try {
+                const profile = await api.getProfile();
+                currentUser = profile;
+
+                document.getElementById('username').textContent = profile.username;
+                document.getElementById('email').textContent = profile.email;
+                document.getElementById('avatarChar').textContent = profile.username.charAt(0).toUpperCase();
+                document.getElementById('joinDate').textContent = `加入于 ${new Date(profile.created_at).toLocaleDateString('zh-CN')}`;
+
+                // 填充编辑表单
+                document.getElementById('editEmail').value = profile.email;
+
+            } catch (error) {
+                console.error('加载用户资料失败:', error);
+                showError('加载用户资料失败');
+            }
+        }
+
+        // 加载用户统计
+        async function loadUserStats() {
+            try {
+                const stats = await api.getUserStats(currentUser.id);
+
+                document.getElementById('totalScore').textContent = formatNumber(stats.stats.total_score);
+                document.getElementById('gamesPlayed').textContent = stats.stats.total_games;
+                document.getElementById('avgScore').textContent = formatNumber(Math.round(stats.stats.avg_score));
+                document.getElementById('maxScore').textContent = formatNumber(stats.stats.max_score);
+
+            } catch (error) {
+                console.error('加载用户统计失败:', error);
+            }
+        }
+
+        // 加载最佳游戏
+        async function loadBestGames() {
+            try {
+                const stats = await api.getUserStats(currentUser.id);
+                const container = document.getElementById('bestGamesContainer');
+
+                let html = '';
+                if (stats.best_games.length === 0) {
+                    html = '<p class="text-muted">还没有游戏记录</p>';
+                } else {
+                    stats.best_games.forEach((game, index) => {
+                        html += `
+                            <div class="col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                                            <span class="badge rounded-pill" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 1rem;">#${index + 1}</span>
+                                            <h6 class="card-title mb-0">${game.name}</h6>
+                                        </div>
+                                        <div class="row g-2 text-center">
+                                            <div class="col-6">
+                                                <small class="text-muted">最高分</small>
+                                                <div class="h5 mb-0">${formatNumber(game.max_score)}</div>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted">游玩次数</small>
+                                                <div class="h5 mb-0">${game.play_count}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('加载最佳游戏失败:', error);
+            }
+        }
+
+        // 加载最近游戏
+        async function loadRecentGames() {
+            try {
+                const records = await api.getGameRecords(1, 10);
+                const tbody = document.getElementById('recentGamesBody');
+
+                let html = '';
+                if (records.records.length === 0) {
+                    html = '<tr><td colspan="5" class="text-center text-muted py-4">还没有游戏记录</td></tr>';
+                } else {
+                    records.records.forEach(record => {
+                        const statusMap = {
+                            'completed': '完成',
+                            'failed': '失败',
+                            'quit': '退出'
+                        };
+                        const statusBadgeClass = {
+                            'completed': 'success',
+                            'failed': 'danger',
+                            'quit': 'warning'
+                        };
+
+                        html += `
+                            <tr>
+                                <td>游戏${record.id}</td>
+                                <td><strong>${formatNumber(record.score)}</strong></td>
+                                <td>${formatTime(record.time_played)}</td>
+                                <td><span class="badge bg-${statusBadgeClass[record.status] || 'secondary'}">${statusMap[record.status] || '未知'}</span></td>
+                                <td>${new Date(record.created_at).toLocaleDateString('zh-CN')}</td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                tbody.innerHTML = html;
+
+            } catch (error) {
+                console.error('加载最近游戏失败:', error);
+            }
+        }
+    </script>
+</body>
+</html>

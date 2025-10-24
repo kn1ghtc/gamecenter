@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞鸟 - 网页游戏中心</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            text-align: center;
+        }
+        h1 { color: #fff; margin-bottom: 20px; }
+        canvas {
+            border: 3px solid #fff;
+            background: #87CEEB;
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 0 30px rgba(0,0,0,0.3);
+        }
+        .info {
+            color: #fff;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .score { font-size: 20px; font-weight: bold; }
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background: #eee; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐦 飞鸟</h1>
+        <canvas id="gameCanvas" width="400" height="600"></canvas>
+        <div class="info">
+            <div class="score">得分: <span id="score">0</span></div>
+            <p>点击或按空格跳跃</p>
+            <button onclick="location.reload()">重新开始</button>
+        </div>
+    </div>
+    <script src="game.js"></script>
+</body>
+</html>

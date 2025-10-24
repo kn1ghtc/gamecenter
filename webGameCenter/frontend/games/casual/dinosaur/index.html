@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>恐龙跳跃 - Dinosaur Jump</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #87CEEB 0%, #E0F6FF 100%);
+            font-family: Arial, sans-serif;
+            color: #333;
+        }
+        
+        .game-container {
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #8B4513;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        #gameCanvas {
+            border: 3px solid #8B4513;
+            background: linear-gradient(to bottom, #87CEEB 0%, #90EE90 100%);
+            display: block;
+            margin: 0 auto 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        
+        .info-item {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 10px 20px;
+            border: 2px solid #8B4513;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .controls {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
+            border: 2px solid #8B4513;
+        }
+        
+        .restart-btn {
+            background-color: #8B4513;
+            color: #fff;
+            border: none;
+            padding: 10px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .restart-btn:hover {
+            background-color: #A0522D;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🦖 恐龙跳跃 Dinosaur Jump 🦖</h1>
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        
+        <div class="game-info">
+            <div class="info-item">🎯 得分: <span id="score">0</span></div>
+            <div class="info-item">🏆 最高分: <span id="bestScore">0</span></div>
+            <div class="info-item">⚡ 速度: <span id="speed">1x</span></div>
+        </div>
+        
+        <div class="controls">
+            <p>🎮 <strong>操作方式:</strong></p>
+            <p>空格 / ↑ 跳跃 | 点击屏幕 跳跃</p>
+            <p>按 R 重新开始</p>
+        </div>
+        
+        <button class="restart-btn" onclick="location.reload()">🔄 重新开始</button>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>

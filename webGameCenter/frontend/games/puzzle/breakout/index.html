@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打砖块 - Breakout</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: Arial, sans-serif;
+            color: #fff;
+        }
+        
+        .game-container {
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: #00d4ff;
+            text-shadow: 0 0 10px #00d4ff;
+        }
+        
+        #gameCanvas {
+            border: 3px solid #00d4ff;
+            background-color: #0f3460;
+            display: block;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 20px #00d4ff;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+        
+        .info-item {
+            background: rgba(0, 212, 255, 0.1);
+            padding: 10px 20px;
+            border: 1px solid #00d4ff;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .controls {
+            background: rgba(0, 212, 255, 0.1);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 14px;
+            border: 1px solid #00d4ff;
+        }
+        
+        .restart-btn {
+            background-color: #00d4ff;
+            color: #000;
+            border: none;
+            padding: 10px 30px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        
+        .restart-btn:hover {
+            background-color: #00a8cc;
+            box-shadow: 0 0 15px #00d4ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>⚔️ 打砖块 Breakout ⚔️</h1>
+        <canvas id="gameCanvas" width="600" height="600"></canvas>
+        
+        <div class="game-info">
+            <div class="info-item">🎯 得分: <span id="score">0</span></div>
+            <div class="info-item">❤️ 生命: <span id="lives">3</span></div>
+            <div class="info-item">🧱 砖块: <span id="bricks">0</span></div>
+        </div>
+        
+        <div class="controls">
+            <p>🎮 <strong>操作方式:</strong></p>
+            <p>← → 移动挡板 | 点击/空格 发射</p>
+            <p>打碎所有砖块即可过关！</p>
+        </div>
+        
+        <button class="restart-btn" onclick="location.reload()">🔄 重新开始</button>
+    </div>
+    
+    <script src="game.js"></script>
+</body>
+</html>

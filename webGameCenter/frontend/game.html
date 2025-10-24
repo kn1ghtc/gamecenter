@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>游戏 - 网页游戏中心</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@6.4.0/css/all.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-gamepad"></i> 网页游戏中心
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/leaderboard.html">排行榜</a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="btn btn-outline-light btn-sm" id="exitGameBtn">退出游戏</button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 游戏容器 -->
+    <main class="container-fluid py-3">
+        <div class="row">
+            <!-- 游戏面板 -->
+            <div class="col-md-9">
+                <div class="game-panel" id="gamePanel" style="background: #000; border-radius: 10px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.3); min-height: 600px;">
+                    <div style="display: flex; align-items: center; justify-content: center; height: 600px; color: white; font-size: 1.2rem;">
+                        <div class="text-center">
+                            <div class="spinner"></div>
+                            <p>加载游戏中...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 游戏信息侧栏 -->
+            <div class="col-md-3">
+                <div class="card" style="border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                    <div class="card-header bg-primary text-white" style="border-radius: 10px 10px 0 0;">
+                        <h5 class="mb-0" id="gameTitle">游戏信息</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">游戏描述</label>
+                            <p class="card-text" id="gameDescription">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">难度</label>
+                            <p class="card-text" id="gameDifficulty">-</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">当前分数</label>
+                            <div class="display-6" id="currentScore">0</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">游戏时长</label>
+                            <p class="card-text" id="gameTime">00:00</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">游戏状态</label>
+                            <span class="badge bg-success" id="gameStatus">准备中</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 游戏统计 -->
+                <div class="card mt-3" style="border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.1);">
+                    <div class="card-header bg-info text-white" style="border-radius: 10px 10px 0 0;">
+                        <h5 class="mb-0">游戏统计</h5>
+                    </div>
+                    <div class="card-body" id="gameStatsContainer">
+                        <p class="text-muted">加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏控制 -->
+        <div class="row mt-3">
+            <div class="col-md-9">
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success" id="continueBtn" style="display:none;">继续游戏</button>
+                    <button class="btn btn-warning" id="pauseBtn" style="display:none;">暂停</button>
+                    <button class="btn btn-danger" id="stopBtn">退出游戏</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>&copy; 2024 网页游戏中心</p>
+        </div>
+    </footer>
+
+    <!-- 脚本 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/api.js"></script>
+    <script src="/static/js/ui.js"></script>
+    <script>
+        let currentGame = null;
+        let gameStartTime = null;
+        let gameScore = 0;
+        let gameStatus = 'ready'; // ready, playing, paused, finished
+        let timerInterval = null;
+
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', async () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const gameId = urlParams.get('id');
+
+            if (!gameId) {
+                showError('游戏参数缺失');
+                setTimeout(() => window.location.href = '/', 2000);
+                return;
+            }
+
+            // 检查登录
+            if (!api.getToken()) {
+                showError('请先登录');
+                window.location.href = '/login.html';
+                return;
+            }
+
+            // 加载游戏信息
+            await loadGameInfo(gameId);
+            loadGame(gameId);
+
+            bindGameEvents();
+        });
+
+        // 加载游戏信息
+        async function loadGameInfo(gameId) {
+            try {
+                const game = await api.getGame(gameId);
+                currentGame = game;
+
+                document.getElementById('gameTitle').textContent = game.name;
+                document.getElementById('gameDescription').textContent = game.description;
+                
+                const difficultyMap = {
+                    'easy': '简单',
+                    'medium': '中等',
+                    'hard': '困难'
+                };
+                document.getElementById('gameDifficulty').textContent = difficultyMap[game.difficulty] || '未知';
+
+                // 加载游戏统计
+                const leaderboard = await api.getGameLeaderboard(gameId, 5);
+                let statsHTML = '<table class="table table-sm"><thead><tr><th>排名</th><th>玩家</th><th>最高分</th></tr></thead><tbody>';
+                
+                leaderboard.forEach(record => {
+                    statsHTML += `<tr><td>#${record.rank}</td><td>${record.username}</td><td>${formatNumber(record.max_score)}</td></tr>`;
+                });
+                
+                statsHTML += '</tbody></table>';
+                document.getElementById('gameStatsContainer').innerHTML = statsHTML;
+
+            } catch (error) {
+                console.error('加载游戏信息失败:', error);
+                showError('加载游戏信息失败');
+            }
+        }
+
+        // 加载游戏
+        function loadGame(gameId) {
+            const gamePanel = document.getElementById('gamePanel');
+            
+            // 根据游戏ID加载对应的游戏
+            const gameUrls = {
+                'flappy_bird': '/games/casual/flappybird/index.html',
+                'space_shooter': '/games/shooting/spaceshooter/index.html',
+                'dinosaur': '/games/casual/dinosaur/index.html',
+                'sokoban': '/games/puzzle/sokoban/index.html',
+                'snake': '/games/arcade/snake/index.html',
+                'pacman': '/games/arcade/pacman/index.html',
+                '2048': '/games/puzzle/2048/index.html',
+                'tetris': '/games/puzzle/tetris/index.html',
+                'breakout': '/games/puzzle/breakout/index.html',
+                'minesweeper': '/games/puzzle/minesweeper/index.html'
+            };
+            
+            const gameUrl = gameUrls[gameId];
+            if (gameUrl) {
+                gamePanel.innerHTML = `<iframe src="${gameUrl}" style="width: 100%; height: 600px; border: none; border-radius: 10px;"></iframe>`;
+            } else {
+                gamePanel.innerHTML = `
+                    <div style="display: flex; align-items: center; justify-content: center; height: 600px; background: #000; color: white;">
+                        <div class="text-center">
+                            <h3>游戏: ${currentGame?.name || '未知'}</h3>
+                            <p>游戏加载失败，请稍后重试</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            gameStatus = 'playing';
+            gameStartTime = Date.now();
+            startGameTimer();
+            updateGameStatus('进行中');
+        }
+
+        // 游戏计时器
+        function startGameTimer() {
+            timerInterval = setInterval(() => {
+                if (gameStatus === 'playing' && gameStartTime) {
+                    const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    document.getElementById('gameTime').textContent = 
+                        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+            }, 100);
+        }
+
+        // 更新游戏状态
+        function updateGameStatus(status) {
+            const statusBadge = document.getElementById('gameStatus');
+            const statusMap = {
+                '准备中': 'secondary',
+                '进行中': 'success',
+                '暂停中': 'warning',
+                '已完成': 'info'
+            };
+            statusBadge.textContent = status;
+            statusBadge.className = `badge bg-${statusMap[status] || 'secondary'}`;
+        }
+
+        // 绑定游戏事件
+        function bindGameEvents() {
+            document.getElementById('exitGameBtn').addEventListener('click', exitGame);
+            document.getElementById('stopBtn').addEventListener('click', exitGame);
+
+            document.getElementById('pauseBtn').addEventListener('click', () => {
+                if (gameStatus === 'playing') {
+                    gameStatus = 'paused';
+                    updateGameStatus('暂停中');
+                    document.getElementById('pauseBtn').style.display = 'none';
+                    document.getElementById('continueBtn').style.display = 'block';
+                } else if (gameStatus === 'paused') {
+                    gameStatus = 'playing';
+                    updateGameStatus('进行中');
+                    document.getElementById('pauseBtn').style.display = 'block';
+                    document.getElementById('continueBtn').style.display = 'none';
+                }
+            });
+
+            document.getElementById('continueBtn').addEventListener('click', () => {
+                gameStatus = 'playing';
+                updateGameStatus('进行中');
+                document.getElementById('continueBtn').style.display = 'none';
+                document.getElementById('pauseBtn').style.display = 'block';
+            });
+        }
+
+        // 退出游戏
+        async function exitGame() {
+            if (gameStatus === 'playing' || gameStatus === 'paused') {
+                const timePlayed = gameStartTime ? Math.floor((Date.now() - gameStartTime) / 1000) : 0;
+                
+                try {
+                    // 保存游戏记录
+                    await api.saveGameRecord(
+                        currentGame.game_id,
+                        gameScore,
+                        timePlayed,
+                        1,
+                        'quit',
+                        0,
+                        {}
+                    );
+                    
+                    showSuccess('游戏记录已保存');
+                } catch (error) {
+                    console.error('保存游戏记录失败:', error);
+                }
+            }
+
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
