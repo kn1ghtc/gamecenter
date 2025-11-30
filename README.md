@@ -730,7 +730,7 @@ python main.py --smoke-test --frames 300
 - **Gomoku（五子棋）**：`cd gomoku; pytest test_smoke.py -v` 验证棋盘逻辑、AI引擎、评估系统、字体管理、存档系统（22个测试用例，100%通过率）。
 - **Military Chess（军棋）**：`python test_smoke.py` 验证游戏逻辑、AI 引擎和包导入；支持直接运行和包导入两种方式的测试。
 - **StreetBattle（街头格斗）**：`python -m pytest streetBattle/tests/test_smoke.py`（验证 manifest、技能、设置）；建议定期运行 `test_combat.py` 和 `test_rollback_sim.py`。
-- **Eco Grassland（生态模拟）**：`python -m pytest tests/test_ecosystem_logic.py` 覆盖生态压力、进食与饮水逻辑，确保教学模式稳定运行。
+- **Eco Grassland（生态模拟）**：人工冒烟测试，通过运行 `cd Eco_grassland; python main.py` 验证生态压力、进食与饮水逻辑。
 - **Tank Battle（坦克大战）**：提供 `--smoke-test` 模式快速回归，训练脚本内置日志。
 - **Tetris（俄罗斯方块）**：`cd tetris; pytest tests/ -v` 验证游戏逻辑、方块旋转、碰撞检测、消行动画。
 - **Alien Invasion（外星人入侵）**：人工冒烟测试，通过快速通关验证游戏流程。
