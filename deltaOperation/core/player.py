@@ -1,5 +1,13 @@
 """
 玩家系统 - 处理玩家移动、射击、动画
+
+此模块提供完整的玩家控制逻辑，包括：
+- 物理运动（移动、跳跃、蹲伏）
+- 武器系统（射击、换弹、切换）
+- 动画系统（12种动画状态，平滑过渡）
+- 伤害/治疗系统
+
+使用AnimationController提供丰富的视觉动画效果。
 """
 
 import sys
@@ -12,27 +20,56 @@ if str(_project_root) not in sys.path:
 import pygame
 from typing import Optional, Dict, List
 from enum import Enum
+import logging
 
 from gamecenter.deltaOperation import config
 from gamecenter.deltaOperation.core.physics import PhysicsBody, PhysicsEngine
+from gamecenter.deltaOperation.core.animation_system import (
+    AnimationController, AnimationState as AnimState
+)
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 
 class PlayerState(Enum):
-    """玩家状态枚举"""
+    """玩家状态枚举 - 兼容旧代码"""
     IDLE = "idle"
     WALK = "walk"
+    RUN = "run"
     JUMP = "jump"
+    FALL = "fall"
     CROUCH = "crouch"
     SHOOT = "shoot"
     RELOAD = "reload"
     HIT = "hit"
     DEATH = "death"
+    MELEE = "melee"
+    CLIMB = "climb"
+
+
+# 状态映射：PlayerState -> AnimState
+_STATE_TO_ANIM_MAP = {
+    PlayerState.IDLE: AnimState.IDLE,
+    PlayerState.WALK: AnimState.WALK,
+    PlayerState.RUN: AnimState.RUN,
+    PlayerState.JUMP: AnimState.JUMP,
+    PlayerState.FALL: AnimState.FALL,
+    PlayerState.CROUCH: AnimState.CROUCH,
+    PlayerState.SHOOT: AnimState.SHOOT,
+    PlayerState.RELOAD: AnimState.RELOAD,
+    PlayerState.HIT: AnimState.HIT,
+    PlayerState.DEATH: AnimState.DEATH,
+    PlayerState.MELEE: AnimState.MELEE,
+    PlayerState.CLIMB: AnimState.CLIMB,
+}
 
 
 class Player(PhysicsBody):
     """
     玩家类
     继承物理实体，增加游戏逻辑
+    集成AnimationController提供丰富动画效果
     """
     
     def __init__(self, x: float, y: float, player_id: int = 1):
@@ -61,6 +98,7 @@ class Player(PhysicsBody):
         self.facing_right = True
         self.is_crouching = False
         self.can_jump = True
+        self.is_running = False  # 新增：奔跑状态
         
         # 武器系统
         self.current_weapon = None  # 当前装备的武器
@@ -68,10 +106,19 @@ class Player(PhysicsBody):
         self.is_shooting = False
         self.is_reloading = False
         
-        # 动画
+        # 🆕 新动画系统 - 使用AnimationController
+        self.animation_controller = AnimationController(
+            width=int(self.width),
+            height=int(self.height)
+        )
+        # 设置动画完成回调（用于射击、换弹等一次性动画）
+        self.animation_controller.on_animation_complete = self._on_animation_complete
+        
+        # 旧动画兼容（保留用于后备）
         self.animation_frame = 0
         self.animation_timer = 0
         self.animation_speed = 0.1  # 秒/帧
+        self.sprites: Dict[PlayerState, List[pygame.Surface]] = {}
         
         # 控制键位(根据玩家ID选择)
         if player_id == 1:
@@ -82,14 +129,18 @@ class Player(PhysicsBody):
         # HUD callbacks (set by gameplay_scene)
         self.on_weapon_switch_callback = None
         self.on_reload_start_callback = None
+        self.on_shoot_callback = None  # 🆕 射击回调（用于粒子效果）
+        self.on_hit_callback = None    # 🆕 受击回调（用于粒子效果）
         
         # 无敌帧(受击后短暂无敌)
         self.invincible = False
         self.invincible_timer = 0
         self.invincible_duration = 1.0  # 秒
         
-        # 加载精灵图
+        # 加载精灵图（后备方案）
         self._load_sprites()
+        
+        logger.debug(f"[Player {player_id}] 初始化完成 at ({x}, {y})")
     
     def _load_sprites(self):
         """加载玩家精灵图"""
@@ -297,26 +348,58 @@ class Player(PhysicsBody):
                                          self.get_aim_direction())
     
     def _update_state(self):
-        """更新玩家状态"""
+        """更新玩家状态 - 使用新的12状态系统"""
         if self.health <= 0:
             self.state = PlayerState.DEATH
             return
         
+        # 优先级排序的状态更新
         if self.is_reloading:
             self.state = PlayerState.RELOAD
         elif self.is_shooting:
             self.state = PlayerState.SHOOT
         elif not self.on_ground:
-            self.state = PlayerState.JUMP
+            # 区分跳跃上升和下落
+            if self.velocity.y < 0:
+                self.state = PlayerState.JUMP
+            else:
+                self.state = PlayerState.FALL
         elif self.is_crouching:
             self.state = PlayerState.CROUCH
+        elif abs(self.velocity.x) > self.move_speed * 0.8:
+            # 接近最大速度时为奔跑
+            self.state = PlayerState.RUN
         elif abs(self.velocity.x) > 0.1:
             self.state = PlayerState.WALK
         else:
             self.state = PlayerState.IDLE
+        
+        # 🆕 同步到动画控制器
+        anim_state = _STATE_TO_ANIM_MAP.get(self.state, AnimState.IDLE)
+        self.animation_controller.set_state(anim_state)
+    
+    def _on_animation_complete(self, state: AnimState):
+        """动画完成回调
+        
+        Args:
+            state: 完成的动画状态
+        """
+        if state == AnimState.RELOAD:
+            self.is_reloading = False
+            if self.current_weapon:
+                self.current_weapon.reload()
+        elif state == AnimState.SHOOT:
+            self.is_shooting = False
+        elif state == AnimState.HIT:
+            # HIT动画结束后恢复正常
+            pass
     
     def _update_animation(self, delta_time: float):
-        """更新动画帧"""
+        """更新动画 - 使用新动画控制器"""
+        # 🆕 更新AnimationController
+        self.animation_controller.update(delta_time)
+        
+        # 旧动画系统兼容（后备）
         self.animation_timer += delta_time
         
         if self.animation_timer >= self.animation_speed:
@@ -324,37 +407,33 @@ class Player(PhysicsBody):
             self.animation_frame += 1
             
             # 循环动画
-            max_frames = len(self.sprites[self.state])
-            if self.animation_frame >= max_frames:
+            max_frames = len(self.sprites.get(self.state, []))
+            if max_frames > 0 and self.animation_frame >= max_frames:
                 self.animation_frame = 0
-                
-                # 换弹完成
-                if self.state == PlayerState.RELOAD:
-                    self.is_reloading = False
-                    if self.current_weapon:
-                        self.current_weapon.reload()
     
     def render(self, screen: pygame.Surface, camera_offset: tuple = (0, 0)):
         """
-        渲染玩家
+        渲染玩家 - 使用新动画系统
         
         Args:
             screen: 渲染目标
             camera_offset: 摄像机偏移
         """
-        # 获取当前帧精灵 - 添加边界检查防止索引越界
-        state_sprites = self.sprites.get(self.state, [])
-        if not state_sprites:
-            # 如果当前状态没有精灵,使用IDLE状态
-            state_sprites = self.sprites.get(PlayerState.IDLE, [])
+        # 🆕 使用AnimationController获取当前帧
+        sprite = self.animation_controller.get_current_frame()
         
-        # 确保动画帧索引在有效范围内
-        if self.animation_frame >= len(state_sprites):
-            self.animation_frame = 0
-        
-        sprite = state_sprites[self.animation_frame] if state_sprites else None
+        # 如果新动画系统无法获取帧，使用后备方案
         if sprite is None:
-            return  # 没有可用精灵时直接返回
+            state_sprites = self.sprites.get(self.state, [])
+            if not state_sprites:
+                state_sprites = self.sprites.get(PlayerState.IDLE, [])
+            
+            if self.animation_frame >= len(state_sprites):
+                self.animation_frame = 0
+            
+            sprite = state_sprites[self.animation_frame] if state_sprites else None
+            if sprite is None:
+                return
         
         # 水平翻转(面向方向)
         if not self.facing_right:
@@ -364,6 +443,12 @@ class Player(PhysicsBody):
         if self.invincible and int(self.invincible_timer * 10) % 2 == 0:
             sprite = sprite.copy()
             sprite.set_alpha(128)
+        
+        # 死亡状态渐隐效果
+        if self.state == PlayerState.DEATH:
+            death_alpha = max(50, 255 - int(self.animation_timer * 200))
+            sprite = sprite.copy()
+            sprite.set_alpha(death_alpha)
         
         # 渲染位置
         render_pos = (
@@ -375,6 +460,9 @@ class Player(PhysicsBody):
         
         # 渲染血量条
         self._render_healthbar(screen, render_pos)
+        
+        # 🆕 渲染玩家名称标签
+        self._render_player_tag(screen, render_pos)
     
     def _render_healthbar(self, screen: pygame.Surface, pos: tuple):
         """渲染血量条"""
@@ -387,11 +475,51 @@ class Player(PhysicsBody):
         pygame.draw.rect(screen, (255, 0, 0),
                         (bar_x, bar_y, bar_width, bar_height))
         
-        # 当前血量(绿色)
+        # 当前血量(绿色→黄色→红色渐变)
         health_ratio = max(0, self.health / self.max_health)
         current_width = int(bar_width * health_ratio)
-        pygame.draw.rect(screen, (0, 255, 0),
+        
+        # 根据血量比例变色
+        if health_ratio > 0.6:
+            health_color = (0, 255, 0)  # 绿色
+        elif health_ratio > 0.3:
+            health_color = (255, 200, 0)  # 黄色
+        else:
+            health_color = (255, 80, 0)  # 橙红色
+        
+        pygame.draw.rect(screen, health_color,
                         (bar_x, bar_y, current_width, bar_height))
+        
+        # 血条边框
+        pygame.draw.rect(screen, (50, 50, 50),
+                        (bar_x, bar_y, bar_width, bar_height), 1)
+    
+    def _render_player_tag(self, screen: pygame.Surface, pos: tuple):
+        """渲染玩家名称标签
+        
+        Args:
+            screen: 渲染目标
+            pos: 玩家渲染位置
+        """
+        if not pygame.font.get_init():
+            pygame.font.init()
+        
+        font = pygame.font.Font(None, 18)
+        tag_text = f"P{self.player_id}"
+        
+        # 根据玩家ID选择颜色
+        if self.player_id == 1:
+            tag_color = (100, 180, 255)  # 蓝色
+        else:
+            tag_color = (255, 100, 100)  # 红色
+        
+        text_surface = font.render(tag_text, True, tag_color)
+        text_rect = text_surface.get_rect(
+            centerx=pos[0] + int(self.width / 2),
+            bottom=pos[1] - 12
+        )
+        
+        screen.blit(text_surface, text_rect)
     
     def get_muzzle_position(self) -> tuple:
         """获取枪口位置(子弹发射点)"""
@@ -410,12 +538,13 @@ class Player(PhysicsBody):
         direction = pygame.math.Vector2(1 if self.facing_right else -1, 0)
         return direction
     
-    def take_damage(self, damage: int):
+    def take_damage(self, damage: int, impact_angle: float = 180.0):
         """
         受到伤害
         
         Args:
             damage: 伤害值
+            impact_angle: 受击方向角度（用于粒子效果）
         """
         if self.invincible or self.state == PlayerState.DEATH:
             return
@@ -423,12 +552,26 @@ class Player(PhysicsBody):
         self.health -= damage
         self.health = max(0, self.health)
         
+        # 🆕 触发受击回调（用于血液粒子效果）
+        if self.on_hit_callback:
+            try:
+                self.on_hit_callback(
+                    self.position.x + self.width / 2,
+                    self.position.y + self.height / 2,
+                    impact_angle,
+                    min(damage, 20)  # 粒子强度上限
+                )
+            except Exception as e:
+                logger.warning(f"受击回调执行失败: {e}")
+        
         if self.health > 0:
             self.state = PlayerState.HIT
+            self.animation_controller.set_state(AnimState.HIT)
             self.invincible = True
             self.invincible_timer = 0
         else:
             self.state = PlayerState.DEATH
+            self.animation_controller.set_state(AnimState.DEATH)
     
     def heal(self, amount: int):
         """

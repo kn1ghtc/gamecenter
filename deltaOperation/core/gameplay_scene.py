@@ -83,6 +83,10 @@ class GameplayScene:
         self.player.add_weapon(pistol)
         self.player.add_weapon(rifle)
         
+        # 🆕 连接玩家粒子效果回调
+        self.player.on_shoot_callback = self._on_player_shoot
+        self.player.on_hit_callback = self._on_player_hit
+        
         # 初始化双人模式（如果启用）
         if self.enable_multiplayer:
             mp_config = MultiplayerConfig(
@@ -97,6 +101,10 @@ class GameplayScene:
             spawn_x = self.level.player_spawn[0] + 50
             spawn_y = self.level.player_spawn[1]
             self.player2 = self.multiplayer.initialize_players(self.player, spawn_x, spawn_y)
+            
+            # 🆕 连接P2粒子效果回调
+            self.player2.on_shoot_callback = self._on_player_shoot
+            self.player2.on_hit_callback = self._on_player_hit
             
             print(f"  [✓] 双人模式已启用 (P1: {self.player.position.x:.0f},{self.player.position.y:.0f} | P2: {self.player2.position.x:.0f},{self.player2.position.y:.0f})")
         
@@ -432,3 +440,64 @@ class GameplayScene:
     def is_mission_failed(self) -> bool:
         """检查任务是否失败"""
         return self.mission_failed
+    
+    # ============ 🆕 粒子效果回调方法 ============
+    
+    def _on_player_shoot(self, x: float, y: float, angle: float, weapon_type: str):
+        """玩家射击时创建枪口火焰和弹壳效果
+        
+        Args:
+            x, y: 枪口位置
+            angle: 射击角度
+            weapon_type: 武器类型
+        """
+        # 枪口火焰
+        self.particle_system.create_muzzle_flash(x, y, angle, weapon_type)
+        
+        # 弹壳抛出
+        self.particle_system.create_bullet_shell(x, y - 5, angle, weapon_type)
+        
+        # 轻微屏幕震动
+        if weapon_type in ["sniper", "shotgun"]:
+            self.camera.shake(8, 0.15)
+        elif weapon_type == "rifle":
+            self.camera.shake(3, 0.08)
+    
+    def _on_player_hit(self, x: float, y: float, impact_angle: float, intensity: int):
+        """玩家受击时创建血液效果
+        
+        Args:
+            x, y: 受击位置
+            impact_angle: 受击方向角度
+            intensity: 效果强度
+        """
+        # 血液溅射
+        self.particle_system.create_blood_splash(x, y, impact_angle, intensity)
+        
+        # 屏幕震动
+        shake_intensity = min(15, intensity * 2)
+        self.camera.shake(shake_intensity, 0.2)
+    
+    def _on_enemy_hit(self, x: float, y: float, impact_angle: float, intensity: int):
+        """敌人受击时创建血液效果
+        
+        Args:
+            x, y: 受击位置
+            impact_angle: 受击方向角度
+            intensity: 效果强度
+        """
+        # 血液溅射（敌人）
+        self.particle_system.create_blood_splash(x, y, impact_angle, intensity)
+    
+    def _on_enemy_death(self, x: float, y: float):
+        """敌人死亡时创建效果
+        
+        Args:
+            x, y: 死亡位置
+        """
+        # 较大的血液效果
+        for angle in range(0, 360, 45):
+            self.particle_system.create_blood_splash(x, y, angle, 5)
+        
+        # 轻微屏幕震动
+        self.camera.shake(5, 0.1)

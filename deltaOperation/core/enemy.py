@@ -1,5 +1,11 @@
 """
 敌人AI系统 - 处理敌人行为和战斗逻辑
+
+此模块提供完整的敌人AI，包括：
+- 状态机AI（巡逻、警戒、战斗、撤退、死亡）
+- 视野检测系统
+- 战斗决策（距离控制、瞄准偏移）
+- 动画系统集成（使用AnimationController）
 """
 
 import sys
@@ -14,11 +20,18 @@ from typing import Optional, List, Tuple
 from enum import Enum
 import random
 import math
-from gamecenter.deltaOperation.utils.enhanced_visuals import get_particle_system
+import logging
 
+from gamecenter.deltaOperation.utils.enhanced_visuals import get_particle_system
 from gamecenter.deltaOperation import config
 from gamecenter.deltaOperation.core.physics import PhysicsBody, PhysicsEngine, AABB
 from gamecenter.deltaOperation.core.weapon import Weapon, WeaponFactory, WeaponType
+from gamecenter.deltaOperation.core.animation_system import (
+    AnimationController, AnimationState as AnimState
+)
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 
 class EnemyState(Enum):
@@ -28,6 +41,16 @@ class EnemyState(Enum):
     COMBAT = "combat"      # 战斗
     RETREAT = "retreat"    # 撤退
     DEATH = "death"        # 死亡
+
+
+# AI状态到动画状态的映射
+_AI_STATE_TO_ANIM_MAP = {
+    EnemyState.PATROL: AnimState.WALK,
+    EnemyState.ALERT: AnimState.IDLE,
+    EnemyState.COMBAT: AnimState.SHOOT,
+    EnemyState.RETREAT: AnimState.RUN,
+    EnemyState.DEATH: AnimState.DEATH,
+}
 
 
 class Enemy(PhysicsBody):
@@ -91,13 +114,38 @@ class Enemy(PhysicsBody):
         self.retreat_health_threshold = 0.3  # 30%血量撤退
         self.retreat_destination = None
         
-        # 动画
+        # 🆕 新动画系统 - 使用AnimationController
+        self.animation_controller = AnimationController(
+            width=int(self.width),
+            height=int(self.height)
+        )
+        # 根据敌人类型设置动画颜色
+        self._setup_enemy_animations()
+        
+        # 旧动画兼容（后备）
         self.animation_frame = 0
         self.animation_timer = 0
         self.animation_speed = 0.1
+        self.sprites = {}
         
-        # 创建精灵(占位)
+        # 创建精灵(后备占位)
         self._load_sprites()
+        
+        logger.debug(f"[Enemy {enemy_type}] 初始化完成 at ({x}, {y})")
+    
+    def _setup_enemy_animations(self):
+        """配置敌人动画（根据类型调整颜色）"""
+        # 根据敌人类型设置基础颜色
+        type_colors = {
+            "grunt": (200, 80, 80),    # 红色系 - 普通敌人
+            "elite": (200, 140, 40),   # 橙色系 - 精英敌人
+            "boss": (140, 30, 30)      # 深红色系 - BOSS
+        }
+        base_color = type_colors.get(self.enemy_type, (200, 80, 80))
+        
+        # 重新生成动画帧（带敌人特定颜色）
+        # AnimationController已有默认动画，这里可以覆盖特定状态
+        # 暂时使用默认动画系统
     
     def _create_weapon(self, weapon_type: str) -> Weapon:
         """根据类型创建武器"""
@@ -365,31 +413,85 @@ class Enemy(PhysicsBody):
         self._update_animation(delta_time)
     
     def _update_animation(self, delta_time: float):
-        """更新动画帧"""
+        """更新动画 - 使用新动画控制器"""
+        # 🆕 根据AI状态和移动情况确定动画状态
+        if self.state == EnemyState.DEATH:
+            anim_state = AnimState.DEATH
+        elif self.state == EnemyState.COMBAT:
+            # 战斗中：射击或移动
+            if abs(self.velocity.x) > 0.1:
+                anim_state = AnimState.WALK
+            else:
+                anim_state = AnimState.SHOOT
+        elif self.state == EnemyState.RETREAT:
+            anim_state = AnimState.RUN
+        elif self.state == EnemyState.ALERT:
+            if abs(self.velocity.x) > 0.1:
+                anim_state = AnimState.WALK
+            else:
+                anim_state = AnimState.IDLE
+        elif self.state == EnemyState.PATROL:
+            if abs(self.velocity.x) > 0.1:
+                anim_state = AnimState.WALK
+            else:
+                anim_state = AnimState.IDLE
+        else:
+            anim_state = AnimState.IDLE
+        
+        self.animation_controller.set_state(anim_state)
+        self.animation_controller.update(delta_time)
+        
+        # 旧动画系统兼容（后备）
         self.animation_timer += delta_time
         if self.animation_timer >= self.animation_speed:
             self.animation_timer = 0
             self.animation_frame += 1
-            if self.animation_frame >= len(self.sprites[self.state]):
+            state_sprites = self.sprites.get(self.state, [])
+            if state_sprites and self.animation_frame >= len(state_sprites):
                 self.animation_frame = 0
     
     def render(self, screen: pygame.Surface, camera_offset: tuple = (0, 0)):
         """
-        渲染敌人
+        渲染敌人 - 使用新动画系统
         
         Args:
             screen: 渲染目标
             camera_offset: 摄像机偏移
         """
-        if self.state == EnemyState.DEATH:
-            return
+        # 🆕 使用AnimationController获取当前帧
+        sprite = self.animation_controller.get_current_frame()
         
-        # 获取当前帧精灵
-        sprite = self.sprites[self.state][self.animation_frame]
+        # 如果新动画系统无法获取帧，使用后备方案
+        if sprite is None:
+            state_sprites = self.sprites.get(self.state, [])
+            if not state_sprites:
+                state_sprites = self.sprites.get(EnemyState.PATROL, [])
+            
+            if self.animation_frame >= len(state_sprites):
+                self.animation_frame = 0
+            
+            sprite = state_sprites[self.animation_frame] if state_sprites else None
+            if sprite is None:
+                return
         
         # 水平翻转
         if not self.facing_right:
             sprite = pygame.transform.flip(sprite, True, False)
+        
+        # 死亡状态渐隐
+        if self.state == EnemyState.DEATH:
+            sprite = sprite.copy()
+            death_alpha = max(30, 255 - int(self.animation_timer * 150))
+            sprite.set_alpha(death_alpha)
+        
+        # 受击闪烁效果（通过警戒级别触发）
+        if self.alert_level > 0.8:
+            if int(self.animation_timer * 20) % 2 == 0:
+                sprite = sprite.copy()
+                # 红色叠加表示战斗状态
+                red_overlay = pygame.Surface(sprite.get_size(), pygame.SRCALPHA)
+                red_overlay.fill((255, 50, 50, 60))
+                sprite.blit(red_overlay, (0, 0))
         
         # 渲染位置
         render_pos = (
@@ -402,11 +504,50 @@ class Enemy(PhysicsBody):
         # 渲染血量条
         self._render_healthbar(screen, render_pos)
         
-        # 渲染状态指示器(调试用)
+        # 渲染状态指示器
         self._render_state_indicator(screen, render_pos)
+        
+        # 🆕 渲染敌人类型标签
+        self._render_enemy_tag(screen, render_pos)
         
         # 渲染武器子弹
         self.weapon.render_bullets(screen, camera_offset)
+    
+    def _render_enemy_tag(self, screen: pygame.Surface, pos: tuple):
+        """渲染敌人类型标签
+        
+        Args:
+            screen: 渲染目标
+            pos: 敌人渲染位置
+        """
+        if not pygame.font.get_init():
+            pygame.font.init()
+        
+        font = pygame.font.Font(None, 16)
+        
+        # 根据类型设置标签
+        type_labels = {
+            "grunt": "G",
+            "elite": "E",
+            "boss": "★"
+        }
+        tag_text = type_labels.get(self.enemy_type, "?")
+        
+        # 根据类型设置颜色
+        type_colors = {
+            "grunt": (255, 100, 100),
+            "elite": (255, 180, 50),
+            "boss": (255, 50, 50)
+        }
+        tag_color = type_colors.get(self.enemy_type, (255, 100, 100))
+        
+        text_surface = font.render(tag_text, True, tag_color)
+        text_rect = text_surface.get_rect(
+            centerx=pos[0] + int(self.width / 2),
+            bottom=pos[1] - 14
+        )
+        
+        screen.blit(text_surface, text_rect)
     
     def _render_healthbar(self, screen: pygame.Surface, pos: tuple):
         """渲染血量条"""

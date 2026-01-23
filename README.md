@@ -1,33 +1,36 @@
 # Game Center 开发手册
 
-> 最后更新：2026-01-23（北京时间）
+> 最后更新：2026-01-24（北京时间）
 
 Game Center 集成了十一款 Python 游戏（Chess、Gomoku、Military Chess、StreetBattle、Eco Grassland、Stickman Game、Super Mario、Tank Battle、Tetris、Alien Invasion、Delta Operation），并提供 Web 游戏中心平台和 **Pygame 统一启动器**，统一了资源治理、测试流程和运维策略。本手册作为唯一权威文档，对整体环境、各子模块特性、常用脚本与质量保证手段进行系统说明，便于团队协同维护与版本迭代。
 
 ## 目录
 
-1. [项目概览](#项目概览)
-2. [目录结构](#目录结构)
-3. [环境准备](#环境准备)
-4. [运行方式概览](#运行方式概览)
-5. [Pygame 游戏启动器](#pygame-游戏启动器)
-6. [Web 游戏中心 (webGameCenter)](#web-游戏中心-webgamecenter)
-7. [游戏模块总览](#游戏模块总览)
-   1. [Chess（国际象棋）](#chess国际象棋)
-   2. [Gomoku（五子棋）](#gomoku五子棋)
-   3. [Military Chess（中国军棋）](#military-chess中国军棋)
-   4. [StreetBattle（街头格斗）](#streetbattle街头格斗)
-   5. [Eco Grassland（生态平衡模拟）](#eco-grassland生态平衡模拟)
-   6. [Stickman Game（火柴人冒险）](#stickman-game火柴人冒险)
-   7. [Super Mario Bros（超级玛丽）](#super-mario-bros超级玛丽)
-   8. [Tank Battle（坦克大战）](#tank-battle坦克大战)
-   9. [Tetris（俄罗斯方块）](#tetris俄罗斯方块)
-   10. [Alien Invasion（外星人入侵）](#alien-invasion外星人入侵)
-   11. [Delta Operation（三角洲行动）](#delta-operation三角洲行动)
-8. [工具与自动化脚本](#工具与自动化脚本)
-9. [质量保障与测试](#质量保障与测试)
-10. [贡献流程](#贡献流程)
-11. [许可证与资源来源](#许可证与资源来源)
+- [Game Center 开发手册](#game-center-开发手册)
+  - [目录](#目录)
+  - [项目概览](#项目概览)
+  - [目录结构](#目录结构)
+  - [环境准备](#环境准备)
+    - [macOS（Homebrew + zsh）快速开始](#macoshomebrew--zsh快速开始)
+  - [运行方式概览](#运行方式概览)
+  - [Pygame 游戏启动器](#pygame-游戏启动器)
+  - [Web 游戏中心 (webGameCenter)](#web-游戏中心-webgamecenter)
+  - [游戏模块总览](#游戏模块总览)
+    - [Chess（国际象棋）](#chess国际象棋)
+    - [Gomoku（五子棋）](#gomoku五子棋)
+    - [Military Chess（中国军棋）](#military-chess中国军棋)
+    - [StreetBattle（街头格斗）](#streetbattle街头格斗)
+    - [Eco Grassland（生态平衡模拟）](#eco-grassland生态平衡模拟)
+    - [Stickman Game（火柴人冒险）](#stickman-game火柴人冒险)
+    - [Super Mario Bros（超级玛丽）](#super-mario-bros超级玛丽)
+    - [Tank Battle（坦克大战）](#tank-battle坦克大战)
+    - [Tetris（俄罗斯方块）](#tetris俄罗斯方块)
+    - [Alien Invasion（外星人入侵）](#alien-invasion外星人入侵)
+    - [Delta Operation（三角洲行动）](#delta-operation三角洲行动)
+  - [工具与自动化脚本](#工具与自动化脚本)
+  - [质量保障与测试](#质量保障与测试)
+  - [贡献流程](#贡献流程)
+  - [许可证与资源来源](#许可证与资源来源)
 
 ---
 
@@ -688,12 +691,14 @@ python alien_invasion.py
 
 ### Delta Operation（三角洲行动）
 
-**概览**：横版射击动作游戏，支持单人和双人模式。包含多种武器、敌人类型、关卡系统和存档功能。
+**概览**：横版射击动作游戏，支持单人和双人模式。包含多种武器、敌人类型、关卡系统、完整动画系统和存档功能。
 
 **核心特性**
+- **完整动画系统**：12种动画状态（待机、行走、奔跑、跳跃、下落、蹲伏、射击、换弹、受击、死亡、近战、攀爬），平滑过渡
+- **增强视觉效果**：枪口火焰、血液溅射、弹壳抛出、爆炸粒子
 - **双人协作模式**：支持本地双人游戏，各自独立控制
 - **武器系统**：M9手枪、M4A1步枪、M24狙击枪、M870霰弹枪
-- **敌人系统**：普通敌人、精英敌人、Boss
+- **敌人系统**：普通敌人、精英敌人、Boss，智能AI状态机
 - **物理系统**：重力、跳跃、空中控制
 - **存档系统**：快速保存（F5）和快速读取（F9）
 - **小地图**：实时显示玩家和敌人位置
@@ -733,11 +738,14 @@ python main.py --smoke-test --frames 300  # 冒烟测试
 - `main.py`：游戏入口、参数解析
 - `config.py`：游戏配置（窗口、玩家、武器、敌人、控制）
 - `core/game_state.py`：游戏状态管理
-- `core/player.py`：玩家角色
-- `core/enemy.py`：敌人AI
+- `core/player.py`：玩家角色（集成AnimationController）
+- `core/enemy.py`：敌人AI（智能状态机 + 动画系统）
+- `core/animation_system.py`：完整动画状态机（12状态、平滑过渡、动态精灵生成）
 - `core/weapon.py`：武器系统
 - `core/physics.py`：物理引擎
 - `core/level_manager.py`：关卡管理
+- `core/gameplay_scene.py`：场景协调（粒子效果集成）
+- `utils/enhanced_visuals.py`：增强粒子系统（枪口火焰、血液、弹壳、爆炸）
 - `ui/`：用户界面组件
 - `assets/`：游戏资源
 - `saves/`：存档目录
