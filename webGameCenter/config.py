@@ -20,7 +20,8 @@ class Config:
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///game_center.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # 游戏配置
+    # 游戏配置 (JS游戏 - 在浏览器中运行)
+    # 注意: kof, tetris, tankbattle 已移至pygame版本 (gamecenter目录)
     GAMES_CONFIG = {
         'action': {
             'name': '动作游戏',
@@ -33,13 +34,6 @@ class Config:
                     'description': '经典的横版射击游戏',
                     'difficulty': 'medium',
                     'icon': 'fas fa-gun'
-                },
-                {
-                    'id': 'kof',
-                    'name': '拳皇格斗',
-                    'description': '经典的对战格斗游戏',
-                    'difficulty': 'medium',
-                    'icon': 'fas fa-fist-raised'
                 }
             ]
         },
@@ -48,13 +42,6 @@ class Config:
             'icon': 'fas fa-crosshairs',
             'description': '紧张刺激的射击游戏',
             'games': [
-                {
-                    'id': 'tankbattle',
-                    'name': '坦克大战',
-                    'description': '经典的坦克对战游戏',
-                    'difficulty': 'medium',
-                    'icon': 'fas fa-cube'
-                },
                 {
                     'id': 'space_shooter',
                     'name': '太空射击',
@@ -128,6 +115,110 @@ class Config:
             ]
         }
     }
+
+
+    # Pygame游戏配置 (本地运行)
+    PYGAME_GAMES = [
+        {
+            'id': 'chess',
+            'name': '中国象棋',
+            'description': 'AI对弈中国象棋，支持语音输入',
+            'category': 'strategy',
+            'icon': 'fas fa-chess',
+            'difficulty': 'medium',
+            'module': 'gamecenter.chess'
+        },
+        {
+            'id': 'gomoku',
+            'name': '五子棋',
+            'description': '人机对战五子棋',
+            'category': 'strategy',
+            'icon': 'fas fa-circle',
+            'difficulty': 'easy',
+            'module': 'gamecenter.gomoku'
+        },
+        {
+            'id': 'militaryChess',
+            'name': '军旗',
+            'description': '双人对战军棋游戏',
+            'category': 'strategy',
+            'icon': 'fas fa-flag',
+            'difficulty': 'hard',
+            'module': 'gamecenter.militaryChess'
+        },
+        {
+            'id': 'tankBattle',
+            'name': '坦克大战',
+            'description': '经典坦克对战，支持AI训练',
+            'category': 'shooting',
+            'icon': 'fas fa-crosshairs',
+            'difficulty': 'medium',
+            'module': 'gamecenter.tankBattle'
+        },
+        {
+            'id': 'tetris',
+            'name': '俄罗斯方块',
+            'description': '经典益智游戏',
+            'category': 'puzzle',
+            'icon': 'fas fa-th-large',
+            'difficulty': 'easy',
+            'module': 'gamecenter.tetris'
+        },
+        {
+            'id': 'superMario',
+            'name': '超级玛丽',
+            'description': '30关平台跳跃游戏',
+            'category': 'action',
+            'icon': 'fas fa-running',
+            'difficulty': 'medium',
+            'module': 'gamecenter.superMario'
+        },
+        {
+            'id': 'deltaOperation',
+            'name': '三角洲行动',
+            'description': '12关闯关枪战游戏',
+            'category': 'shooting',
+            'icon': 'fas fa-gun',
+            'difficulty': 'hard',
+            'module': 'gamecenter.deltaOperation'
+        },
+        {
+            'id': 'streetBattle',
+            'name': '街头霸王',
+            'description': '2.5D/3D格斗游戏',
+            'category': 'action',
+            'icon': 'fas fa-fist-raised',
+            'difficulty': 'hard',
+            'module': 'gamecenter.streetBattle'
+        },
+        {
+            'id': 'stickman_game',
+            'name': '火柴人格斗',
+            'description': '火柴人动作游戏',
+            'category': 'action',
+            'icon': 'fas fa-user',
+            'difficulty': 'easy',
+            'module': 'gamecenter.stickman_game'
+        },
+        {
+            'id': 'Eco_grassland',
+            'name': '生态草原',
+            'description': '生态模拟经营游戏',
+            'category': 'simulation',
+            'icon': 'fas fa-leaf',
+            'difficulty': 'medium',
+            'module': 'gamecenter.Eco_grassland'
+        },
+        {
+            'id': 'alien_invasion',
+            'name': '外星人入侵',
+            'description': '太空射击游戏',
+            'category': 'shooting',
+            'icon': 'fas fa-rocket',
+            'difficulty': 'easy',
+            'module': 'gamecenter.alien_invasion'
+        }
+    ]
 
 
 class DevelopmentConfig(Config):

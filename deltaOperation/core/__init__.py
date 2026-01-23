@@ -7,5 +7,14 @@ from gamecenter.deltaOperation.core.enemy import Enemy, EnemyState
 from gamecenter.deltaOperation.core.level_manager import LevelManager, TileType, Checkpoint, SpawnPoint
 from gamecenter.deltaOperation.core.mission import Mission, MissionConfig, Objective, ObjectiveType, MissionStatus
 from gamecenter.deltaOperation.core.gameplay_scene import GameplayScene
+from gamecenter.deltaOperation.core.animation_system import (
+    AnimationState, AnimationFrame, AnimationClip, AnimationController, get_animation_controller
+)
 
-__all__ = ["GameState", "Vector2D", "AABB", "PhysicsBody", "PhysicsEngine", "CollisionResult", "Player", "PlayerState", "Weapon", "WeaponType", "Bullet", "WeaponFactory", "Enemy", "EnemyState", "LevelManager", "TileType", "Checkpoint", "SpawnPoint", "Mission", "MissionConfig", "Objective", "ObjectiveType", "MissionStatus", "GameplayScene"]
+__all__ = [
+    "GameState", "Vector2D", "AABB", "PhysicsBody", "PhysicsEngine", "CollisionResult", 
+    "Player", "PlayerState", "Weapon", "WeaponType", "Bullet", "WeaponFactory", 
+    "Enemy", "EnemyState", "LevelManager", "TileType", "Checkpoint", "SpawnPoint", 
+    "Mission", "MissionConfig", "Objective", "ObjectiveType", "MissionStatus", "GameplayScene",
+    "AnimationState", "AnimationFrame", "AnimationClip", "AnimationController", "get_animation_controller"
+]
