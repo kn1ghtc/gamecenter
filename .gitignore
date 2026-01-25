@@ -25,3 +25,4 @@ gomoku/cpp_engine/*.dylib
 # Gomoku save files
 gomoku/saves/
 
+game_progress.json
