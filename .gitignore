@@ -26,3 +26,5 @@ gomoku/cpp_engine/*.dylib
 gomoku/saves/
 
 game_progress.json
+chess/data/chess_games.db
+tankBattle/saves/game_progress.json
