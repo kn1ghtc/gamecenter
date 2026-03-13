@@ -9,6 +9,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // 加载游戏分类
     await loadGameCategories();
+
+    // 加载 Pygame 游戏（预加载）
+    if (typeof loadPygameGames === 'function') {
+        await loadPygameGames();
+    }
+
+    // 初始化 Pygame 运行状态
+    if (typeof initPygameStatus === 'function') {
+        await initPygameStatus();
+    }
     
     // 绑定事件
     bindEvents();
@@ -251,5 +261,36 @@ function bindEvents() {
             api.clearToken();
             window.location.href = '/';
         });
+    }
+}
+
+/**
+ * 切换游戏标签页（网页游戏 / 本地游戏 / 全部游戏）
+ * @param {string} tab - 'web' | 'pygame' | 'all'
+ */
+function switchTab(tab) {
+    // 更新按钮状态
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tab);
+    });
+
+    const webSection = document.getElementById('webGamesSection');
+    const pygameSection = document.getElementById('pygameGamesSection');
+
+    if (!webSection || !pygameSection) return;
+
+    switch (tab) {
+        case 'web':
+            webSection.style.display = 'block';
+            pygameSection.style.display = 'none';
+            break;
+        case 'pygame':
+            webSection.style.display = 'none';
+            pygameSection.style.display = 'block';
+            break;
+        case 'all':
+            webSection.style.display = 'block';
+            pygameSection.style.display = 'block';
+            break;
     }
 }

@@ -49,6 +49,7 @@ class Game(db.Model):
     description = db.Column(db.Text)
     difficulty = db.Column(db.String(20), default='medium')
     icon = db.Column(db.String(100))
+    game_type = db.Column(db.String(20), default='web')
     total_plays = db.Column(db.Integer, default=0)
     average_score = db.Column(db.Float, default=0.0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -66,6 +67,7 @@ class Game(db.Model):
             'description': self.description,
             'difficulty': self.difficulty,
             'icon': self.icon,
+            'game_type': self.game_type,
             'total_plays': self.total_plays,
             'average_score': self.average_score,
             'created_at': self.created_at.isoformat()
@@ -151,4 +153,28 @@ class Achievement(db.Model):
             'description': self.description,
             'icon': self.icon,
             'unlocked_at': self.unlocked_at.isoformat()
+        }
+
+
+class GameSetting(db.Model):
+    """游戏设置模型 — 存储全局和单游戏配置"""
+    __tablename__ = 'game_settings'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    game_id = db.Column(db.String(50), nullable=True, index=True)
+    setting_key = db.Column(db.String(100), nullable=False)
+    setting_value = db.Column(db.Text, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'user_id': self.user_id,
+            'game_id': self.game_id,
+            'setting_key': self.setting_key,
+            'setting_value': self.setting_value,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+
         }

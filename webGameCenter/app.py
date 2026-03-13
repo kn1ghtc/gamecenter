@@ -8,10 +8,14 @@ from pathlib import Path
 from flask import Flask, jsonify, send_from_directory, send_file, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
-from backend.database.db import db, User, Game, GameRecord, Score, Achievement
+from backend.database.db import db, User, Game, GameRecord, Score, Achievement, GameSetting
 from backend.routes.auth import auth_bp
 from backend.routes.games import games_bp
 from backend.routes.scores import scores_bp
+from backend.routes.pygame_games import pygame_bp
+from backend.routes.settings import settings_bp
+from backend.services.game_scanner import GameScanner
+from backend.services.pygame_launcher import PygameLauncherService
 from config import config
 
 def create_app(config_name=None):
@@ -40,6 +44,18 @@ def create_app(config_name=None):
     app.register_blueprint(auth_bp)
     app.register_blueprint(games_bp)
     app.register_blueprint(scores_bp)
+    app.register_blueprint(pygame_bp)
+    app.register_blueprint(settings_bp)
+
+    # 初始化 Pygame 服务
+    scanner = GameScanner(
+        gamecenter_root=app.config.get('GAMECENTER_ROOT', base_dir.parent),
+        exclude_dirs=app.config.get('PYGAME_SCAN_EXCLUDE', []),
+        pygame_games_config=app.config.get('PYGAME_GAMES', []),
+    )
+    launcher = PygameLauncherService(scanner)
+    app.config['GAME_SCANNER'] = scanner
+    app.config['PYGAME_LAUNCHER'] = launcher
     
     # 应用上下文
     with app.app_context():
@@ -78,6 +94,11 @@ def create_app(config_name=None):
     def serve_leaderboard():
         """服务排行榜页"""
         return send_from_directory(app.static_folder, 'leaderboard.html')
+
+    @app.route('/settings.html', methods=['GET'])
+    def serve_settings():
+        """服务设置页"""
+        return send_from_directory(app.static_folder, 'settings.html')
     
     # 静态文件路由 - CSS、JS、游戏文件
     @app.route('/css/<path:path>', methods=['GET'])
@@ -162,6 +183,23 @@ def init_games_data():
                 )
                 db.session.add(game)
     
+    db.session.commit()
+
+    # 初始化 Pygame 游戏数据
+    pygame_games = current_app.config.get('PYGAME_GAMES', [])
+    for pg in pygame_games:
+        if not Game.query.filter_by(game_id=pg['id']).first():
+            game = Game(
+                game_id=pg['id'],
+                name=pg['name'],
+                category=pg.get('category', 'other'),
+                description=pg.get('description', ''),
+                difficulty=pg.get('difficulty', 'medium'),
+                icon=pg.get('icon', 'fas fa-gamepad'),
+                game_type='pygame',
+            )
+            db.session.add(game)
+
     db.session.commit()
 
 

@@ -3,6 +3,7 @@
 配置文件
 """
 import os
+from pathlib import Path
 from datetime import timedelta
 
 class Config:
@@ -19,6 +20,13 @@ class Config:
     # SQLAlchemy
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///game_center.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+
+    # Pygame 扫描
+    GAMECENTER_ROOT = Path(__file__).parent.parent
+    PYGAME_SCAN_EXCLUDE = ['webGameCenter', '__pycache__', '.git', '.pytest_cache', 'docs']
+
+    # 默认游戏设置
+    DEFAULT_GAME_SETTINGS = {'volume': 80, 'resolution': '1280x720'}
     
     # 游戏配置 (JS游戏 - 在浏览器中运行)
     # 注意: kof, tetris, tankbattle 已移至pygame版本 (gamecenter目录)
@@ -69,6 +77,20 @@ class Config:
                     'description': '经典的益智解谜游戏',
                     'difficulty': 'medium',
                     'icon': 'fas fa-box'
+                },
+                {
+                    'id': 'breakout',
+                    'name': '打砖块',
+                    'description': '经典的打砖块街机游戏',
+                    'difficulty': 'easy',
+                    'icon': 'fas fa-table-cells'
+                },
+                {
+                    'id': 'minesweeper',
+                    'name': '扫雷',
+                    'description': '经典的 Windows 扫雷游戏',
+                    'difficulty': 'medium',
+                    'icon': 'fas fa-bomb'
                 }
             ]
         },

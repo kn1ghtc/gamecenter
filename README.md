@@ -171,20 +171,29 @@ python pygame_launcher.py
 
 ## Web 游戏中心 (webGameCenter)
 
-**概览**：现代化的网页游戏平台，基于 Flask 后端 + HTML5 前端，集成多款经典网页小游戏。提供完整的用户管理、游戏分类、积分排行系统。
+**概览**：统一游戏平台（v2.0.0），基于 Flask 后端 + HTML5 前端，集成 10 款网页小游戏 + 11 款 Pygame 本地游戏。提供 Tab 分类浏览（网页游戏 / 本地游戏 / 全部）、统一设置管理、进度记录、积分排行系统。
 
-> **注意**：KOF、俄罗斯方块、坦克大战已移至 Pygame 版本，Web 版本不再维护这三款游戏。
+> **架构升级**（v2.0.0）：新增 Pygame 游戏自动发现、子进程启动管理、全局/游戏级设置 API，前端支持 Tab 切换和实时状态轮询。
 
 **核心功能**
 - ✅ **用户系统**：注册、登录、资料编辑（JWT 认证）
-- ✅ **游戏中心**：分类浏览、在线游戏、进度保存
+- ✅ **统一游戏中心**：Tab 分类浏览（网页游戏 / 本地游戏 / 全部）
+- ✅ **Pygame 集成**：自动扫描 gamecenter/ 目录发现本地游戏，一键启动/停止
+- ✅ **统一设置**：全局音量/分辨率 + 游戏级自定义设置
 - ✅ **排行系统**：全球排行榜、游戏排行、个人排名
-- ✅ **游戏列表**：
+- ✅ **实时状态**：Pygame 游戏运行状态实时轮询与 Toast 通知
+- ✅ **网页游戏列表**（10 款）：
   - 🎮 动作游戏：魂斗罗 (Contra)
   - 🎯 射击游戏：太空射击
   - 🎰 益智游戏：2048、推箱子、扫雷、打砖块
   - 🐍 街机游戏：贪吃蛇
   - 🦅 休闲游戏：飞鸟、恐龙跑酷、吃豆人
+- ✅ **本地游戏列表**（11 款，自动发现）：
+  - 🧠 策略：中国象棋、五子棋、军旗
+  - ⚡ 动作：超级玛丽、街头霸王、火柴人格斗
+  - 🎯 射击：坦克大战、三角洲行动、外星人入侵
+  - 🧩 益智：俄罗斯方块
+  - 🌍 模拟：生态草原
 
 **快速开始**
 ```powershell
@@ -197,39 +206,52 @@ python run.py
 **项目结构**
 ```
 webGameCenter/
-├─ app.py                   # Flask 主应用
-├─ config.py                # 配置与游戏定义
+├─ app.py                   # Flask 主应用（含 Pygame 服务初始化）
+├─ config.py                # 配置与游戏定义（Web + Pygame）
 ├─ run.py                   # 启动脚本
 ├─ requirements.txt         # Python 依赖
 ├─ backend/
-│  ├─ database/db.py       # SQLAlchemy 数据模型
+│  ├─ database/db.py       # SQLAlchemy 数据模型（含 GameSetting）
+│  ├─ services/
+│  │  ├─ game_scanner.py   # 🆕 Pygame 游戏自动发现服务
+│  │  └─ pygame_launcher.py # 🆕 Pygame 子进程管理服务
 │  └─ routes/
 │     ├─ auth.py           # 认证 API
-│     ├─ games.py          # 游戏 API
-│     └─ scores.py         # 积分 API
-└─ frontend/
-   ├─ index.html           # 首页
-   ├─ login.html           # 登录页
-   ├─ game.html            # 游戏容器
-   ├─ leaderboard.html     # 排行榜
-   ├─ dashboard.html       # 个人中心
-   ├─ css/style.css        # 样式表
-   ├─ js/api.js            # API 客户端
-   ├─ js/ui.js             # UI 工具函数
-   ├─ js/main.js           # 主应用逻辑
-   └─ games/               # 5+ 款游戏
-      ├─ action/
-      ├─ shooting/
-      ├─ arcade/
-      ├─ puzzle/
-      └─ casual/
+│     ├─ games.py          # 网页游戏 API
+│     ├─ scores.py         # 积分 API
+│     ├─ pygame_games.py   # 🆕 Pygame 游戏 API（6 个端点）
+│     └─ settings.py       # 🆕 统一设置 API（4 个端点）
+├─ frontend/
+│  ├─ index.html           # 首页（Tab 导航：网页/本地/全部）
+│  ├─ settings.html        # 🆕 设置页面
+│  ├─ login.html           # 登录页
+│  ├─ game.html            # 游戏容器
+│  ├─ leaderboard.html     # 排行榜
+│  ├─ dashboard.html       # 个人中心
+│  ├─ css/style.css        # 样式表（含 Tab/Pygame 卡片/Toast 样式）
+│  ├─ js/api.js            # API 客户端
+│  ├─ js/ui.js             # UI 工具函数
+│  ├─ js/main.js           # 主应用逻辑（含 Tab 切换）
+│  └─ js/pygame.js         # 🆕 Pygame 游戏交互模块
+│  └─ games/               # 10 款网页游戏
+│     ├─ action/contra/
+│     ├─ shooting/spaceshooter/
+│     ├─ arcade/snake/
+│     ├─ puzzle/2048/, sokoban/, minesweeper/, breakout/
+│     └─ casual/pacman/, flappybird/, dinosaur/
+└─ tests/
+   ├─ test_api.py          # 原有 API 测试
+   ├─ test_game_scanner.py # 🆕 GameScanner 测试（11 用例）
+   └─ test_pygame_routes.py # 🆕 Pygame API 测试（10 用例）
 ```
 
 **API 文档**
 - 认证：`POST /api/auth/register`, `POST /api/auth/login`
-- 游戏：`GET /api/games/categories`, `GET /api/games/list`
+- 网页游戏：`GET /api/games/categories`, `GET /api/games/list`
 - 记录：`POST /api/games/record`, `GET /api/games/records`
 - 排名：`GET /api/scores/leaderboard`, `GET /api/scores/game/<id>`
+- Pygame：`GET /api/pygame/games`, `GET /api/pygame/games/<id>`, `POST /api/pygame/launch/<id>`, `GET /api/pygame/status`, `POST /api/pygame/stop`, `POST /api/pygame/refresh`
+- 设置：`GET /api/settings`, `PUT /api/settings`, `GET /api/settings/game/<id>`, `PUT /api/settings/game/<id>`
 
 **前端框架**
 - Bootstrap 5：响应式设计
@@ -249,6 +271,7 @@ webGameCenter/
 - `TECHNICAL.md`：技术实现细节
 - `COMPLETION_REPORT.md`：项目交付清单
 - `verify_setup.py`：环境验证脚本
+- `docs/design/`：架构设计文档
 
 **部署**
 ```powershell
